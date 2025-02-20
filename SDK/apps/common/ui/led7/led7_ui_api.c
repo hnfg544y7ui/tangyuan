@@ -72,9 +72,9 @@ static const struct ui_dis_api *const ui_dis_main[] = {
 #if TCFG_APP_FM_EN
     &fm_main,
 #endif
-    /*#if TCFG_APP_RECORD_EN
-        &record_main,
-    #endif*/
+#if TCFG_APP_RECORD_EN
+    &record_main,
+#endif
 #if TCFG_APP_LINEIN_EN
     &linein_main,
 #endif

@@ -28,7 +28,7 @@ EXT_CFLAGS  := # Windows 下不需要 -D__SHELL__
 export PATH:=$(TOOL_DIR);$(PATH)
 
 ## 后处理脚本
-FIXBAT          := tools\utils\fixbat.exe # 用于处理 utf8->gbk 编码问题
+FIXBAT          := tools/utils/fixbat.exe # 用于处理 utf8->gbk 编码问题
 POST_SCRIPT     := cpu/br27/tools/download.bat
 RUN_POST_SCRIPT := cpu\br27\tools\download.bat
 else
@@ -128,6 +128,7 @@ DEFINES := \
 	-D__GCC_PI32V2__ \
 	-DCONFIG_NEW_ECC_ENABLE \
 	-DCONFIG_CODE_MOVABLE_ENABLE \
+	-DCONFIG_FLOAT_DEBUG_ENABLE \
 	-DCONFIG_EFFECT_CORE_V2_ENABLE \
 	-DCONFIG_OS_AFFINITY_ENABLE=0 \
 	-DEVENT_HANDLER_NUM_CONFIG=2 \
@@ -240,6 +241,7 @@ INCLUDES := \
 	-Iapps/common/third_party_profile/dma_protocol \
 	-Iapps/common/third_party_profile/gfps_protocol \
 	-Iapps/common/third_party_profile/custom_protocol_demo \
+	-Iinterface/utils/apple_dock \
 	-Iapps/common/cJSON \
 	-Iinterface/btstack \
 	-Iinterface/media/cpu/br27 \
@@ -326,6 +328,7 @@ c_SRC_FILES := \
 	apps/common/device/usb/device/custom_hid.c \
 	apps/common/device/usb/device/descriptor.c \
 	apps/common/device/usb/device/hid.c \
+	apps/common/device/usb/device/iap.c \
 	apps/common/device/usb/device/midi.c \
 	apps/common/device/usb/device/msd.c \
 	apps/common/device/usb/device/msd_upgrade.c \
@@ -353,6 +356,10 @@ c_SRC_FILES := \
 	apps/common/fat_nor/virfat_flash.c \
 	apps/common/file_operate/file_bs_deal.c \
 	apps/common/file_operate/file_manager.c \
+	apps/common/iap/iAP_chip.c \
+	apps/common/iap/iAP_des.c \
+	apps/common/iap/iAP_device.c \
+	apps/common/iap/iAP_iic.c \
 	apps/common/le_audio/big.c \
 	apps/common/le_audio/cig.c \
 	apps/common/le_audio/wireless_trans_manager.c \
@@ -645,6 +652,7 @@ c_SRC_FILES := \
 	apps/soundbox/ui/led7/ui_linein.c \
 	apps/soundbox/ui/led7/ui_music.c \
 	apps/soundbox/ui/led7/ui_pc.c \
+	apps/soundbox/ui/led7/ui_record.c \
 	apps/soundbox/ui/led7/ui_rtc.c \
 	apps/soundbox/ui/led7/ui_sink.c \
 	apps/soundbox/ui/led7/ui_spdif.c \
@@ -932,6 +940,7 @@ LFLAGS := \
 	--plugin-opt=-movable-region-section-map-file-list=apps/soundbox/movable/section.txt \
 	--plugin-opt=-movable-region-exclude-func-file-list=apps/soundbox/movable/exclude.txt \
 	--plugin-opt=-pi32v2-large-program=true \
+	--plugin-opt=-floating-point-may-trap=true \
 	--gc-sections \
 	--plugin-opt=-pi32v2-csync-before-rti=true \
 	--start-group \
@@ -1057,6 +1066,7 @@ LFLAGS := \
 	cpu/br27/liba/vm.a \
 	cpu/br27/liba/ftl.a \
 	cpu/br27/liba/debug_record.a \
+	cpu/br27/liba/apple_dock.a \
 	--end-group \
 	-Tcpu/br27/sdk.ld \
 	-M=cpu/br27/tools/sdk.map \
@@ -1146,37 +1156,31 @@ endif
 $(BUILD_DIR)/%.c.o : %.c
 	$(info +CC $<)
 	$(QUITE) $(MKDIR) $(@D)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
 
 $(BUILD_DIR)/%.S.o : %.S
 	$(info +AS $<)
 	$(QUITE) $(MKDIR) $(@D)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
 
 $(BUILD_DIR)/%.s.o : %.s
 	$(info +AS $<)
 	$(QUITE) $(MKDIR) $(@D)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
-	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
 
 $(BUILD_DIR)/%.cpp.o : %.cpp
 	$(info +CXX $<)
 	$(QUITE) $(MKDIR) $(@D)
-	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
-	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
 
 $(BUILD_DIR)/%.cxx.o : %.cxx
 	$(info +CXX $<)
 	$(QUITE) $(MKDIR) $(@D)
-	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
-	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
 
 $(BUILD_DIR)/%.cc.o : %.cc
 	$(info +CXX $<)
 	$(QUITE) $(MKDIR) $(@D)
-	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MM -MT $@ $< -o $(@:.o=.d)
-	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -c $< -o $@
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
 
 -include $(DEP_FILES)

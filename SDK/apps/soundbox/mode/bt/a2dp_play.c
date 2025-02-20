@@ -46,8 +46,11 @@ static u8 g_play_addr[6];
 static u8 g_slience_addr[6];
 static u8 a2dp_play_status = 0;
 
-void app_set_a2dp_play_status(u8 st)
+void app_set_a2dp_play_status(u8 *bt_addr, u8 st)
 {
+    if ((st == 0) && (memcmp(bt_addr, g_play_addr, 6) != 0)) {
+        return;
+    }
     a2dp_play_status = st;
 }
 
@@ -63,7 +66,10 @@ void a2dp_play_close(u8 *bt_addr)
     a2dp_player_close(bt_addr);
     bt_stop_a2dp_slience_detect(bt_addr);
     a2dp_media_close(bt_addr);
-    memset(g_play_addr, 0xff, 6);
+    if (memcmp(bt_addr, g_play_addr, 6) == 0) {
+        memset(g_play_addr, 0xff, 6);
+    }
+    app_set_a2dp_play_status(bt_addr, 0);
 }
 
 static void a2dp_play_in_task(u8 *data)
@@ -158,14 +164,6 @@ static int a2dp_bt_status_event_handler(int *event)
     u8 data[8];
     u8 btaddr[6];
     struct bt_event *bt = (struct bt_event *)event;
-#if  LEA_BIG_CTRLER_RX_EN && (LEA_BIG_FIX_ROLE==2) && !TCFG_KBOX_1T3_MODE_EN
-    if (get_broadcast_connect_status() && \
-        (bt->event == BT_STATUS_A2DP_MEDIA_START)) {
-        printf("BIS receiving state does not support the event %d", bt->event);
-        bt_key_music_pp();
-        return 0;
-    }
-#endif
 
     switch (bt->event) {
     case BT_STATUS_A2DP_MEDIA_START:
@@ -174,7 +172,7 @@ static int a2dp_bt_status_event_handler(int *event)
         if (app_var.goto_poweroff_flag) {
             break;
         }
-        app_set_a2dp_play_status(1);
+        app_set_a2dp_play_status(bt->args, 1);
         if (bt_get_call_status_for_addr(bt->args) == BT_CALL_INCOMING) {
             //小米11来电挂断偶现没有hungup过来，hfp链路异常，重新断开hfp再连接
             puts("<<<<<<<<waring a2dp start hfp_incoming\n");
@@ -201,7 +199,7 @@ static int a2dp_bt_status_event_handler(int *event)
         break;
     case BT_STATUS_A2DP_MEDIA_STOP:
         puts("BT_STATUS_A2DP_MEDIA_STOP\n");
-        app_set_a2dp_play_status(0);
+        app_set_a2dp_play_status(bt->args, 0);
 #if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_AURACAST_SOURCE_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN)) || \
@@ -243,7 +241,7 @@ static int a2dp_bt_hci_event_handler(int *event)
 
     switch (bt->event) {
     case HCI_EVENT_DISCONNECTION_COMPLETE:
-        app_set_a2dp_play_status(0);
+        app_set_a2dp_play_status(bt->args, 0);
         a2dp_play_close(bt->args);
         break;
     }
@@ -359,9 +357,6 @@ static int a2dp_local_audio_close(void)
     if (get_a2dp_play_status() == LOCAL_AUDIO_PLAYER_STATUS_PLAY) {
         //关闭本地播放
         a2dp_player_close(get_g_play_addr());
-#if  LEA_BIG_CTRLER_RX_EN && (LEA_BIG_FIX_ROLE==2) && !TCFG_KBOX_1T3_MODE_EN
-        bt_key_music_pp();
-#endif
     }
     return 0;
 }

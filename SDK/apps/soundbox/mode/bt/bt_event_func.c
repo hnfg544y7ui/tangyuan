@@ -145,6 +145,9 @@ void bt_status_init_ok(void)
     le_audio_scene_deal(LE_AUDIO_APP_MODE_ENTER);
 
 #if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if TCFG_KBOX_1T3_MODE_EN
+    bt_work_mode_select(BT_MODE_BROADCAST);
+#endif
     if (g_bt_hdl.work_mode == BT_MODE_BROADCAST) {
         app_broadcast_init();
 #if TCFG_KBOX_1T3_MODE_EN
@@ -154,6 +157,9 @@ void bt_status_init_ok(void)
 #endif
 
 #if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if TCFG_KBOX_1T3_MODE_EN
+    bt_work_mode_select(BT_MODE_CIG);
+#endif
     if (g_bt_hdl.work_mode == BT_MODE_CIG) {
         app_connected_init();
 #if TCFG_KBOX_1T3_MODE_EN
@@ -360,7 +366,7 @@ void bt_dut_api(u8 param)
         g_bt_hdl.auto_connection_timer = 0;
     }
 
-#if TCFG_BT_BLE_ADV_ENABLE
+#if ((TCFG_USER_BLE_ENABLE && TCFG_THIRD_PARTY_PROTOCOLS_ENABLE) || TCFG_BT_BLE_ADV_ENABLE)
 #if (CONFIG_BT_MODE == BT_NORMAL)
     bt_ble_adv_enable(0);
 #endif

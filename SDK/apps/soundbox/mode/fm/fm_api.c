@@ -42,6 +42,7 @@
 #include "rcsp_config.h"
 #include "bt_key_func.h"
 #include "btstack_rcsp_user.h"
+#include "app_le_auracast.h"
 
 #define LOG_TAG             "[APP_FM]"
 #define LOG_ERROR_ENABLE
@@ -621,9 +622,9 @@ void fm_volume_pp(void)
         le_audio_fm_volume_pp();
     } else {
         if (__this->fm_dev_mute) {
-            update_app_broadcast_deal_scene(LE_AUDIO_MUSIC_STOP);
+            update_app_auracast_deal_scene(LE_AUDIO_MUSIC_STOP);
         } else {
-            update_app_broadcast_deal_scene(LE_AUDIO_MUSIC_START);
+            update_app_auracast_deal_scene(LE_AUDIO_MUSIC_START);
         }
     }
 #endif

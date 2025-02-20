@@ -67,7 +67,7 @@ static void ui_close_record(void *hd, void *private)
     if (private) {
         free(private);
     }
-    //record_ui_del_mutex();
+    record_ui_del_mutex();
 }
 
 static void ui_record_main(void *hd, void *private) //主界面显示
@@ -82,7 +82,6 @@ static void ui_record_main(void *hd, void *private) //主界面显示
         /* printf("-->%d\n", time); */
         led_show_record_time(hd, time);
     } else {
-
         time = app_recorder_get_play_file_time();
         if (time == -1) {
             led7_show_record(hd);

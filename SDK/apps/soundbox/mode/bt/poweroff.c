@@ -21,6 +21,7 @@
 #include "app_le_auracast.h"
 #include "app_le_connected.h"
 #include "app_le_broadcast.h"
+#include "le_broadcast.h"
 
 #if(TCFG_USER_TWS_ENABLE == 0)
 

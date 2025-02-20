@@ -10,6 +10,7 @@
 #include "key_driver.h"
 #include "adkey.h"
 #include "iokey.h"
+#include "irkey.h"
 
 static void key_wakeup_callback(P33_IO_WKUP_EDGE edge)
 {

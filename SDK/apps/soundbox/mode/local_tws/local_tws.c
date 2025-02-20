@@ -437,11 +437,9 @@ static int local_tws_msg_handler(int *msg)
         break;
 
     case CMD_TWS_VOL_REPORT:
-        if (!app_in_mode(APP_MODE_BT)) {
-            app_audio_set_volume(APP_AUDIO_STATE_IDLE, cmd[1], 1);
-            if (cmd[2]) {   //sink shound be reflash ui
-                app_send_message(APP_MSG_VOL_CHANGED, app_audio_get_volume(APP_AUDIO_STATE_IDLE));
-            }
+        app_audio_set_volume(APP_AUDIO_STATE_IDLE, cmd[1], 1);
+        if (cmd[2]) {   //sink shound be reflash ui
+            app_send_message(APP_MSG_VOL_CHANGED, app_audio_get_volume(APP_AUDIO_STATE_IDLE));
         }
         break;
 

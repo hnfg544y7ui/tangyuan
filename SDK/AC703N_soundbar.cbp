@@ -60,6 +60,7 @@
 <Add option="-D__GCC_PI32V2__" />
 <Add option="-DCONFIG_NEW_ECC_ENABLE" />
 <Add option="-DCONFIG_CODE_MOVABLE_ENABLE" />
+<Add option="-DCONFIG_FLOAT_DEBUG_ENABLE" />
 <Add option="-DCONFIG_EFFECT_CORE_V2_ENABLE" />
 <Add option="-DCONFIG_OS_AFFINITY_ENABLE=0" />
 <Add option="-DEVENT_HANDLER_NUM_CONFIG=2" />
@@ -166,6 +167,7 @@
 <Add directory="apps/common/third_party_profile/dma_protocol" />
 <Add directory="apps/common/third_party_profile/gfps_protocol" />
 <Add directory="apps/common/third_party_profile/custom_protocol_demo" />
+<Add directory="interface/utils/apple_dock" />
 <Add directory="apps/common/cJSON" />
 <Add directory="interface/btstack" />
 <Add directory="interface/media/cpu/br27" />
@@ -232,6 +234,7 @@
 <Add option="--plugin-opt=-movable-region-section-map-file-list=apps/soundbox/movable/section.txt" />
 <Add option="--plugin-opt=-movable-region-exclude-func-file-list=apps/soundbox/movable/exclude.txt" />
 <Add option="--plugin-opt=-pi32v2-large-program=true" />
+<Add option="--plugin-opt=-floating-point-may-trap=true" />
 <Add option="--gc-sections" />
 <Add option="--plugin-opt=-pi32v2-csync-before-rti=true" />
 <Add option="--start-group" />
@@ -357,6 +360,7 @@
 <Add option="cpu/br27/liba/vm.a" />
 <Add option="cpu/br27/liba/ftl.a" />
 <Add option="cpu/br27/liba/debug_record.a" />
+<Add option="cpu/br27/liba/apple_dock.a" />
 <Add option="--end-group" />
 <Add option="-Tcpu/br27/sdk.ld" />
 <Add option="-M=cpu/br27/tools/sdk.map" />
@@ -442,6 +446,8 @@
 <Unit filename="apps/common/device/usb/device/custom_hid.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/descriptor.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/hid.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/device/usb/device/iap.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/device/usb/device/iap.h" />
 <Unit filename="apps/common/device/usb/device/midi.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/device/midi.h" />
 <Unit filename="apps/common/device/usb/device/msd.c"><Option compilerVer="CC"/></Unit>
@@ -490,6 +496,10 @@
 <Unit filename="apps/common/file_operate/file_bs_deal.h" />
 <Unit filename="apps/common/file_operate/file_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/file_operate/file_manager.h" />
+<Unit filename="apps/common/iap/iAP_chip.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/iap/iAP_des.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/iap/iAP_device.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/common/iap/iAP_iic.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/include/bt_common.h" />
 <Unit filename="apps/common/include/nandflash.h" />
 <Unit filename="apps/common/include/norflash.h" />
@@ -991,6 +1001,7 @@
 <Unit filename="apps/soundbox/ui/led7/ui_linein.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/ui/led7/ui_music.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/ui/led7/ui_pc.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/ui/led7/ui_record.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/ui/led7/ui_rtc.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/ui/led7/ui_sink.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/ui/led7/ui_spdif.c"><Option compilerVer="CC"/></Unit>
@@ -1677,6 +1688,11 @@
 <Unit filename="interface/update/update.h" />
 <Unit filename="interface/update/update_interactive_uart.h" />
 <Unit filename="interface/update/update_loader_download.h" />
+<Unit filename="interface/utils/apple_dock/iAP.h" />
+<Unit filename="interface/utils/apple_dock/iAP2.h" />
+<Unit filename="interface/utils/apple_dock/iAP_chip.h" />
+<Unit filename="interface/utils/apple_dock/iAP_device.h" />
+<Unit filename="interface/utils/apple_dock/iAP_iic.h" />
 <Unit filename="interface/utils/config/config_interface.h" />
 <Unit filename="interface/utils/config/config_target.h" />
 <Unit filename="interface/utils/config/config_transport.h" />

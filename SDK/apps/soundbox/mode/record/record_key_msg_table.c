@@ -1,3 +1,4 @@
+
 #ifdef SUPPORT_MS_EXTENSIONS
 #pragma bss_seg(".record_key_msg_table.data.bss")
 #pragma data_seg(".record_key_msg_table.data")
@@ -19,16 +20,16 @@ const int key_record_ad_num1_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_REC_PP,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
 };
 const int key_record_ad_num2_msg_table[KEY_ACTION_MAX] = {
-    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
+    APP_MSG_REC_PAUSE,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
 };
 const int key_record_ad_num3_msg_table[KEY_ACTION_MAX] = {
-    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
+    APP_MSG_REC_DEL_CUR_FILE,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
 };
 const int key_record_ad_num4_msg_table[KEY_ACTION_MAX] = {
-    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
+    APP_MSG_MUSIC_NEXT,  APP_MSG_VOL_UP,  APP_MSG_VOL_UP,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
 };
 const int key_record_ad_num5_msg_table[KEY_ACTION_MAX] = {
-    APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
+    APP_MSG_MUSIC_PREV,  APP_MSG_VOL_DOWN,  APP_MSG_VOL_DOWN,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,
 };
 const int key_record_ad_num6_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,  APP_MSG_NULL,    APP_MSG_NULL,

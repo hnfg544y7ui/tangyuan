@@ -203,6 +203,12 @@ void setup_arch()
     bit_clr_ie(IRQ_TIME4_IDX);
     bit_clr_ie(IRQ_TIME5_IDX);
 
+#if TCFG_LONG_PRESS_RESET_ENABLE
+    gpio_longpress_pin0_reset_config(TCFG_LONG_PRESS_RESET_PORT, TCFG_LONG_PRESS_RESET_LEVEL, TCFG_LONG_PRESS_RESET_TIME, 1, TCFG_LONG_PRESS_RESET_INSIDE_PULL_UP_DOWN);
+#else
+    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0, 1, 1);
+#endif
+
     memory_init();
 
     wdt_init(WDT_8S);

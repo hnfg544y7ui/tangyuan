@@ -431,10 +431,10 @@ const int JLA_CODEC_SOFT_DECISION_ENABLE = 0;
 
 #if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_V2)
 
-//{32, 40, 48, 60, 64, 80, 96, 120, 128, 160, 240, 320, 480}; 0~12. 编码支持得输入点数
+//{32, 40, 48, 60, 64, 80, 96, 120, 128, 160, 240, 320, 400, 480}; 0~13. 编码支持得输入点数
 
 //0~12位: 编码支持得输入点数配置, 代码优化使用，可以禁用掉不用的点数,节省代码量
-//最高位： 延时模式配置 	1: 延时=帧长点数.  0:延时1/4帧点.  注意： 160,240,320,480 固定延时1/4帧 不受配置影响.
+//最高位： 延时模式配置 	1: 延时=帧长点数.  0:延时1/4帧点.  注意： 160,240,320,400,480 固定延时1/4帧 不受配置影响.
 const unsigned short JLA_V2_FRAMELEN_MASK = 0xffff;
 
 //是否支持24bit编解码
@@ -941,6 +941,13 @@ const char log_tag_const_c_JLSTREAM  = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_i_JLSTREAM  = CONFIG_DEBUG_LIB(1);
 const char log_tag_const_d_JLSTREAM  = CONFIG_DEBUG_LIB(1);
 const char log_tag_const_e_JLSTREAM  = CONFIG_DEBUG_LIB(TRUE);
+
+const char log_tag_const_v_CVP = CONFIG_DEBUG_LIB(0);
+const char log_tag_const_c_CVP = CONFIG_DEBUG_LIB(0);
+const char log_tag_const_i_CVP = CONFIG_DEBUG_LIB(TRUE);
+const char log_tag_const_d_CVP = CONFIG_DEBUG_LIB(0);
+const char log_tag_const_e_CVP = CONFIG_DEBUG_LIB(TRUE);
+
 /*
  *******************************************************************
  *						Audio Others Config

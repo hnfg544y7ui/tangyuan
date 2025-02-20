@@ -31,6 +31,7 @@
 #include "rcsp_spdif_func.h"
 #include "bt_key_func.h"
 #include "btstack_rcsp_user.h"
+#include "app_le_auracast.h"
 
 struct spdif_ctl {
     struct spdif_file_cfg *p_spdif_cfg;	//spdif的配置参数信息
@@ -63,6 +64,7 @@ struct spdif_ctl {
 struct spdif_ctl app_spdif_hd;
 static u8 spdif_idle_flag = 1;
 
+static int le_audio_spdif_volume_pp(void);
 /* 模式提示音播放回调 */
 static int spdif_tone_play_end_callback(void *priv, enum stream_event event)
 {
@@ -79,6 +81,12 @@ static int spdif_tone_play_end_callback(void *priv, enum stream_event event)
     }
     return 0;
 }
+
+u8 get_spdif_mute_state(void)
+{
+    return app_spdif_hd.mute_mark;
+}
+
 int spdif_app_msg_handler(int *msg)
 {
     if (false == app_in_mode(APP_MODE_SPDIF)) {

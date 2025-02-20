@@ -19,6 +19,7 @@
 #include "media/sync/audio_syncts.h"
 #include "asm/dac.h"
 #include "audio_cvp.h"
+#include "spdif.h"
 
 struct le_audio_a2dp_recorder {
     void *stream;

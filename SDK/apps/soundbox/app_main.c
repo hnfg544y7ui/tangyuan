@@ -118,6 +118,12 @@ const struct task_info task_info_table[] = {
     {"mic_effect9",         6,     1,  768,   0 },
     {"mic_effecta",         6,     1,  768,   0 },
 
+    /*无线mic任务*/
+    {"wl_mic_effect1",      6,     1,  512,   0 },
+    {"wl_mic_effect2",      6,     1,  512,   0 },
+    {"wl_mic_effect3",      6,     1,  768,   0 },
+    {"wl_mic_effect4",      6,     1,  768,   0 },
+
     /*
      *为了防止dac buf太大，通话一开始一直解码，
      *导致编码输入数据需要很大的缓存，这里提高编码的优先级

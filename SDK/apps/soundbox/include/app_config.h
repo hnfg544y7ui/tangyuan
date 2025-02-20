@@ -166,6 +166,9 @@
 #define TCFG_AUDIO_FM_ENABLE     TCFG_APP_FM_EN
 #endif
 
+#ifndef TCFG_AUDIO_SPDIF_ENABLE
+#define TCFG_AUDIO_SPDIF_ENABLE     TCFG_APP_SPDIF_EN
+#endif
 
 /* ------------------rule check------------------ */
 #ifndef TCFG_APP_MUSIC_EN
@@ -218,6 +221,7 @@
 #endif
 #ifndef TCFG_REC_FILE_NAME
 #define TCFG_REC_FILE_NAME "aud_****"
+#define TCFG_REC_FILE_NAME_PREFIX	"aud_"			//录音文件前缀名
 #endif
 
 #if !(THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
@@ -613,7 +617,11 @@
 #endif
 
 /*使能iis输出外部参考数据*/
+#if (TCFG_IIS_NODE_ENABLE == 1) && (TCFG_DAC_NODE_ENABLE == 0)
+#define TCFG_AUDIO_CVP_OUTPUT_WAY_IIS_ENABLE    1
+#else
 #define TCFG_AUDIO_CVP_OUTPUT_WAY_IIS_ENABLE    0
+#endif
 
 /*Audio数据导出配置:通过蓝牙spp导出/sd写卡导出/uart写卡导出*/
 #define AUDIO_DATA_EXPORT_VIA_UART	1
@@ -842,6 +850,11 @@
 #if TCFG_BLE_BRIDGE_EDR_ENALBE   //一键连接必须同地址
 #undef  TCFG_BT_BLE_BREDR_SAME_ADDR
 #define  TCFG_BT_BLE_BREDR_SAME_ADDR 0x1
+#endif
+
+//检查IAP与MSD
+#if TCFG_USB_APPLE_DOCK_EN && TCFG_USB_SLAVE_MSD_ENABLE
+#error "IAP 与 MSD 只能开启其中一个"
 #endif
 
 #endif
