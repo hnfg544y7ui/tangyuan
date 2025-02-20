@@ -166,9 +166,6 @@
 #define TCFG_AUDIO_FM_ENABLE     TCFG_APP_FM_EN
 #endif
 
-#ifndef TCFG_AUDIO_SPDIF_ENABLE
-#define TCFG_AUDIO_SPDIF_ENABLE     TCFG_APP_SPDIF_EN
-#endif
 
 /* ------------------rule check------------------ */
 #ifndef TCFG_APP_MUSIC_EN
@@ -827,11 +824,19 @@
 
 //FM 一部分代码动态加载到ram
 #define TCFG_CODE_RUN_RAM_FM_CODE            1
+
+#ifdef CONFIG_CPU_BR28
 //BT 一部分代码加载到ram
 #define TCFG_CODE_RUN_RAM_BT_CODE            1
-
 //AAC 一部分代码加载到ram
 #define TCFG_CODE_RUN_RAM_AAC_CODE           1
+#else
+//BT 一部分代码加载到ram
+#define TCFG_CODE_RUN_RAM_BT_CODE            0
+//AAC 一部分代码加载到ram
+#define TCFG_CODE_RUN_RAM_AAC_CODE           0
+#endif
+
 
 //AEC 一部分代码加载到ram
 #define TCFG_CODE_RUN_RAM_AEC_CODE           1
