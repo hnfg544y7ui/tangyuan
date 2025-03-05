@@ -320,6 +320,7 @@ static int audio_init()
     audio_dac_io_initcall();
 #elif (defined(TCFG_AUDIO_ADC_ENABLE) && TCFG_AUDIO_ADC_ENABLE)
     extern void audio_dac_io_clock_init();
+    audio_common_initcall();
     audio_dac_io_clock_init();
     request_irq(IRQ_AUDIO_IDX, 2, audio_irq_handler, 0);
 #endif

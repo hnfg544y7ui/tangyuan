@@ -81,6 +81,13 @@ PSRAM_END = PSRAM_BEGIN + PSRAM_SIZE;
 //=============== About BT RAM ===================
 //CONFIG_BT_RX_BUFF_SIZE = (1024 * 18);
 
+FREE_DACHE_WAY = TCFG_FREE_DCACHE_WAY_NUM; //max is 3
+FREE_IACHE0_WAY = TCFG_FREE_ICACHE0_WAY_NUM; //max is 7  // 如果同时了开启低功耗会有问题
+FREE_IACHE1_WAY = TCFG_FREE_ICACHE1_WAY_NUM; //max is 7  // 如果同时了开启低功耗会有问题
+DCACHE_RAM_SIZE = TCFG_FREE_DCACHE_WAY_NUM*4K;
+ICACHE0_RAM_SIZE = TCFG_FREE_ICACHE0_WAY_NUM*4K;
+ICACHE1_RAM_SIZE = TCFG_FREE_ICACHE1_WAY_NUM*4K;
+
 MEMORY
 {
 	code0(rx)    	  : ORIGIN = CODE_BEG, LENGTH = CONFIG_FLASH_SIZE
@@ -92,6 +99,10 @@ MEMORY
 #if (defined(TCFG_PSRAM_DEV_ENABLE) && TCFG_PSRAM_DEV_ENABLE)
 	psram(rwx)        : ORIGIN = PSRAM_BEGIN,  LENGTH = PSRAM_SIZE
 #endif /* #if ((defined TCFG_PSRAM_DEV_ENABLE) && TCFG_PSRAM_DEV_ENABLE) */
+
+    dcache_ram(rw)    : ORIGIN =  0x370000+((4-FREE_DACHE_WAY)*4K), LENGTH = DCACHE_RAM_SIZE
+    icache0_ram(rw)    : ORIGIN =  0x3C0000+((8-FREE_IACHE0_WAY)*4K), LENGTH = ICACHE0_RAM_SIZE
+    icache1_ram(rw) : ORIGIN = 0x3D0000+((8-FREE_IACHE1_WAY)*4K), LENGTH = ICACHE1_RAM_SIZE
 }
 
 
@@ -516,6 +527,44 @@ SECTIONS
 	} > cmac_mcu_ram
 #endif /* #if ((defined TCFG_CONFIG_CMAC_MCU_ENABLE) && TCFG_CONFIG_CMAC_MCU_ENABLE) */
 
+
+    . = ORIGIN(dcache_ram);
+    .dcache_ram_data ALIGN(32):SUBALIGN(4)
+    {
+		. = ALIGN(4);
+        *(.dcache_pool)
+		. = ALIGN(4);
+    } > dcache_ram
+
+    .dcache_ram_bss ALIGN(32):SUBALIGN(4)
+    {
+		. = ALIGN(4);
+        *(.dcache_bss)
+    } > dcache_ram
+
+    . = ORIGIN(icache0_ram);
+    .icache0_ram_data_code ALIGN(32):SUBALIGN(4)
+    {
+		icache0_ram_data_code_pc_limit_begin = .;
+		. = ALIGN(4);
+        *(.icache0_pool)
+        *(.icache0_code)
+		. = ALIGN(4);
+		icache0_ram_data_code_pc_limit_end = .;
+    } > icache0_ram
+
+    . = ORIGIN(icache1_ram);
+    .icache1_ram_data_code ALIGN(32):SUBALIGN(4)
+    {
+		icache1_ram_data_code_pc_limit_begin = .;
+		. = ALIGN(4);
+        *(.icache1_pool)
+        *(.icache1_code)
+		. = ALIGN(4);
+		icache1_ram_data_code_pc_limit_end = .;
+    } > icache1_ram
+
+
     . = ORIGIN(code0);
     .text ALIGN(4):SUBALIGN(4)
     {
@@ -710,6 +759,8 @@ SECTIONS
         #include "btctrler/btctler_lib_text.ld"
 
         . = ALIGN(4);
+
+        . = ALIGN(4);
         tws_tone_cb_begin = .;
         KEEP(*(.tws_tone_callback))
         tws_tone_cb_end = .;
@@ -795,6 +846,31 @@ _PSRAM_MALLOC_SIZE = _PSRAM_HEAP_END - _PSRAM_HEAP_BEGIN;
 PROVIDE(PSRAM_MALLOC_SIZE = _PSRAM_HEAP_END - _PSRAM_HEAP_BEGIN);
 #endif /* #if ((defined TCFG_PSRAM_DEV_ENABLE) && TCFG_PSRAM_DEV_ENABLE) */
 
+//================ dcache ==================//
+dcache_ram_bss_begin = ADDR(.dcache_ram_bss);
+dcache_ram_bss_size  = SIZEOF(.dcache_ram_bss);
+dcache_ram_bss_end    = dcache_ram_bss_begin + dcache_ram_bss_size;
+ASSERT((dcache_ram_bss_size % 4) == 0,"!!! dcache_ram_bss_size Not Align 4 Bytes !!!");
+
+dcache_ram_data_addr = ADDR(.dcache_ram_data);
+#if (defined(TCFG_PSRAM_DEV_ENABLE) && TCFG_PSRAM_DEV_ENABLE)
+dcache_ram_data_begin = ps_ram_data_code_begin + ps_ram_data_code_size;
+#else
+dcache_ram_data_begin = aac_begin + aac_size;
+#endif
+dcache_ram_data_size =  SIZEOF(.dcache_ram_data);
+ASSERT((dcache_ram_data_size % 4) == 0,"!!! dcache_ram_data_size Not Align 4 Bytes !!!");
+
+//================ icache ==================//
+icache0_ram_data_code_addr = ADDR(.icache0_ram_data_code);
+icache0_ram_data_code_begin = dcache_ram_data_begin + dcache_ram_data_size;
+icache0_ram_data_code_size =  SIZEOF(.icache0_ram_data_code);
+ASSERT((icache0_ram_data_code_size % 4) == 0,"!!! icache0_ram_data_code_size Not Align 4 Bytes !!!");
+
+icache1_ram_data_code_addr = ADDR(.icache1_ram_data_code);
+icache1_ram_data_code_begin = icache0_ram_data_code_begin + icache0_ram_data_code_size;
+icache1_ram_data_code_size =  SIZEOF(.icache1_ram_data_code);
+ASSERT((icache1_ram_data_code_size % 4) == 0,"!!! icache1_ram_data_code_size Not Align 4 Bytes !!!");
 
 /*
 lc3_addr = ADDR(.overlay_lc3);

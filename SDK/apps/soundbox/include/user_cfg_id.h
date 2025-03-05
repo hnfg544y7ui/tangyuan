@@ -56,6 +56,11 @@
 #define     CFG_RCSP_MISC_REVERB_ON_OFF      52
 #define     CFG_RCSP_MISC_DRC_SETTING        53
 
+//charge
+#define     CFG_CHARGE_FULL_VBAT_VOLTAGE    54//充满电后记当前的VBAT的ADC值
+#define     VM_CHARGE_PROGI_VOLT            55//恒流充电的PROGI
+
+
 //=================================================================================//
 //                             用户自定义配置项 暂时只能使用 [1 ~ 49]                            //
 //=================================================================================//

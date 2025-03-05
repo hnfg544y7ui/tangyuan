@@ -10,6 +10,7 @@
 #include "app_config.h"
 #include "asm/power_interface.h"
 #include "uart.h"
+#include "generic/lbuf.h"
 
 
 #define LOG_TAG             "[SETUP]"
@@ -170,6 +171,100 @@ void cpu1_main()
 }
 #endif /* #if (OS_CPU_NUM > 1) */
 //==================================================//
+
+extern u32 dcache_ram_bss_begin;
+extern u32 dcache_ram_bss_size;
+extern u32 dcache_ram_bss_end;
+
+extern u32 dcache_ram_data_addr;
+extern u32 dcache_ram_data_begin;
+extern u32 dcache_ram_data_size;
+
+extern u32 icache0_ram_data_code_addr;
+extern u32 icache0_ram_data_code_begin;
+extern u32 icache0_ram_data_code_size;
+
+extern u32 icache1_ram_data_code_addr;
+extern u32 icache1_ram_data_code_begin;
+extern u32 icache1_ram_data_code_size;
+
+struct lbuff_head *dcache_lbuf = NULL;
+struct lbuff_head *icache0_lbuf = NULL;
+struct lbuff_head *icache1_lbuf = NULL;
+
+#if TCFG_FREE_ICACHE0_WAY_NUM
+u8 icache0_buf[TCFG_FREE_ICACHE0_WAY_NUM * 4 * 1024] SEC(.icache0_pool);
+void *get_icache0_lbuf(void)
+{
+    return icache0_lbuf;
+}
+#endif
+
+#if TCFG_FREE_ICACHE1_WAY_NUM
+u8 icache1_buf[TCFG_FREE_ICACHE1_WAY_NUM * 4 * 1024] SEC(.icache1_pool);
+void *get_icache1_lbuf(void)
+{
+    return icache1_lbuf;
+}
+#endif
+
+#if TCFG_FREE_DCACHE_WAY_NUM
+u8 dcache_buf[TCFG_FREE_DCACHE_WAY_NUM * 4 * 1024] SEC(.dcache_pool);
+void *get_dcache_lbuf(void)
+{
+    return dcache_lbuf;
+}
+#endif
+
+__attribute__((weak))
+AT(.volatile_ram_code)
+void cache_ram_init(void)
+{
+    if (current_cpu_id() == 0) {
+        DcuInitial();
+
+#if TCFG_FREE_DCACHE_WAY_NUM
+        volatile u8 dcache_way = 4 -  TCFG_FREE_DCACHE_WAY_NUM;
+        if (dcache_way != 4) {
+            // 空出way当ram用
+            DcuSetWayNum(dcache_way);
+
+            memset((u8 *)(&dcache_ram_bss_begin), 0, (u32)&dcache_ram_bss_size);
+            memcpy((u8 *)&dcache_ram_data_addr, (u8 *)&dcache_ram_data_begin, (u32)&dcache_ram_data_size);
+
+            dcache_lbuf = lbuf_init(dcache_buf, sizeof(dcache_buf), 4, 0);
+        }
+#endif
+
+#if TCFG_FREE_ICACHE0_WAY_NUM
+        // 用 volatile 避免被优化而导致出错
+        volatile u8 icache0_way = 8 - TCFG_FREE_ICACHE0_WAY_NUM;
+        if (icache0_way != 8) {
+            IcuDisable();
+            IcuInitial();
+            // 空出way当ram用
+            IcuSetWayNum(icache0_way);
+            memcpy((u8 *)&icache0_ram_data_code_addr, (u8 *)&icache0_ram_data_code_begin, (u32)&icache0_ram_data_code_size);
+
+            icache0_lbuf = lbuf_init(icache0_buf, sizeof(icache0_buf), 4, 0);
+        }
+#endif
+    } else if (current_cpu_id() == 1) {
+        IcuDisable();
+        IcuInitial();
+#if TCFG_FREE_ICACHE1_WAY_NUM
+        // 用 volatile 避免被优化而导致出错
+        volatile u8 icache1_way = 8 - TCFG_FREE_ICACHE1_WAY_NUM;
+        if (icache1_way != 8) {
+            // 空出way当ram用
+            IcuSetWayNum(icache1_way);
+            memcpy((u8 *)&icache1_ram_data_code_addr, (u8 *)&icache1_ram_data_code_begin, (u32)&icache1_ram_data_code_size);
+
+            icache1_lbuf = lbuf_init(icache1_buf, sizeof(icache1_buf), 4, 0);
+        }
+#endif
+    }
+}
 
 void memory_init(void);
 

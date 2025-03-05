@@ -22,6 +22,7 @@
 #include "app_le_auracast.h"
 #include "spdif.h"
 #include "le_audio_recorder.h"
+#include "le_broadcast.h"
 
 #if TCFG_SPDIF_ENABLE
 
@@ -175,7 +176,7 @@ static void spdif_restart(void)
             spdif_player_close();
         }
     } else {
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
         if (get_broadcast_role()) {
             //关闭广播音频播放
             void *le_audio = spdif_get_le_audio_hdl();
@@ -236,7 +237,7 @@ int spdif_restart_by_taskq(void)
 static void spdif_open_player(int arg)
 {
     printf("================ open spdif player\n");
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     if (get_broadcast_role() == BROADCAST_ROLE_TRANSMITTER) { //打开广播的数据流
         struct le_audio_stream_params *params   =  spdif_get_le_audio_params();
         void *le_audio = spdif_get_le_audio_hdl();

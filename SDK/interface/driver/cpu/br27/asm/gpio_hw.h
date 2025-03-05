@@ -2,7 +2,7 @@
 #define _GPIO_HW_H
 
 #include "typedef.h"
-#include "asm/power/p33_sfr.h"
+#include "asm/power_interface.h"
 
 #define IO_GROUP_NUM 		16
 

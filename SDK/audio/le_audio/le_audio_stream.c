@@ -28,6 +28,7 @@ struct le_audio_tx_stream {
     int (*tick_handler)(void *priv, int len, u32 timestamp);
     void *parent;
     u32 coding_type;
+    u16 frame_size;
 
 #if LE_AUDIO_TX_TEST
     u16 test_timer;
@@ -61,6 +62,11 @@ struct le_audio_stream_context {
     int (*tx_tick_handler)(void *priv, int period, u32 timestamp);
     void *rx_tick_priv;
     void (*rx_tick_handler)(void *priv);
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+    struct le_audio_tx_stream *tx_stream_2nd;
+    void *tx_tick_priv_2nd;
+    int (*tx_tick_handler_2nd)(void *priv, int period, u32 timestamp);
+#endif
 };
 
 extern int bt_audio_reference_clock_select(void *addr, u8 network);
@@ -109,14 +115,71 @@ u32 le_audio_stream_current_time(void *le_audio)
     return bb_le_clk_get_time_us();
 }
 
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+static int __le_audio_stream_dual_tx_data_handler(void *_ctx, void *data, int len, u32 timestamp, int latency)
+{
+    struct le_audio_stream_context *ctx = (struct le_audio_stream_context *)_ctx;
+    struct le_audio_tx_stream *tx_stream = ctx->tx_stream;
+    struct le_audio_tx_stream *tx_stream_2nd = ctx->tx_stream_2nd;
+
+    struct le_audio_rx_stream *rx_stream = ctx->rx_stream;
+    u32 rlen = 0;
+    u32 r_len = 0;
+    /* printf("len :%d\n",len); */
+    /*putchar('A');*/
+    if (!ctx->start) {
+        u32 time_diff = (bb_le_clk_get_time_us() - ctx->start_time) & 0xfffffff;
+        if (time_diff > 5000000) {
+            return 0;
+        }
+        ctx->start = 1;
+    }
+
+    if (((cbuf_get_data_len(&tx_stream->buf.cbuf) < tx_stream->frame_size) || (cbuf_get_data_len(&tx_stream_2nd->buf.cbuf) < tx_stream_2nd->frame_size)) ||
+        (rx_stream && cbuf_get_data_len(&rx_stream->buf.cbuf) < rx_stream->sdu_period_len)) {
+        /*对于需要本地播放的必须满足播放与发送都有一个interval的数据*/
+        y_printf("no data : %d, %d, %d, %d, %d\n", cbuf_get_data_len(&tx_stream->buf.cbuf), cbuf_get_data_len(&tx_stream_2nd->buf.cbuf), len, tx_stream->frame_size, tx_stream_2nd->frame_size);
+        return 0;
+    }
+
+    spin_lock(&ctx->lock);
+    rlen = cbuf_read(&tx_stream->buf.cbuf, data, tx_stream->frame_size);
+    r_len = cbuf_read(&tx_stream_2nd->buf.cbuf, (u8 *)data + rlen, tx_stream_2nd->frame_size);
+    rlen += r_len;
+    spin_unlock(&ctx->lock);
+    if (!rlen) {
+        return 0;
+    }
+
+    if (ctx->tx_tick_handler) {
+        ctx->tx_tick_handler(ctx->tx_tick_priv, ctx->fmt.sdu_period, timestamp);
+    }
+    if (ctx->tx_tick_handler_2nd) {
+        ctx->tx_tick_handler_2nd(ctx->tx_tick_priv_2nd, ctx->fmt.sdu_period, timestamp);
+    }
+
+    if (tx_stream->tick_handler) {
+        tx_stream->tick_handler(tx_stream->tick_priv, tx_stream->frame_size, timestamp);
+    }
+    if (tx_stream_2nd->tick_handler) {
+        tx_stream_2nd->tick_handler(tx_stream->tick_priv, tx_stream_2nd->frame_size, timestamp);
+    }
+    return rlen;
+}
+
+#endif
+
 static int __le_audio_stream_tx_data_handler(void *stream, void *data, int len, u32 timestamp, int latency)
 {
     struct le_audio_tx_stream *tx_stream = (struct le_audio_tx_stream *)stream;
     struct le_audio_stream_context *ctx = (struct le_audio_stream_context *)tx_stream->parent;
-    struct le_audio_rx_stream *rx_stream = ctx->rx_stream;
     u32 rlen = 0;
-    u32 read_alloc_len = 0;
 
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+    rlen = __le_audio_stream_dual_tx_data_handler(ctx, data, len, timestamp, latency);
+#else
+    struct le_audio_rx_stream *rx_stream = ctx->rx_stream;
+    u32 read_alloc_len = 0;
     /*putchar('A');*/
     if (!ctx->start) {
         u32 time_diff = (bb_le_clk_get_time_us() - ctx->start_time) & 0xfffffff;
@@ -155,6 +218,7 @@ static int __le_audio_stream_tx_data_handler(void *stream, void *data, int len, 
         void *addr = cbuf_read_alloc(&rx_stream->buf.cbuf, &read_alloc_len);
         if (read_alloc_len < rx_stream->sdu_period_len) {
             printf("local not align to tx.\n");
+            spin_unlock(&ctx->lock);
             return rlen;
         }
         if ((tx_stream->coding_type == AUDIO_CODING_LC3 || tx_stream->coding_type == AUDIO_CODING_JLA) &&
@@ -178,7 +242,7 @@ static int __le_audio_stream_tx_data_handler(void *stream, void *data, int len, 
         spin_unlock(&ctx->lock);
         /*printf("-%d-\n", rx_stream->sdu_period_len);*/
     }
-
+#endif
     return rlen;
 }
 
@@ -207,7 +271,7 @@ static void le_audio_tx_test_timer(void *stream)
 }
 #endif
 
-void le_audio_stream_set_tx_tick_handler(void *le_audio, void *priv, int (*tick_hanlder)(void *, int, u32))
+void le_audio_stream_set_tx_tick_handler(void *le_audio, void *priv, int (*tick_hanlder)(void *, int, u32), u8 ch)
 {
     struct le_audio_stream_context *ctx = (struct le_audio_stream_context *)le_audio;
 
@@ -216,10 +280,51 @@ void le_audio_stream_set_tx_tick_handler(void *le_audio, void *priv, int (*tick_
     }
 
     spin_lock(&ctx->lock);
-    ctx->tx_tick_handler = tick_hanlder;
-    ctx->tx_tick_priv = priv;
+
+    if (ch) {
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+        ctx->tx_tick_handler_2nd = tick_hanlder;
+        ctx->tx_tick_priv_2nd = priv;
+#endif
+    } else {
+        ctx->tx_tick_handler = tick_hanlder;
+        ctx->tx_tick_priv = priv;
+    }
     spin_unlock(&ctx->lock);
 }
+
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+void *le_audio_dual_stream_tx_open(void *le_audio, int coding_type, int frame_size, u8 ch)
+{
+    struct le_audio_stream_context *ctx = (struct le_audio_stream_context *)le_audio;
+    struct le_audio_tx_stream *tx_stream = NULL;
+
+    tx_stream = (struct le_audio_tx_stream *)zalloc(sizeof(struct le_audio_tx_stream));
+
+
+    int sdu_period_len = (ctx->fmt.sdu_period / 100 / ctx->fmt.frame_dms) * frame_size;
+    tx_stream->buf.size = sdu_period_len * 8;
+    tx_stream->buf.addr = malloc(tx_stream->buf.size);
+    ASSERT(tx_stream->buf.addr != NULL, "please check audio param");
+    printf("tx stream buffer : 0x%x, %d\n", (u32)tx_stream->buf.addr, tx_stream->buf.size);
+    cbuf_init(&tx_stream->buf.cbuf, tx_stream->buf.addr, tx_stream->buf.size);
+    tx_stream->coding_type = coding_type;
+    tx_stream->parent = ctx;
+    tx_stream->tick_priv = NULL;
+    tx_stream->tick_handler = NULL;
+    tx_stream->frame_size = frame_size;
+
+    if (ch) {
+        ctx->tx_stream_2nd = tx_stream;
+        /* y_printf("== ctx->tx_stream_2nd, 0x%x\n",(int)ctx->tx_stream_2nd); */
+    } else {
+        ctx->tx_stream = tx_stream;
+        /* y_printf("== ctx->tx_stream, 0x%x\n",(int)ctx->tx_stream); */
+    }
+
+    return tx_stream;
+}
+#endif
 
 void *le_audio_stream_tx_open(void *le_audio, int coding_type, void *priv, int (*tick_handler)(void *, int, u32))
 {
@@ -499,7 +604,50 @@ int le_audio_stream_rx_frame(void *stream, void *data, int len, u32 timestamp)
         putchar('H');
         return 0;
     }
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE //环绕音
+    if (len > 2) { //丢包判断
+        int rlen = 0;
+#if 1 //立体声(LS(解码左声道)//RS(解码右声道))
+        rlen = 122; //获取立体声编码帧长
+        frame = malloc(sizeof(struct le_audio_frame) + rlen);
+        if (!frame) {
+            return 0;
+        }
+        frame->data = (u8 *)(frame + 1);
+        memcpy(frame->data, data, rlen);
+        frame->len = rlen;
+        len = rlen;
+#else//单声道(SW)    62(立体声的编码长度)
+        rlen = 32; //获取单声道编码帧长
+        int offset = 122; // 获取立体声道编码帧长
+        frame = malloc(sizeof(struct le_audio_frame) + rlen);
+        if (!frame) {
+            return 0;
+        }
+        frame->data = (u8 *)(frame + 1);
+        memcpy(frame->data, (u8 *)data + offset, rlen);
+        frame->len = rlen;
+        len = rlen;
+        /* printf("len :%d",frame->len); */
+#endif
+    } else { // 丢包数据
+        frame = malloc(sizeof(struct le_audio_frame) + len);
+        if (!frame) {
+            return 0;
+        }
+        frame->data = (u8 *)(frame + 1);
+        memcpy(frame->data, data, len);
+        frame->len = len;
+        put_buf(frame->data, len);
+    }
+
+    frame->timestamp = timestamp;
+    rx_stream->timestamp = timestamp;
+
+
+#else// 正常的广播接收
     frame = malloc(sizeof(struct le_audio_frame) + len);
+    /* frame = malloc(sizeof(struct le_audio_frame) + len); */
     if (!frame) {
         return 0;
     }
@@ -508,6 +656,7 @@ int le_audio_stream_rx_frame(void *stream, void *data, int len, u32 timestamp)
     frame->timestamp = timestamp;
     rx_stream->timestamp = timestamp;
     memcpy(frame->data, data, len);
+#endif
 
     spin_lock(&ctx->lock);
     list_add_tail(&frame->entry, &rx_stream->frames);

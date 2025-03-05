@@ -6,7 +6,7 @@
 //使用usb2.0 ip的芯片需要定义
 #define USB_HW_20
 
-#define USB_MAX_HW_EPNUM        5
+#define USB_MAX_HW_EPNUM        7
 
 
 

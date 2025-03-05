@@ -38,7 +38,7 @@ extern void tws_dual_conn_state_handler();
 #include "btstack_rcsp_user.h"
 #endif
 
-#if LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 
 /**************************************************************************************************
   Macros
@@ -1390,7 +1390,7 @@ void app_connected_uninit(void)
 /* ----------------------------------------------------------------------------*/
 void app_connected_open_in_other_mode()
 {
-    if (!g_bt_hdl.init_ok || g_bt_hdl.work_mode != BT_MODE_CIG) {
+    if (!g_bt_hdl.init_ok || ((g_bt_hdl.work_mode != BT_MODE_CIG) && (g_bt_hdl.work_mode != BT_MODE_3IN1))) {
         return;
     }
 
@@ -1406,7 +1406,7 @@ void app_connected_open_in_other_mode()
 /* ----------------------------------------------------------------------------*/
 void app_connected_close_in_other_mode()
 {
-    if (!g_bt_hdl.init_ok || g_bt_hdl.work_mode != BT_MODE_CIG) {
+    if (!g_bt_hdl.init_ok || ((g_bt_hdl.work_mode != BT_MODE_CIG) && (g_bt_hdl.work_mode != BT_MODE_3IN1))) {
         return;
     }
 

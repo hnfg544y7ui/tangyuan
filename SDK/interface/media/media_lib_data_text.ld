@@ -258,6 +258,13 @@
 #if AFx_DYN_EQ_AT_RAM 				
 	*(.dynamiceq.text.cache.L2.code)
 #endif
+
+
+#if AFx_DYN_EQ_PRO_AT_RAM 				
+	*(.dynamicEQPro.text.cache.L2.code)
+	*(.dynamicEQPro.text.cache.L2.const)
+#endif
+
 #if AFx_EQ_AT_RAM 				
 	*(.eq.text)
 	*(.hw_eq.text)
@@ -320,6 +327,14 @@
 	/* *(.distortion.text.const)	 */
 #endif
 
+#if AFx_FREQUENCY_COMPRESSOR_AT_RAM
+	*(.freq_compressor.text.cache.L2.code)
+	*(.freq_compressor.text.cache.L2.const)
+#endif
+
+#if AFx_DAC_IO_IRQ_HANDLER_AT_RAM
+	*(.dac_io_irq_handler.text.cache.L2)	
+#endif
 
 	*(.mixer.text.cache.L2)
 	*(.dac.text.cache.L2)

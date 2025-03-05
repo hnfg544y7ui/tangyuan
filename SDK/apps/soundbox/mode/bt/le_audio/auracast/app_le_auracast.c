@@ -16,9 +16,12 @@
 #include "linein.h"
 #include "spdif_file.h"
 #include "spdif.h"
+#include "iis.h"
+#include "pc_spk_player.h"
 #include "btstack/le/auracast_delegator_api.h"
 #include "btstack/le/att.h"
 #include "btstack/le/ble_api.h"
+#include "bt_slience_detect.h"
 
 #if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
 #include "ble_rcsp_server.h"
@@ -57,8 +60,6 @@
 |        5          |    1     | 48000  | 10000      | 100        | 80         | 4        |
 ****/
 #define AURACAST_BIS_NUM                    (1)
-#define AURACAST_BIS_SAMPLING_RATE          (5)
-#define AURACAST_BIS_VARIANT                (1)
 #define AURACAST_BIS_ENCRYPTION_ENABLE      (0)
 
 auracast_user_config_t user_config = {
@@ -457,20 +458,27 @@ u8 get_auracast_app_mode_exit_flag(void)
 /* ----------------------------------------------------------------------------*/
 static bool is_auracast_as_source()
 {
+    struct app_mode *cur_mode = app_get_current_mode();
+#if (TCFG_BT_BACKGROUND_ENABLE)
+    //如果能量检测中则等待能量检测完成再触发做发送的流程，避免重复打开数据流
+    u8 addr[6];
+    if (cur_mode->name == APP_MODE_BT && bt_slience_get_detect_addr(addr)) {
+        return false;
+    }
+#endif
+
 #if (LEA_BIG_FIX_ROLE == 1)
     return true;
 #elif (LEA_BIG_FIX_ROLE == 2)
     return false;
 #endif
 
-    struct app_mode *cur_mode = app_get_current_mode();
-
     //当前处于蓝牙模式并且已连接手机设备时，
     //(1)播歌作为广播发送设备；
     //(2)暂停作为广播接收设备。
     if ((cur_mode->name == APP_MODE_BT) &&
         (bt_get_connect_status() != BT_STATUS_WAITINT_CONN)) {
-        if ((bt_a2dp_get_status() == BT_MUSIC_STATUS_STARTING) ||
+        if ((bt_a2dp_get_status() == BT_MUSIC_STATUS_STARTING &&  bt_get_connect_status() == BT_STATUS_PLAYING_MUSIC) ||
             get_a2dp_decoder_status() ||
             a2dp_player_runing()) {
             return true;
@@ -548,7 +556,11 @@ static bool is_auracast_as_source()
     //当处于下面几种模式时，作为广播发送设备
     if (cur_mode->name == APP_MODE_PC) {
 #if defined(TCFG_USB_SLAVE_AUDIO_SPK_ENABLE) && TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
-        return true;
+        if (pc_get_status() || config_auracast_as_master) {
+            return true;
+        } else {
+            return false;
+        }
 #else
         return false;
 #endif
@@ -589,11 +601,7 @@ static void app_auracast_resume()
         return;
     }
 
-    if (is_auracast_as_source()) {
-        app_auracast_source_open();
-    } else {
-        app_auracast_sink_open();
-    }
+    app_auracast_open();
 }
 
 /* --------------------------------------------------------------------------*/
@@ -1145,6 +1153,8 @@ static void auracast_sink_event_callback(uint16_t event, uint8_t *packet, uint16
         printf("periodic adv sync lost\n");
 #if TCFG_AURACAST_SINK_CONNECT_BY_APP
         memset(no_past_broadcast_sink_notify.save_auracast_addr[no_past_broadcast_num], 0, 6);
+#else
+        auracast_sink_rescan();
 #endif
         break;
     case AURACAST_SINK_BIG_SYNC_FAIL_EVENT:
@@ -1299,6 +1309,9 @@ static void auracast_source_app_send_callback(uint8_t *buff, uint16_t length)
         if (!rlen) {
             putchar('^');
         }
+    }
+    if (!rlen) {
+        memset(send_packet->buffer, 0, length);
     }
 }
 
@@ -1538,13 +1551,13 @@ int app_auracast_deal(int scene)
             le_audio_ops_register(mode->name);
         }
         if (is_need_resume_auracast()) {
-            if (mode->name == APP_MODE_BT) {
-                //处于其他模式时，手机后台播歌使设备跳回蓝牙模式，此时获取蓝牙底层a2dp状态为正在播放，
-                //但BT_STATUS_A2DP_MEDIA_START事件还没到来，无法获取设备信息，导致直接开关tx_le_audio_open使用了空设备地址引起死机
-                app_auracast_sink_open();
-            } else {
-                app_auracast_resume();
-            }
+            /* if (mode->name == APP_MODE_BT) { */
+            /*     //处于其他模式时，手机后台播歌使设备跳回蓝牙模式，此时获取蓝牙底层a2dp状态为正在播放， */
+            /*     //但BT_STATUS_A2DP_MEDIA_START事件还没到来，无法获取设备信息，导致直接开关tx_le_audio_open使用了空设备地址引起死机 */
+            /*     app_auracast_sink_open(); */
+            /* } else { */
+            app_auracast_resume();
+            /* } */
             ret = 1;
         }
         config_auracast_as_master = 0;
@@ -1816,6 +1829,7 @@ static int auracast_sink_media_open(uint8_t index, uint8_t *packet, uint16_t len
              params.fmt.frame_dms, config->sdu_period, config->sample_rate, config->bit_rate, params.conn);
 
     //打开广播音频播放
+    ASSERT(le_audio_switch_ops, "le_audio_sw_ops == NULL\n");
     if (le_audio_switch_ops && le_audio_switch_ops->rx_le_audio_open) {
         g_printf("auracast_sink_rx_le_audio_open");
         le_audio_switch_ops->rx_le_audio_open(&app_auracast.bis_hdl_info[index].rx_player, &params);
@@ -1868,29 +1882,45 @@ static int auracast_sink_media_close()
     return 0;
 }
 
+bool are_all_zeros(uint8_t *array, int length)
+{
+    for (int i = 0; i < length; i++) {
+        if (array[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void auracast_iso_rx_callback(uint8_t *packet, uint16_t size)
 {
     //putchar('o');
     bool plc_flag = 0;
     hci_iso_hdr_t hdr = {0};
     ll_iso_unpack_hdr(packet, &hdr);
+
+    if (size) {
+        if (are_all_zeros(hdr.iso_sdu, hdr.iso_sdu_length)) {
+            /* log_error("SDU empty"); */
+            putchar('m');
+            plc_flag = 1;
+        }
+    }
+
     if ((hdr.pb_flag == 0b10) && (hdr.iso_sdu_length == 0)) {
         if (hdr.packet_status_flag == 0b00) {
             /* log_error("SDU empty"); */
             putchar('m');
-            return;
             plc_flag = 1;
         } else {
             /* log_error("SDU lost"); */
             putchar('s');
-            return;
             plc_flag = 1;
         }
     }
     if (((hdr.pb_flag == 0b10) || (hdr.pb_flag == 0b00)) && (hdr.packet_status_flag == 0b01)) {
         //log_error("SDU invalid, len=%d", hdr.iso_sdu_length);
         putchar('p');
-        return;
         plc_flag = 1;
     }
     for (u8 i = 0; i < app_auracast.bis_num; i++) {

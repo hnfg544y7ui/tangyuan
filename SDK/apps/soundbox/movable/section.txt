@@ -29,16 +29,16 @@
 
 2:
 
-.classic.text.cache.L2.irq
+
 
 
 
 3:
 
-.bt_aac_dec_code
-.bt_aac_dec_sparse_code
-. = ALIGN(4)
-.bt_aac_dec_data
+
+
+
+
 
 
 4:

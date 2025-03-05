@@ -39,7 +39,7 @@
 #include "btstack_rcsp_user.h"
 #endif
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 
 /**************************************************************************************************
   Macros
@@ -158,6 +158,39 @@ void app_broadcast_reset_transmitter(void)
         for (i = 0; i < BIG_MAX_NUMS; i++) {
             //固定收发角色重启广播数据流
             broadcast_audio_recorder_reset(app_big_hdl_info[i].big_hdl);
+        }
+    }
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 用于外部打开发送端的数据流
+ */
+/* ----------------------------------------------------------------------------*/
+bool app_broadcast_open_transmitter(void)
+{
+    u8 i;
+    for (i = 0; i < BIG_MAX_NUMS; i++) {
+        if (app_big_hdl_info[i].big_status == APP_BROADCAST_STATUS_START && get_broadcast_role() == BROADCAST_ROLE_TRANSMITTER) {
+            broadcast_audio_recorder_open(app_big_hdl_info[i].big_hdl);
+            return true;
+        }
+    }
+    return false;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 用于外部关闭发送端的数据流
+ */
+/* ----------------------------------------------------------------------------*/
+void app_broadcast_close_transmitter(void)
+{
+    int i = 0;
+    if (get_broadcast_role() == BROADCAST_ROLE_TRANSMITTER) {
+        for (i = 0; i < BIG_MAX_NUMS; i++) {
+            //固定收发角色关闭广播数据流
+            broadcast_audio_recorder_close(app_big_hdl_info[i].big_hdl);
         }
     }
 }
@@ -516,7 +549,7 @@ static bool is_broadcast_as_transmitter()
 #if (TCFG_BT_BACKGROUND_ENABLE)
     //如果能量检测中则等待能量检测完成再触发做发送的流程，避免重复打开数据流
     u8 addr[6];
-    if (cur_mode->name == APP_MODE_BT && bt_slience_get_detect_addr(addr)) {
+    if (cur_mode->name == APP_MODE_BT && bt_slience_get_detect_addr(addr) && !a2dp_player_runing()) {       //有可能一拖二一台在播放一台在能量检测
         return false;
     }
 #endif

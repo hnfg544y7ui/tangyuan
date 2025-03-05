@@ -1379,6 +1379,7 @@ typedef struct {
 #define H0_EP6_RXHUBADDR                (*(volatile u8  *)(husb_sie_sfr_ptr(0x0b6)))
 #define H0_EP6_RXHUBPORT                (*(volatile u8  *)(husb_sie_sfr_ptr(0x0b7)))
 
+#define H0_EP0TXMAXP                    (*(volatile u16 *)husb_sie_sfr_ptr(0x100))
 #define H0_CSR0                         (*(volatile u16 *)husb_sie_sfr_ptr(0x102))
 #define H0_COUNT0                       (*(volatile u16 *)husb_sie_sfr_ptr(0x108))
 #define H0_NAKLIMIT0                    (*(volatile u8  *)husb_sie_sfr_ptr(0x10b))

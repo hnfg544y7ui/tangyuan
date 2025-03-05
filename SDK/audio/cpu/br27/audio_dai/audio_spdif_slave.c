@@ -239,9 +239,10 @@ int spdif_slave_channel_close(void *hw_spdif_slave_channel)
 
 void *spdif_slave_init(void *hw_spdif_slave)
 {
-    if (hw_spdif_slave == NULL) {
+    if (hw_spdif_slave == NULL || spdif_slave_parm) {
         return NULL;
     }
+
     spdif_slave_parm = hw_spdif_slave;
 
     SS_RESET();													//reset all con
@@ -371,6 +372,7 @@ int spdif_slave_uninit(void *hw_spdif_slave)
         spdif_slave_hdl->inf_buf = NULL;
     }
     spdif_slave_hdl = NULL;
+    spdif_slave_parm = NULL;
     spdif_printf("spdif_slave_exit OK\n");
     return 0;
 }

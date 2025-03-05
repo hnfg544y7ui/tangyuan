@@ -426,6 +426,9 @@ static void iis_handle_frame(struct stream_iport *iport, struct stream_note *not
 // flag   0:time  1:points
 static int iis_ioc_get_delay(struct iis_node_hdl *hdl, struct audio_iis_channel *ch)
 {
+    if (!hdl->iis_start) {
+        return 0;
+    }
     int len = audio_iis_data_len(ch);
     if (len == 0) {
         return 0;
@@ -667,7 +670,7 @@ static int iis_adapter_ioctl(struct stream_iport *iport, int cmd, int arg)
         iis_adapter_syncts_ioctl(hdl, (struct audio_syncts_ioc_params *)arg);
         break;
     case NODE_IOC_GET_ODEV_CACHE:
-        return audio_iis_data_len(&hdl->iis_ch);
+        return hdl->iis_start ? audio_iis_data_len(&hdl->iis_ch) : 0;
     case NODE_IOC_SET_PARAM:
         hdl->reference_network = arg;
         break;

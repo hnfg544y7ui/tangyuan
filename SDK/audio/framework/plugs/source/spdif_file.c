@@ -21,6 +21,7 @@
 #include "hdmi_cec_api.h"
 #include <math.h>
 #include "app_le_auracast.h"
+#include "le_broadcast.h"
 
 
 
@@ -298,8 +299,41 @@ u8 get_spdif_source_io(void)
  * 返回值：采样率
  * note:
  */
+const static u32 spdif_sample_rate_table[] = {
+    80,
+    110,
+    160,
+    221,
+    240,
+    320,
+    441,
+    480,
+//    504,
+//    640,
+    882,
+//  937
+    960,
+    1764,
+    1920,
+};
+
 static int spdif_get_sr(void)
 {
+    u32 temp_sr;
+
+    temp_sr = spdif_slave_get_sr() / 100;
+    u8  search_index = 0xff;
+    for (u8 i = 0; i < (sizeof(spdif_sample_rate_table) / sizeof(spdif_sample_rate_table[0])) ; i++) {
+        if ((temp_sr > (spdif_sample_rate_table[i] - 20)) && (temp_sr < spdif_sample_rate_table[i] + 20)) {
+            search_index = i;
+        }
+    }
+    if (search_index != 0xff) {
+        return spdif_sample_rate_table[search_index] * 100;
+    }
+    /* printf("[%s], can't identify spdif sampal rate, return default sr:44100!\n", __func__); */
+    return 44100;
+#if 0
     u32 inf = JL_SPDIF->SS_CSB0;
     u32 tmp = ((inf & 0xF000000) >> 24) ^ 0xF;
     switch (tmp) {
@@ -334,6 +368,7 @@ static int spdif_get_sr(void)
         break;
     }
     return 48000;
+#endif
 }
 
 /* 获取 spdif 的声道数, 值为0表示默认值双声道 */
@@ -736,7 +771,7 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     }
 
     //hdl->have_data 置1标示接收到数据, 此时打开数据流
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     if (hdl->have_data == 0 && spdif_format.get_fmt_complete == 1 && get_broadcast_role() != BROADCAST_ROLE_RECEIVER) {
 #elif (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN))
     if (hdl->have_data == 0 && spdif_format.get_fmt_complete == 1 && get_auracast_role() != APP_AURACAST_AS_SINK) {
@@ -922,7 +957,7 @@ static void spdif_online_det_timer(void *priv)
 {
     struct spdif_file_hdl *hdl = spdif_file_t;
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     //广播下不做掉线检查
     if (get_broadcast_role()) {
         if (hdl->irq_running_cnt) {

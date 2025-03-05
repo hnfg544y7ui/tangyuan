@@ -96,7 +96,7 @@ static void *le_audio_file_init(void *priv, struct stream_node *node)
     struct le_audio_file_handle *hdl = (struct le_audio_file_handle *)zalloc(sizeof(struct le_audio_file_handle));
 
     hdl->node = node;
-    node->type |= NODE_TYPE_IRQ | NODE_TYPE_FLOW_CTRL;
+    node->type |= /* NODE_TYPE_IRQ | */ NODE_TYPE_FLOW_CTRL;//关闭irq类型的配置，避免解码器拆包的情况下，激活不及时的问题
 
     return hdl;
 }

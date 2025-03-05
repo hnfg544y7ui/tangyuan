@@ -11,6 +11,7 @@
 #include "gpadc.h"
 #include "asm/efuse.h"
 #include "gpio_config.h"
+#include "rtc.h"
 
 //--------------------------------------------------------
 /*config
@@ -87,12 +88,14 @@ u8 power_soff_callback()
 {
     DO_PLATFORM_UNINITCALL();
 
-    __mask_io_cfg();
+    poweroff_save_rtc_time();
 
-    gpio_config_uninit();
+    __mask_io_cfg();
 
     void gpio_config_soft_poweroff(void);
     gpio_config_soft_poweroff();
+
+    gpio_config_uninit();
 
     return 0;
 }

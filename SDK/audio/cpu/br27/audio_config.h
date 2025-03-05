@@ -265,5 +265,15 @@ void audio_adc_param_fill(struct mic_open_param *mic_param, struct adc_platform_
 void audio_linein_param_fill(struct linein_open_param *linein_param, const struct adc_platform_cfg *platform_cfg);
 
 void audio_fast_mode_test();
+/*
+*********************************************************************
+*          			Audio Volume State MUTE
+* Description: 针对不同AUDIO STATE，将数据静音或者解开静音
+* Arguments  : mute_en	是否使能静音, 0:不使能,1:使能
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
+void app_audio_set_mute_state(u8 state, u8 mute_en);
 
 #endif/*_APP_AUDIO_H_*/

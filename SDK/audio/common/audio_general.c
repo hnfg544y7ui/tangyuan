@@ -278,6 +278,12 @@ const int iir_filter_run_mode = 0  //不支持32进16出
 #endif
                                 ;
 
+#ifdef TCFG_AUDIO_EFX_BFE4_RUN_MODE
+const int frequency_compressor_run_mode  = TCFG_AUDIO_EFX_BFE4_RUN_MODE; //只支持16进16出与32进32出
+#else
+const int frequency_compressor_run_mode  = EFx_BW_16t32 | EFx_BW_32t32;
+#endif
+
 /*变声模式使能*/
 const int voicechanger_effect_v_config = (0
         | BIT(EFFECT_VOICECHANGE_PITCHSHIFT)

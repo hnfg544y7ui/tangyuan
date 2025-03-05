@@ -212,13 +212,53 @@ static void iis_rxx_handle(void *priv, void *buf, int len, int ch_idx)
 #endif
 
 }
+#define IO_DEBUG_1(i,x)       {JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
+#define IO_DEBUG_0(i,x)       {JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
+
+#define TCFG_SOUND_PCM_DELAY_TEST   1
+
+#if (defined TCFG_SOUND_PCM_DELAY_TEST && TCFG_SOUND_PCM_DELAY_TEST)
+static int test_count = 0;
+static u16 sin_data_offset = 0;
+const s16 sin_48k[48] = {
+    0, 2139, 4240, 6270, 8192, 9974, 11585, 12998,
+    14189, 15137, 15826, 16244, 16384, 16244, 15826, 15137,
+    14189, 12998, 11585, 9974, 8192, 6270, 4240, 2139,
+    0, -2139, -4240, -6270, -8192, -9974, -11585, -12998,
+    -14189, -15137, -15826, -16244, -16384, -16244, -15826, -15137,
+    -14189, -12998, -11585, -9974, -8192, -6270, -4240, -2139
+};
+static int get_sine_data(s16 *data, u16 points, u8 ch)
+{
+    while (points--) {
+        if (sin_data_offset >= ARRAY_SIZE(sin_48k)) {
+            sin_data_offset = 0;
+        }
+        *data++ = sin_48k[sin_data_offset];
+        if (ch == 2) {
+            *data++ = sin_48k[sin_data_offset];
+        }
+        sin_data_offset++;
+    }
+    return 0;
+}
+#endif
+
 static void iis_rx0_handle(void *priv, void *addr, int len)	//中断回调
 {
+
+#if (defined TCFG_SOUND_PCM_DELAY_TEST && TCFG_SOUND_PCM_DELAY_TEST)
+    get_sine_data(addr, len / 4, 2);
+#endif
+    IO_DEBUG_1(C, 3);
     iis_rxx_handle(priv, addr, len, 0);
+    IO_DEBUG_0(C, 3);
 }
 static  void iis_rx1_handle(void *priv, void *addr, int len)	//中断回调
 {
+    IO_DEBUG_1(C, 4);
     iis_rxx_handle(priv, addr, len, 1);
+    IO_DEBUG_0(C, 4);
 }
 static  void iis_rx2_handle(void *priv, void *addr, int len)	//中断回调
 {
