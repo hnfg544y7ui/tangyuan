@@ -88,6 +88,8 @@ void DcuFlushinvRegion(int *beg, int len);
 void DcuPfetchRegion(int *beg, int len);
 void IcuInitial(void);
 void DcuInitial(void);
+void DcuSetWayNum(unsigned int way);
+void IcuSetWayNum(unsigned int way);
 
 #define WAIT_DCACHE_IDLE    do {DcuWaitIdle();} while(0);
 #define WAIT_ICACHE_IDLE    do {IcuWaitIdle();} while(0);

@@ -18,9 +18,10 @@
 #include "mic_effect.h"
 #include "fm_api.h"
 #include "tone_player.h"
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #include "app_le_broadcast.h"
 #endif
+#include "asm/audio_common.h"
 
 #if TCFG_APP_FM_EN
 #if(TCFG_FM_INSIDE_ENABLE == ENABLE)
@@ -43,10 +44,11 @@ u8 fm_inside_init(void *priv)
 {
     puts("fm_insice_init\n");
 
-    fm_inside_dac_clk = audio_dac_clk_get();
+    fm_inside_dac_clk = audio_common_clock_get();
     overlay_load_code(OVERLAY_FM);
 
     fm_inside_on();  //fm analog init
+    fm_inside_io_ctrl(SET_FM_INSIDE_SCAN_ARG1, FMSCAN_CNR,  SEEK_CNT_MAX, SEEK_CNT_ZERO_MAX);
     fm_inside_set_stereo(TCFG_FM_INSIDE_STEREO_ENABLE);  //0 mono, 1 stereo.
 #if TCFG_FM_INSIDE_AGC_ENABLE
     fm_inside_agc_en_set(1);
@@ -62,12 +64,16 @@ u8 fm_inside_init(void *priv)
 void fm_inside_dac_clk_set(u32 freq)
 {
     u8 target_dac_clk = 0;
-    u8 cur_dac_clk = audio_dac_clk_get();
+    u8 cur_dac_clk = audio_common_clock_get();
 
     if ((freq % 6000) == 0) {
-        target_dac_clk = 1;
+        if (clk_get("bt_pll") == 192 * 1000000L) { //pll 192M,192M 的pll 分不出6.66M的DAC时钟
+            target_dac_clk = AUDIO_COMMON_CLK_685M;
+        } else { //pll 192 M
+            target_dac_clk = AUDIO_COMMON_CLK_666M;
+        }
     } else {
-        target_dac_clk = 0;
+        target_dac_clk = AUDIO_COMMON_CLK_600M;
     }
 
     if (target_dac_clk != cur_dac_clk) {
@@ -77,19 +83,16 @@ void fm_inside_dac_clk_set(u32 freq)
 #endif
         if (fm_player_runing()) {
             fm_player_close();
-            audio_dac_clk_switch(target_dac_clk);
+            audio_common_clock_switch(target_dac_clk);
             fm_player_open();
         } else {
-            audio_dac_clk_switch(target_dac_clk);
+            audio_common_clock_switch(target_dac_clk);
         }
-        /* printf("freq = %d, cur_dac_clk = %d, target_dac_clk = %d, dac_clk_get = %d\n", freq, cur_dac_clk, target_dac_clk, audio_dac_clk_get()); */
+        /* printf("freq = %d, cur_dac_clk = %d, target_dac_clk = %d, dac_clk_get = %d\n", freq, cur_dac_clk, target_dac_clk, audio_common_clock_get()); */
 #if TCFG_MIC_EFFECT_ENABLE
         if (!get_fm_scan_status()) {
             mic_effect_player_pause(0);
         }
-#endif
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
-        app_broadcast_reset_transmitter();
 #endif
     }
 }
@@ -124,7 +127,7 @@ u8 fm_inside_powerdown(void *priv)
     mic_effect_player_pause(1);
 #endif
 
-    audio_dac_clk_switch(fm_inside_dac_clk);
+    audio_common_clock_switch(fm_inside_dac_clk);
     /* dac_channel_off(FM_INSI_CHANNEL, FADE_ON); */
 
 #if TCFG_MIC_EFFECT_ENABLE
@@ -148,6 +151,7 @@ REGISTER_FM(fm_inside) = {
     .set_fre = fm_inside_set_fre,
     .mute    = fm_inside_mute,
     .read_id = fm_inside_read_id,
+    .set_scan_status = fm_inside_set_scan_status,
 };
 
 

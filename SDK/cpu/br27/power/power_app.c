@@ -11,6 +11,7 @@
 #include "gpadc.h"
 #include "asm/efuse.h"
 #include "gpio_config.h"
+#include "rtc.h"
 
 //--------------------------------------------------------
 /*config
@@ -87,12 +88,14 @@ u8 power_soff_callback()
 {
     DO_PLATFORM_UNINITCALL();
 
-    __mask_io_cfg();
+    poweroff_save_rtc_time();
 
-    gpio_config_uninit();
+    __mask_io_cfg();
 
     void gpio_config_soft_poweroff(void);
     gpio_config_soft_poweroff();
+
+    gpio_config_uninit();
 
     return 0;
 }
@@ -100,7 +103,7 @@ u8 power_soff_callback()
 void power_early_flowing()
 {
     // 默认关闭长按复位0，由key_driver配置
-    gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0, 1, 1);
+    /* gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0, 1, 1); */
     // 不开充电功能，将长按复位关闭
 #if (!TCFG_CHARGE_ENABLE)
     gpio_longpress_pin1_reset_config(IO_LDOIN_DET, 0, 0);

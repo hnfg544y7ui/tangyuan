@@ -25,6 +25,10 @@
 #include "usb/device/msd.h"
 #endif
 
+#if TCFG_USB_SLAVE_MTP_ENABLE
+#include "usb/device/mtp.h"
+#endif
+
 #if (TCFG_USB_DM_MULTIPLEX_WITH_SD_DAT0)
 #include "dev_multiplex_api.h"
 #endif
@@ -33,6 +37,9 @@
 #include "apple_dock/iAP.h"
 #endif
 
+#if TCFG_HUB_HOST_ENABLE
+#include "usb/host/hub.h"
+#endif
 
 #define LOG_TAG_CONST       USB
 #define LOG_TAG             "[USB_TASK]"
@@ -140,6 +147,7 @@ static void usb_task(void *p)
 #endif
                         //cppcheck-suppress unreadVariable
                         ret = usb_host_mount(usb_id,
+                                             0,
                                              TCFG_USB_HOST_MOUNT_RETRY,
                                              TCFG_USB_HOST_MOUNT_RESET,
                                              TCFG_USB_HOST_MOUNT_TIMEOUT);
@@ -147,7 +155,7 @@ static void usb_task(void *p)
                         mult_usb_online_mount_after(usb_id, ret);
 #endif
                     } else if (event == DEVICE_EVENT_OUT) {
-                        usb_host_unmount(usb_id);
+                        usb_host_unmount(usb_id, 0);
                     }
 #endif
                 }
@@ -179,19 +187,30 @@ static void usb_task(void *p)
             os_sem_post(&msg_sem);
             break;
 
+#if TCFG_USB_APPLE_DOCK_EN
+        case USBSTACK_IAP_RUN:
+            if (apple_mfi_link((void *)msg[2]) == IAP2_LINK_ERR) {
+                os_time_dly(1);
+                os_taskq_post_msg(USB_TASK_NAME, 2, USBSTACK_IAP_RUN, msg[2]);
+            }
+            break;
+#endif
+
 #if TCFG_USB_SLAVE_MSD_ENABLE
         case USBSTACK_MSD_RUN:
             msd_in_task = 1;
-#if TCFG_USB_APPLE_DOCK_EN
-            apple_mfi_link((void *)msg[2]);
-#else
             USB_MassStorage((void *)msg[2]);
-#endif
             if (msd_run_reset) {
                 msd_reset((struct usb_device_t *)msg[2], 0);
                 msd_run_reset = 0;
             }
             msd_in_task = 0;
+            break;
+#endif
+
+#if TCFG_USB_SLAVE_MTP_ENABLE
+        case USBSTACK_MTP_RUN:
+            usb_mtp_process((void *)msg[2]);
             break;
 #endif
 
@@ -236,11 +255,20 @@ static void usb_task(void *p)
                     uac_host_unmount(usb_msg[5] - '0');
                 }
 #endif
+            } else if (!strncmp(usb_msg, "hub", 3)) {
+#if TCFG_HUB_HOST_ENABLE
+                if (event == DEVICE_EVENT_IN) {
+                    log_info("usb_hub online %s", usb_msg);
+                    usb_hub_process(usb_msg[3] - '0');
+                } else if (event == DEVICE_EVENT_OUT) {
+                    log_info("usb_hub offline %s", usb_msg);
+                }
+#endif
             }
             break;
         case USBSTACK_HOST_REMOUNT:
             usb_id = ((int *)msg[2])[0];
-            ret = usb_host_remount(usb_id, TCFG_USB_HOST_MOUNT_RETRY, TCFG_USB_HOST_MOUNT_RESET, TCFG_USB_HOST_MOUNT_TIMEOUT, 0);
+            ret = usb_host_remount(usb_id, 0, TCFG_USB_HOST_MOUNT_RETRY, TCFG_USB_HOST_MOUNT_RESET, TCFG_USB_HOST_MOUNT_TIMEOUT, 0);
             ((int *)msg[2])[1] = ret;
             os_sem_post(&msg_sem);
             break;
@@ -258,6 +286,22 @@ static void usb_task(void *p)
             ret = ((int *)msg[2])[1];
             mult_usb_mount_offline(usb_id);
             os_sem_post(&msg_sem);
+            break;
+#endif
+#if TCFG_HUB_HOST_ENABLE
+        case USBSTACK_HUB_MSG:
+            event = msg[2];
+            u32 value = msg[3];
+            struct usb_host_device *host_dev = (struct usb_host_device *)msg[4];
+            if (event == DEVICE_EVENT_CHANGE) {
+                usb_hub_event(host_dev, value >> 16, value & 0xff);
+            } else if (event == DEVICE_EVENT_ONLINE) {
+                usb_hub_port_event(host_dev, value, USB_HUB_PORT_RESET);
+            } else if (event == DEVICE_EVENT_IN) {
+                usb_hub_port_event(host_dev, value, USB_HUB_PORT_IN);
+            } else if (event == DEVICE_EVENT_OUT) {
+                usb_hub_port_event(host_dev, value, USB_HUB_PORT_OUT);
+            }
             break;
 #endif
 #endif

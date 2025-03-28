@@ -34,6 +34,7 @@
 #define AFx_DRC_AT_RAM 					    0	//DRC
 #define AFx_HARMONIC_EXCITER_AT_RAM 	    0	//谐波激励
 #define AFx_DYN_EQ_AT_RAM 				    0	//动态EQ
+#define AFx_DYN_EQ_PRO_AT_RAM 				0	//动态EQ Pro
 #define AFx_NOTCH_HOWLING_AT_RAM 		    0	//啸叫抑制：陷波
 #define AFx_FREQ_SHIFT_AT_RAM	 		    0	//啸叫抑制：移频
 #define AFx_NOISEGATE_AT_RAM	 		    0	//噪声门
@@ -51,7 +52,7 @@
 #define AFX_VIRTUAL_SURRUOUND_PRO_AT_RAM    0   //虚拟环绕声pro/2t4/2t5
 #define AFX_SW_EQ_AT_RAM                    0   //软件EQ
 #define AFx_SPATIAL_EFFECT_AT_RAM           1   //空间音效
-
+#define AFx_DAC_IO_IRQ_HANDLER_AT_RAM       1   //dac io中断代码放ram
 /*通话语音处理算法*/
 #define AUDIO_CVP_TEXT_AT_RAM	    	0	//COMMON TEXT
 #define AUDIO_CVP_AEC_AT_RAM	    	0	//AEC
@@ -67,11 +68,11 @@
 #define AUDIO_CVP_THIRD_AT_RAM		    0	//3MIC
 
 /*编解码编译链接配置*/
-#define AUD_AAC_DEC_AT_RAM		        1   //AAC解码
-#define AUDIO_LDAC_AT_RAM			    1	//LDAC解码
+#define AUD_AAC_DEC_AT_RAM		        0   //AAC解码
+#define AUDIO_LDAC_AT_RAM			    0	//LDAC解码
 #define AUDIO_MSBC_CODEC_AT_RAM		    0	//MSBC 编解码
 #define AUDIO_CVSD_CODEC_AT_RAM		    0	//CVSD 编解码
-#define AUDIO_JLA_CODEC_AT_RAM			1	//JLA 编解码
+#define AUDIO_JLA_CODEC_AT_RAM			0	//JLA 编解码
 #define AUDIO_LC3_CODEC_AT_RAM			0	//LC3 编解码
 
 /*语音识别算法编译链接配置*/

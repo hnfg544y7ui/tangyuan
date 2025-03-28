@@ -11,6 +11,7 @@ u32 efuse_get_gpadc_vbg_trim();
 u32 get_chip_version();
 u32 efuse_get_dcvdd_trim();
 u32 efuse_get_usb_tx_ldo_trim();
+u32 efuse_get_lrc_trim();
 
 u32 efuse_get_wvdd_lev_trim();
 

@@ -13,6 +13,7 @@
 #include "user_cfg.h"
 #include "bt_common.h"
 #include "le_broadcast.h"
+#include "le_connected.h"
 #include "dual_conn.h"
 
 #if(TCFG_USER_TWS_ENABLE && TCFG_APP_BT_EN)
@@ -81,13 +82,13 @@ static void write_scan_conn_enable(bool scan_enable, bool conn_enable)
     }
 #endif
 
-#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) && LEA_BIG_RX_CLOSE_EDR_EN)
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
         return;
     }
 #endif
 
-#if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 
 #if LEA_CIG_CENTRAL_CLOSE_EDR_CONN
     if ((get_connected_role() & CONNECTED_ROLE_CENTRAL) == CONNECTED_ROLE_CENTRAL) {
@@ -269,7 +270,7 @@ static void tws_pair_new_tws(void *p)
         tws_active = 0;
     }
 #endif
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
 
@@ -315,7 +316,7 @@ void tws_dual_conn_state_handler()
 #endif
     printf("page_state: %d, %x, %d %d %x\n", connect_device, state, have_page_device, g_dual_conn.device_num_recorded, rets);
 
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
 
@@ -330,7 +331,7 @@ void tws_dual_conn_state_handler()
     }
 #endif
 
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
 
@@ -411,8 +412,8 @@ void tws_dual_conn_state_handler()
             g_dual_conn.timer = sys_timeout_add(NULL, tws_pair_new_tws,
                                                 TCFG_TWS_CONN_TIMEOUT * 1000);
 #endif
+            return;
         }
-        return;
 #endif
         if (have_page_device) {
             g_dual_conn.timer = sys_timeout_add(NULL, tws_auto_pair_timeout,
@@ -455,7 +456,7 @@ void tws_dual_conn_state_handler()
                                                 TCFG_TWS_PAIR_TIMEOUT * 1000);
         }
 #else
-        if (bt_name && edr_background_active) {
+        if ((bt_name || connect_device == 0) && edr_background_active) {
             write_scan_conn_enable(1, 1);
         }
 #endif
@@ -494,13 +495,13 @@ static void dual_conn_page_device_timeout(void *p)
         return;
     }
 
-#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) && LEA_BIG_RX_CLOSE_EDR_EN)
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
         return;
     }
 #endif
 
-#if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 
 #if LEA_CIG_CENTRAL_CLOSE_EDR_CONN
     if ((get_connected_role() & CONNECTED_ROLE_CENTRAL) == CONNECTED_ROLE_CENTRAL) {
@@ -634,7 +635,7 @@ static int dual_conn_btstack_event_handler(int *_event)
     }
 #endif
 
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
     switch (event->event) {
@@ -648,13 +649,13 @@ static int dual_conn_btstack_event_handler(int *_event)
         }
         del_device_from_page_list(event->args);
         memcpy(g_dual_conn.remote_addr[0], event->args, 6);
+        page_mode_active = 0;
         if (tws_api_get_role() == TWS_ROLE_MASTER) {
             if (!page_list_empty()) {
                 g_dual_conn.timer = sys_timeout_add(NULL, page_next_device, 500);
                 return 0;
             }
         }
-        page_mode_active = 0;
         if (tws_active) {
             if ((state & TWS_STA_TWS_PAIRED) && (state & TWS_STA_SIBLING_DISCONNECTED)) {
                 tws_api_wait_connection(0);
@@ -895,7 +896,7 @@ static int dual_conn_tws_event_handler(int *_event)
         tws_active = 0;
     }
 
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
 
@@ -1082,7 +1083,7 @@ static void tws_pair_timeout(void *p)
     }
 #endif
 
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
     r_printf("tws_pair_timeout\n");
@@ -1152,7 +1153,7 @@ static int dual_conn_app_event_handler(int *msg)
     }
 #endif
 
-    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
+    if ((g_bt_hdl.work_mode != BT_MODE_TWS) && (g_bt_hdl.work_mode != BT_MODE_3IN1)) {
         tws_active = 0;
     }
 

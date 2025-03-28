@@ -698,9 +698,10 @@ static int music_file_player_start(struct file_player *player)
 
     jlstream_set_dec_file(player->stream, player, &music_file_ops);
 
-    err = jlstream_start(player->stream);
-
-    if (player->stream->coding_type == AUDIO_CODING_MP3) {
+#if TCFG_DEC_ID3_V1_ENABLE || TCFG_DEC_ID3_V2_ENABLE
+    u8 name[12 + 1] = {0}; //8.3+\0
+    fget_name(player->file, name, sizeof(name));
+    if (file_name_match_mp3((char *)name)) {
 #if TCFG_DEC_ID3_V1_ENABLE
         if (player->p_mp3_id3_v1) {
             id3_obj_post(&player->p_mp3_id3_v1);
@@ -718,6 +719,8 @@ static int music_file_player_start(struct file_player *player)
         file_dec_id3_post(player);
 #endif
     }
+#endif
+    err = jlstream_start(player->stream);
 
     if (err) {
         goto __exit1;
@@ -850,11 +853,10 @@ void music_file_player_stop()
 
     list_for_each_entry_safe(player, n, &(g_file_player.head), entry) {
         __list_del_entry(&player->entry);
-#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_AURACAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_JL_UNICAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SINK_EN | LE_AUDIO_JL_UNICAST_SINK_EN))) && LEA_LOCAL_SYNC_PLAY_EN
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))) && LEA_LOCAL_SYNC_PLAY_EN
         if (player->le_audio) {
             le_audio_player_close(player->le_audio);
         }
@@ -903,11 +905,10 @@ static int __music_player_init()
 }
 __initcall(__music_player_init);
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_AURACAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_JL_UNICAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SINK_EN | LE_AUDIO_JL_UNICAST_SINK_EN))
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 static int le_audio_music_file_player_start(struct file_player *player)
 {
     int err = -EINVAL;

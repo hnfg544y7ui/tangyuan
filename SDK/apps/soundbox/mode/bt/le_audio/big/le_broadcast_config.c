@@ -18,7 +18,7 @@
 #include "wireless_trans.h"
 #include "classic/tws_api.h"
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 
 /**************************************************************************************************
   Macros
@@ -36,7 +36,7 @@
 
 #define SCAN_WINDOW_SLOT                10
 #define SCAN_INTERVAL_SLOT              (28*2)
-#define PRIMARY_ADV_INTERVAL_SLOT       (192/2)
+#define PRIMARY_ADV_INTERVAL_SLOT       (192)
 
 /**************************************************************************************************
   Data Types
@@ -59,7 +59,7 @@ static big_parameter_t big_tx_param = {
         .eadv_int_slot  = PRIMARY_ADV_INTERVAL_SLOT,
         .padv_int_slot  = PRIMARY_ADV_INTERVAL_SLOT,
         .vdr = {
-            .tx_delay   = 3500,
+            .tx_delay   = 1000,
         },
     },
 };

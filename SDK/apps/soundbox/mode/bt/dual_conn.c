@@ -21,6 +21,7 @@
 #define TIMEOUT_CONN_DEVICE_OPEN_PAGE  1 //第二台设备超时断开回连一直开启page
 
 static void page_next_device(void *p);
+void dual_conn_page_device();
 
 struct page_device_info {
     struct list_head entry;
@@ -76,13 +77,13 @@ static void write_scan_conn_enable(bool scan_enable, bool conn_enable)
     }
 #endif
 
-#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) && LEA_BIG_RX_CLOSE_EDR_EN)
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
         return;
     }
 #endif
 
-#if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 
 #if LEA_CIG_CENTRAL_CLOSE_EDR_CONN
     if ((get_connected_role() & CONNECTED_ROLE_CENTRAL) == CONNECTED_ROLE_CENTRAL) {
@@ -227,9 +228,11 @@ static u8 *get_device_addr_in_page_list()
 
 void dual_conn_state_handler()
 {
+    u32 rets;//, reti;
+    __asm__ volatile("%0 = rets":"=r"(rets));
     int connect_device      = bt_get_total_connect_dev();
     int have_page_device    = page_list_empty() ? false : true;
-    printf("page_state: %d, %d\n", connect_device, have_page_device);
+    printf("page_state: %d, %d %d %x\n", connect_device, have_page_device, g_dual_conn.device_num_recorded, rets);
     if (g_dual_conn.timer) {
         sys_timeout_del(g_dual_conn.timer);
         g_dual_conn.timer = 0;
@@ -239,7 +242,12 @@ void dual_conn_state_handler()
     } else if (connect_device == 1) {
 #if TCFG_BT_DUAL_CONN_ENABLE
         if (g_dual_conn.device_num_recorded > 1) {
-            write_scan_conn_enable(0, 1);
+            if (have_page_device) {
+                r_printf("have_page_device\n");
+                dual_conn_page_device();
+            } else {
+                write_scan_conn_enable(0, 1);
+            }
         }
 #endif
     }
@@ -253,13 +261,13 @@ static void dual_conn_page_device_timeout(void *p)
         return;
     }
 
-#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) && LEA_BIG_RX_CLOSE_EDR_EN)
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
         return;
     }
 #endif
 
-#if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 
 #if LEA_CIG_CENTRAL_CLOSE_EDR_CONN
     if ((get_connected_role() & CONNECTED_ROLE_CENTRAL) == CONNECTED_ROLE_CENTRAL) {
@@ -295,7 +303,12 @@ static void dual_conn_page_device_timeout(void *p)
                 }
                 g_dual_conn.timer = sys_timeout_add(NULL, page_next_device, 2000);
                 //增加2s可发现可连接
-                bt_discovery_and_connectable_using_loca_mac_addr(1, 1);
+                if (bt_get_total_connect_dev() == 1) {
+                    write_scan_conn_enable(0, 1);
+                } else {
+                    write_scan_conn_enable(1, 1);
+                }
+                page_mode_active = 0;
                 return;
             }
             page_mode_active = 0;
@@ -414,12 +427,13 @@ static int dual_conn_btstack_event_handler(int *_event)
         }
         del_device_from_page_list(event->args);
         memcpy(g_dual_conn.remote_addr[0], event->args, 6);
+
+        page_mode_active = 0;
         if (!page_list_empty()) {
             g_dual_conn.timer = sys_timeout_add(NULL, page_next_device, 500);
             return 0;
         }
 
-        page_mode_active = 0;
         if (g_dual_conn.device_num_recorded == 0) {
             g_dual_conn.device_num_recorded++;
             memcpy(g_dual_conn.remote_addr[2], event->args, 6);

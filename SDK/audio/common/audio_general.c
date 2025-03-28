@@ -78,7 +78,8 @@ const int const_audio_codec_wav_dec_bitDepth_set_en = 0;
  *						Audio SYNCTS Config
  *******************************************************************
  */
-const float FRAME_DURATION_THREAD = 1.5f;//范围1.5f~2,采样率和时间戳抖动阈值倍数(丢帧检测阈值,时间戳间隔超过1.5帧，判定丢帧)
+
+const float FRAME_DURATION_THREAD = 1.5f;	//范围1.5f~2,采样率和时间戳抖动阈值倍数(丢帧检测阈值,时间戳间隔超过1.5帧，判定丢帧)
 
 /*
  *******************************************************************
@@ -276,6 +277,12 @@ const int iir_filter_run_mode = 0  //不支持32进16出
                                 | EFx_BW_16t16 | EFx_BW_16t32 | EFx_BW_32t32  //不支持32进16出
 #endif
                                 ;
+
+#ifdef TCFG_AUDIO_EFX_BFE4_RUN_MODE
+const int frequency_compressor_run_mode  = TCFG_AUDIO_EFX_BFE4_RUN_MODE; //只支持16进16出与32进32出
+#else
+const int frequency_compressor_run_mode  = EFx_BW_16t32 | EFx_BW_32t32;
+#endif
 
 /*变声模式使能*/
 const int voicechanger_effect_v_config = (0

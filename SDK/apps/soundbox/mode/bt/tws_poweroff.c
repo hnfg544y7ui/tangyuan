@@ -53,6 +53,9 @@ void sys_auto_shut_down_disable(void)
 void sys_auto_shut_down_enable(void)
 {
 #if TCFG_AUTO_SHUT_DOWN_TIME
+    if (bt_get_total_connect_dev()) {
+        return;
+    }
     if (!app_in_mode(APP_MODE_BT)) {
         return;
     }

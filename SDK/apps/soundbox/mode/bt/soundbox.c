@@ -68,13 +68,6 @@
 #include "app_le_auracast.h"
 #include "btstack_rcsp_user.h"
 
-#if TCFG_APP_BT_EN
-
-#if (THIRD_PARTY_PROTOCOLS_SEL & (RCSP_MODE_EN | GFPS_EN | MMA_EN | FMNA_EN | REALME_EN | SWIFT_PAIR_EN | DMA_EN | ONLINE_DEBUG_EN | CUSTOM_DEMO_EN))||(TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_AURACAST_SINK_EN)
-
-#include "multi_protocol_main.h"
-#endif
-
 #define LOG_TAG             "[SOUNDBOX]"
 #define LOG_ERROR_ENABLE
 #define LOG_DEBUG_ENABLE
@@ -82,13 +75,21 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+struct bt_mode_var g_bt_hdl = {.work_mode = BT_MODE_SIGLE_BOX};
+
+#if TCFG_APP_BT_EN
+
+#if (THIRD_PARTY_PROTOCOLS_SEL & (RCSP_MODE_EN | GFPS_EN | MMA_EN | FMNA_EN | REALME_EN | SWIFT_PAIR_EN | DMA_EN | ONLINE_DEBUG_EN | CUSTOM_DEMO_EN))||(TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_AURACAST_SINK_EN)
+
+#include "multi_protocol_main.h"
+#endif
+
 #define AVC_VOLUME_UP			0x41
 #define AVC_VOLUME_DOWN			0x42
 #define AVC_PLAY			    0x44
 #define AVC_PAUSE			    0x46
 
 BT_USER_COMM_VAR bt_user_comm_var;
-struct bt_mode_var g_bt_hdl = {.work_mode = BT_MODE_SIGLE_BOX};
 static u16 power_mode_timer = 0;
 static u8 sniff_out = 0;
 
@@ -146,9 +147,6 @@ static u8 *bt_get_sdk_ver_info(u8 *len)
 void bredr_handle_register()
 {
 #if (TCFG_BT_SUPPORT_SPP==1)
-#if APP_ONLINE_DEBUG
-    online_spp_init();
-#endif
     bt_spp_data_deal_handle_register(spp_data_handler);
 #endif
     bt_fast_test_handle_register(bt_fast_test_api);//测试盒快速测试接口
@@ -353,7 +351,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 
         bt_status_init_ok();
 
-#if (TCFG_USER_BLE_ENABLE && TCFG_BT_BLE_ADV_ENABLE)
+#if TCFG_USER_BLE_ENABLE
 #if RCSP_MODE
         rcsp_init();
 #endif
@@ -400,7 +398,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         log_info("++++++++ BT_STATUS_CONN_A2DP_CH +++++++++  \n");
         u8 a2dp_vol_mac[6];
         memcpy(a2dp_vol_mac, bt->args, 6);
+#ifndef BR56_FPGA_CODE_VERIFY
         app_audio_bt_volume_save_mac(a2dp_vol_mac);
+#endif
         break;
     case BT_STATUS_DISCON_A2DP_CH:
         log_info("++++++++ BT_STATUS_DISCON_A2DP_CH +++++++++  \n");
@@ -681,7 +681,7 @@ static int bt_tone_play_end_callback(void *priv, enum stream_event event)
 {
 #if TCFG_USER_TWS_ENABLE && TCFG_TWS_INIT_AFTER_POWERON_TONE_PLAY_END
     if (event == STREAM_EVENT_STOP) {
-        if (g_bt_hdl.work_mode == BT_MODE_TWS) {
+        if ((g_bt_hdl.work_mode == BT_MODE_TWS) || (g_bt_hdl.work_mode == BT_MODE_3IN1)) {
             bt_tws_poweron();
         }
     }
@@ -724,7 +724,6 @@ static void bt_no_background_exit_check(void *priv)
     btstack_exit_edr();
 #endif
 
-    g_bt_hdl.init_ok = 0;
     g_bt_hdl.init_start = 0;
     g_bt_hdl.exit_check_timer = 0;
     bt_set_stack_exiting(0);
@@ -757,12 +756,12 @@ static u8 bt_nobackground_exit()
     bt_cmd_prepare(USER_CTRL_CONNECTION_CANCEL, 0, NULL);
 
 #if (TCFG_KBOX_1T3_MODE_EN == 0)        //三合一退出模式不关闭le audio
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     app_broadcast_close(APP_BROADCAST_STATUS_STOP);
     app_broadcast_uninit();
 #endif
 
-#if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
     app_connected_close_all(APP_CONNECTED_STATUS_STOP);
     app_connected_uninit();
 #endif
@@ -789,7 +788,6 @@ static u8 bt_nobackground_exit()
 
 static int app_bt_init()
 {
-    int ret = -1;
 #if TCFG_CODE_RUN_RAM_BT_CODE
     int bt_code_size = __bt_movable_region_end - __bt_movable_region_start;
     printf("bt_code_size:%d\n", bt_code_size);
@@ -811,7 +809,9 @@ static int app_bt_init()
 #endif
 
     g_bt_hdl.init_start = 1;//蓝牙协议栈已经开始初始化标志位
+#if (TCFG_KBOX_1T3_MODE_EN == 0)    //开了三合一，ble需要一直运行，init_ok不能清0
     g_bt_hdl.init_ok = 0;
+#endif
     g_bt_hdl.exiting = 0;
     g_bt_hdl.wait_exit = 0;
     g_bt_hdl.ignore_discon_tone = 0;
@@ -824,7 +824,7 @@ static int app_bt_init()
     {
         tone_player_stop();
 #if TCFG_USER_TWS_ENABLE && TCFG_LOCAL_TWS_ENABLE
-        ret = local_tws_enter_mode(get_tone_files()->bt_mode, NULL);
+        int ret = local_tws_enter_mode(get_tone_files()->bt_mode, NULL);
         if (ret != 0)
 #endif //TCFG_LOCAL_TWS_ENABLE
 
@@ -1008,7 +1008,7 @@ int bt_nobackground_status_event_handler(int *msg)
         trim_timer_add();
 
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #if TCFG_KBOX_1T3_MODE_EN && TCFG_MIC_EFFECT_ENABLE
         if (!mic_effect_player_runing()) {
             app_broadcast_open_in_other_mode();
@@ -1018,7 +1018,7 @@ int bt_nobackground_status_event_handler(int *msg)
 #endif
 #endif
 
-#if (LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 #if TCFG_KBOX_1T3_MODE_EN && TCFG_MIC_EFFECT_ENABLE
         if (is_open_cis_connet() && !mic_effect_player_runing()) {
             app_connected_open_in_other_mode();

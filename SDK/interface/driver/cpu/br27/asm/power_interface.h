@@ -21,8 +21,11 @@
 #include "asm/power/power_trim.h"
 
 //p33寄存器
-#include "asm/power/p33.h"
-#include "asm/power/p33_api.h"
+#include "power/p33/p33_sfr.h"
+#include "power/p33/p33_access.h"
+#include "power/p33/charge_hw.h"
+#include "power/p33/p33_api.h"
+#include "power/p33/rtc_hw.h"
 
 //P11寄存器
 #include "asm/power/p11.h"
@@ -39,7 +42,5 @@
 #include "asm/power/power_compat.h"
 
 #include "power/wdt.h"
-
-#include "power/lib_power_config.h"
 
 #endif

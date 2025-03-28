@@ -88,6 +88,7 @@ struct jlstream;
 #define NODE_IOC_GET_MIXER_INFO     0x0002002f
 #define NODE_IOC_TWS_TX_SWITCH      0x00020030
 #define NODE_IOC_GET_ID3      		0x00020031
+#define NODE_IOC_GET_ENC_TIME       0x00020032		//获取编码时间
 
 #define NODE_IOC_START              (0x00040000 | NODE_STA_RUN)
 #define NODE_IOC_PAUSE              (0x00040000 | NODE_STA_PAUSE)
@@ -126,6 +127,7 @@ enum stream_event {
 
     STREAM_EVENT_GET_SWITCH_CALLBACK,
     STREAM_EVENT_GET_MERGER_CALLBACK,
+    STREAM_EVENT_GET_SPATIAL_ADV_CALLBACK,
 };
 
 enum stream_scene : u8 {
@@ -195,6 +197,7 @@ enum stream_node_state : u16 {
     NODE_STA_OUTPUT_TO_FAST         = 0x0800,   //解码输出太多主动挂起
     NODE_STA_OUTPUT_BLOCKED         = 0x1000,   //终端节点缓存满,数据写不进去
     NODE_STA_OUTPUT_SPLIT           = 0x2000,
+    NODE_STA_DECODER_FADEOUT        = 0X4000,  //用来判断是否是解码节点的淡出
 };
 
 enum stream_node_type : u8 {
@@ -670,6 +673,7 @@ int jlstream_get_node_param_s(void *node, void *param, u16 param_len);
 void jlstream_put_node(void *);
 
 int jlstream_set_node_param(u16 node_uuid, const char *name, void *param, u16 param_len);
+int jlstream_set_node_specify_param(u16 node_uuid, const char *name, int cmd, void *param, u16 param_len);
 
 int jlstream_get_node_param(u16 node_uuid, const char *name, void *param, u16 param_len);
 

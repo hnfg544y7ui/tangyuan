@@ -604,6 +604,7 @@ static void a2dp_stream_control_open(struct a2dp_file_hdl *hdl)
 static void a2dp_stream_control_close(struct a2dp_file_hdl *hdl)
 {
     if (hdl->stream_ctrl) {
+        a2dp_stream_control_set_underrun_callback(hdl->stream_ctrl, NULL, NULL);
         a2dp_stream_control_free(hdl->stream_ctrl);
         hdl->stream_ctrl = NULL;
     }

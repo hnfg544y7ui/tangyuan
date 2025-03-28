@@ -7,7 +7,7 @@
 #include "includes.h"
 #include "app_config.h"
 #include "asm/power/p11.h"
-#include "asm/power/p33.h"
+#include "asm/power_interface.h"
 #include "asm/lp_nfc_tag.h"
 
 #define LOG_TAG_CONST       LP_NFC

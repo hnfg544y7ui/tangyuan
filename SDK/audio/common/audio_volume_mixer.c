@@ -36,7 +36,7 @@
 #include "tone_player.h"
 #include "ring_player.h"
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #include "app_le_broadcast.h"
 #endif
 
@@ -685,9 +685,9 @@ int audio_digital_vol_node_name_get(u8 dvol_idx, char *node_name)
     struct app_mode *mode;
     mode = app_get_current_mode();
     int i = 0;
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_AURACAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN))
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))
     if (le_audio_player_is_playing()) {
         sprintf(node_name, "%s%s", "Vol_LE_", "Audio");
         return 0;
@@ -908,6 +908,46 @@ void audio_app_volume_set(u8 state, s16 volume, u8 fade)
             }
         }
     }
+}
+
+/*
+*********************************************************************
+*          			Audio Volume State MUTE
+* Description: 针对不同AUDIO STATE，将数据静音或者解开静音
+* Arguments  : mute_en	是否使能静音, 0:不使能,1:使能
+* Return	 : None.
+* Note(s)    : None.
+*********************************************************************
+*/
+void app_audio_set_mute_state(u8 state, u8 mute_en)
+{
+    u8 dvol_idx = 0; //记录音量通道供数字音量控制使用
+    switch (state) {
+    case APP_AUDIO_STATE_IDLE:
+    case APP_AUDIO_STATE_MUSIC:
+        dvol_idx = MUSIC_DVOL;
+        __this->music_mute_state = mute_en;
+        break;
+    case APP_AUDIO_STATE_CALL:
+        dvol_idx = CALL_DVOL;
+        __this->call_mute_state = mute_en;
+        break;
+    case APP_AUDIO_STATE_WTONE:
+#if WARNING_TONE_VOL_FIXED
+        return;
+#endif
+        dvol_idx = TONE_DVOL | RING_DVOL | KEY_TONE_DVOL;
+        __this->wtone_mute_state = mute_en;
+        break;
+    case APP_AUDIO_CURRENT_STATE:
+        app_audio_set_mute_state(__this->state, mute_en);
+        break;
+    default:
+        break;
+    }
+    u32 param = dvol_idx << 16 | mute_en;
+    /* app_audio_set_mute_timer_func((void *)param); */
+    sys_timeout_add((void *)param, app_audio_set_mute_timer_func, 5); //5ms后将数据mute 或者解mute
 }
 
 /*
@@ -1495,7 +1535,7 @@ u8 app_audio_dac_vol_mode_get(void)
 void app_audio_set_volume(u8 state, s16 volume, u8 fade)
 {
     audio_app_volume_set(state, volume, fade);
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     if (state == APP_AUDIO_STATE_MUSIC) {
         update_broadcast_sync_data(BROADCAST_SYNC_VOL, volume);
     }

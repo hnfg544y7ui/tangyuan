@@ -590,11 +590,16 @@
 	/* *(.pingpong_echo.text.const)	 */
 #endif
 
-#if AFx_DISTORTION_CLIPPING_AT_RAM == 0
+#if (AFx_DISTORTION_CLIPPING_AT_RAM == 0)
 	*(.distortion.text.cache.L2.code)	
 	*(.distortion.text.cache.L2.const)	
 	/* *(.distortion.text)	 */
 	/* *(.distortion.text.const)	 */
+#endif
+
+#if (AFx_FREQUENCY_COMPRESSOR_AT_RAM == 0)
+	*(.freq_compressor.text.cache.L2.code)
+	*(.freq_compressor.text.cache.L2.const)
 #endif
 
     . = ALIGN(4);

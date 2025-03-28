@@ -118,6 +118,12 @@ const struct task_info task_info_table[] = {
     {"mic_effect9",         6,     1,  768,   0 },
     {"mic_effecta",         6,     1,  768,   0 },
 
+    /*无线mic任务*/
+    {"wl_mic_effect1",      6,     1,  512,   0 },
+    {"wl_mic_effect2",      6,     1,  512,   0 },
+    {"wl_mic_effect3",      6,     1,  768,   0 },
+    {"wl_mic_effect4",      6,     1,  768,   0 },
+
     /*
      *为了防止dac buf太大，通话一开始一直解码，
      *导致编码输入数据需要很大的缓存，这里提高编码的优先级
@@ -205,12 +211,16 @@ int eSystemConfirmStopStatus(void)
      *   0:100 ms wakeup
      *   other: x ms wakeup
      */
+#if TCFG_CHARGE_POWERON_ENABLE
+    return 0;
+#else
     if (get_charge_full_flag()) {
         power_set_soft_poweroff();
         return 1;
     } else {
         return 0;
     }
+#endif
 }
 
 __attribute__((used))
@@ -501,7 +511,7 @@ struct app_mode *app_mode_switch_handler(int *msg)
     } while (next_mode);
 
     //处理开了多个模式，但是除了当前模式其他模式都无法进入的情况，不要重复切换当前任务
-    if (app_get_current_mode()->name == next_mode->name && curr_mode_exiting == false) {
+    if (app_get_current_mode() && app_get_current_mode()->name == next_mode->name && curr_mode_exiting == false) {
         return NULL;
     }
 
@@ -552,7 +562,7 @@ int app_get_message(int *msg, int max_num, const struct key_remap_table *key_tab
             if (key_msg == APP_MSG_NULL) {
                 return 1;
             }
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #if (LEA_BIG_CUSTOM_DATA_EN && LEA_BIG_VOL_SYNC_EN && (!TCFG_KBOX_1T3_MODE_EN))
             if ((get_broadcast_role() == BROADCAST_ROLE_RECEIVER) && get_receiver_connected_status()) {
                 if ((key_msg == APP_MSG_VOL_UP) || (key_msg == APP_MSG_VOL_DOWN)) {

@@ -26,9 +26,9 @@ set TONE_ZH_ENABLE=1
 
 
 
-set LCD_SOURCE_ENABLE=1
 
 
+set LCD_SOURCE_ENABLE=0
 
 
 

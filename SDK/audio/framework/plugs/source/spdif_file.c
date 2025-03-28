@@ -16,6 +16,13 @@
 #include "clock_manager/clock_manager.h"
 #include "media/audio_general.h"
 #include "spinlock.h"
+#include "system/timer.h"
+#include "gptimer.h"
+#include "hdmi_cec_api.h"
+#include <math.h>
+#include "app_le_auracast.h"
+#include "le_broadcast.h"
+
 
 
 #if TCFG_SPDIF_ENABLE
@@ -30,6 +37,7 @@ static const u8 spdif_analog_port[] = {
     IO_PORTC_02,
 };
 
+
 /* SPDIF淡入 */
 #define SPDIF_FADE_IN_EN    1		//spdif 淡入使能
 /* #define SPDIF_FADE_IN_STEP2  0.01f	//24bit spdif淡入的步进 */
@@ -43,7 +51,14 @@ static const u8 spdif_analog_port[] = {
 
 /* SPDIF ONLINE 检测使能 */
 #define SPDIF_ONLINE_DET_EN			1
-#define SPDIF_ONLINE_DET_TIME_MS	500
+#define SPDIF_ONLINE_DET_TIME_MS	500		//定时器中断时间
+
+/* SPDIF 补包使能(补包使能需要在工具上开启) */
+#define SPDIF_FIX_PACKAGE_EN 			1
+#define SPDIF_FIRST_FIX_PACKAGE_TIME	1.5f	//表示第一次补包间隔为 1.5 帧时间
+#define SPDIF_FIX_PACKAGE_VALID_SR		96000	//在小于等于此采样率，相关的补包是生效的，如果高于这个采样率则不开启补包功能
+#define SPDIF_FIX_START_MUTE_EN			0		//该宏为1时表示检测到要开始补包时mute，检测到补包结束时结束mute, 默认关闭，效果不明显
+
 
 /*
  * 针对采样率的特殊情况处理：
@@ -71,6 +86,8 @@ struct spdif_file_hdl {
     u32 spdif_set_data_dma_len;	//记录下spdif每次设置的data_dma_len，用于决定是否需要重启
     u32 sw_real_time_sr;		//记录下软件实时的采样率大小
     u32 last_irq_timestamp;
+    u32 spdif_data_isr_diff_time;	//spdif数据中断的间隔时间
+    u32 spdifrx_isr_timestamp;
 #if SPDIF_FADE_IN_EN
     float fade_in_coefficient;	//淡入系数
     u8 new_frame_can_fade_in;
@@ -78,6 +95,12 @@ struct spdif_file_hdl {
 #if SPDIF_ONLINE_DET_EN
     u32 irq_running_cnt;		//该值用来判断当前spdif是否有起中断，当该值不为0时，说明spdif起中断往后面推数
     u16 online_det_timer_id;	//检测spdif是否在线的定时器id
+#endif
+#if SPDIF_FIX_PACKAGE_EN
+    u32 fix_package_timer_id;	//spdif补包定时器id
+    u32 fix_package_time_const;	//spdif一开始的补包定时器时间, 在spdif数据流开启期间不会变, 为正常常规的spdif补包的检测时间
+    u32 fix_package_time;		//spdif开始补包定时器时间
+    u8 start_fix_package_flag;
 #endif
     u16 drop_frame_cnt;		//驱动去掉了帧错误重启操作，需要先丢掉几帧
     u16 hdmi_wait_cec_drop_packet_cnt;	//hdmi 等待cec通信成功的丢包数量
@@ -92,6 +115,7 @@ struct spdif_file_hdl {
     u8 is_hdmi_source;		//当前源是否是HDMI源的标记
     u8 hdmi_stop_push_data;	//决定spdif HDMI是否可以往后面推数, 改变量由app层进行控制
     u8 Qval;//数据的饱和位宽
+    u8 monitor_err_filter_cnt;
 };
 struct spdif_file_hdl *spdif_file_t = NULL;
 
@@ -124,6 +148,13 @@ struct spdif_port_config_t {
 };
 struct spdif_port_config_t spdif_port_config = {0};
 
+
+#if SPDIF_FIX_PACKAGE_EN
+static void spdif_fix_package_gptimer_open(void);
+static void spdif_fix_package_gptimer_close(void);
+static void spdif_fix_package_gptimer_set_period(u32 us_time);
+static void spdif_fix_one_package(void);
+#endif
 
 struct spdif_file_cfg *audio_spdif_file_get_cfg(void)
 {
@@ -268,8 +299,41 @@ u8 get_spdif_source_io(void)
  * 返回值：采样率
  * note:
  */
+const static u32 spdif_sample_rate_table[] = {
+    80,
+    110,
+    160,
+    221,
+    240,
+    320,
+    441,
+    480,
+//    504,
+//    640,
+    882,
+//  937
+    960,
+    1764,
+    1920,
+};
+
 static int spdif_get_sr(void)
 {
+    u32 temp_sr;
+
+    temp_sr = spdif_slave_get_sr() / 100;
+    u8  search_index = 0xff;
+    for (u8 i = 0; i < (sizeof(spdif_sample_rate_table) / sizeof(spdif_sample_rate_table[0])) ; i++) {
+        if ((temp_sr > (spdif_sample_rate_table[i] - 20)) && (temp_sr < spdif_sample_rate_table[i] + 20)) {
+            search_index = i;
+        }
+    }
+    if (search_index != 0xff) {
+        return spdif_sample_rate_table[search_index] * 100;
+    }
+    /* printf("[%s], can't identify spdif sampal rate, return default sr:44100!\n", __func__); */
+    return 44100;
+#if 0
     u32 inf = JL_SPDIF->SS_CSB0;
     u32 tmp = ((inf & 0xF000000) >> 24) ^ 0xF;
     switch (tmp) {
@@ -304,6 +368,7 @@ static int spdif_get_sr(void)
         break;
     }
     return 48000;
+#endif
 }
 
 /* 获取 spdif 的声道数, 值为0表示默认值双声道 */
@@ -394,9 +459,17 @@ static int spdif_format_monitor()
         // 无特殊情况继续检测采样率
         if (spdif_file_t->special_idx == SPDIF_SPECIAL_NONE) {
             if (spdif_format.sample_rate != spdif_get_sr()) {
-                spdif_format.get_fmt_complete = 0;
-                spdif_format.init = 0;
-                ret = -3;
+                r_printf("err, %s, %d, %d, %d\n", __func__, __LINE__, spdif_format.sample_rate, spdif_get_sr());
+                spdif_file_t->monitor_err_filter_cnt++;
+                if (spdif_file_t->monitor_err_filter_cnt >= 3) {
+                    spdif_file_t->monitor_err_filter_cnt = 0;
+                    spdif_format.get_fmt_complete = 0;
+                    spdif_format.init = 0;
+                    ret = -3;
+                }
+            } else {
+                spdif_file_t->monitor_err_filter_cnt = 0;
+
             }
         }
     }
@@ -531,6 +604,9 @@ static u32 spdif_get_sr_by_software(u32 irq_timestamp, u32 last_irq_timestamp)
     } else {
         diff_time = 0xffffffff - last_irq_timestamp + irq_timestamp + 1;
     }
+    if (spdif_file_t) {
+        spdif_file_t->spdif_data_isr_diff_time = diff_time;
+    }
     u32 sr = 0;
     u32 spdif_data_dma_len = 0;
     u32 spdif_inf_dma_len = 0;
@@ -541,6 +617,48 @@ static u32 spdif_get_sr_by_software(u32 irq_timestamp, u32 last_irq_timestamp)
     /* y_printf("---> diff_time:%d, last_t:%d, irq_t:%d\n", diff_time, last_irq_timestamp, irq_timestamp); */
     return sr;
 }
+
+
+
+#if SPDIF_FIX_PACKAGE_EN
+static void spdif_fix_package_timerout_cb()
+{
+    struct spdif_file_hdl *hdl = spdif_file_t;
+    if (!hdl || hdl->start == 0 || hdl->online_flag == 0) {
+        /* r_printf("spdif fix packet failed!\n"); */
+        return;
+    }
+
+    u32 fix_package_timestamp = audio_jiffies_usec();
+    u32 diff_time = 0;
+    if (fix_package_timestamp >= hdl->last_irq_timestamp) {
+        diff_time = fix_package_timestamp - hdl->last_irq_timestamp;
+    } else {
+        diff_time = 0xffffffff - hdl->last_irq_timestamp + fix_package_timestamp + 1;
+    }
+    if (hdl->start_fix_package_flag == 0) {
+        if (__builtin_abs((int)diff_time - (int)hdl->fix_package_time_const * 1000) < 1000) {
+            y_printf(">>>>>>>>>>> start fix spdif package!\n");
+#if SPDIF_FIX_START_MUTE_EN
+            y_printf(">> Spdif Mute!\n");
+            audio_app_mute_en(1);
+#endif
+            hdl->need_fade_in_flag = 1;	//数据恢复时做淡入
+            hdl->start_fix_package_flag = 1;
+            spdif_fix_one_package();
+            spdif_fix_package_gptimer_set_period(hdl->fix_package_time * 1000);
+        } else {
+            r_printf(">>>>> fix time err, %d, %d, %d\n", diff_time, hdl->fix_package_time_const * 1000, __builtin_abs((int)diff_time - (int)hdl->fix_package_time_const * 1000));
+        }
+    } else {
+        hdl->start_fix_package_flag = 1;
+        spdif_fix_one_package();
+        /* spdif_fix_package_gptimer_set_period(hdl->fix_package_time * 1000); */
+    }
+
+}
+#endif
+
 
 /*
  * @description: spdif 数据中断回调函数
@@ -559,7 +677,9 @@ static void spdif_data_isr_cb(void *buf, u32 len)
         return;
     }
     struct stream_node  *source_node = hdl->source_node;
-    u32 spdifrx_isr_timestamp = audio_jiffies_usec();
+    hdl->spdifrx_isr_timestamp = audio_jiffies_usec();
+
+
 
 #if SPDIF_ONLINE_DET_EN
     // irq_running_cnt 作为中断标志
@@ -587,6 +707,9 @@ static void spdif_data_isr_cb(void *buf, u32 len)
         return;
     }
 
+    if (len == 0) {
+        return;
+    }
 
     // 滤掉超过192k采样率的,  spdif_slave_get_sr 的值会到216k左右
     if (spdif_slave_get_sr() > 200000 && spdif_get_sr() == 192000) {
@@ -609,7 +732,7 @@ static void spdif_data_isr_cb(void *buf, u32 len)
         /* printf("[%s] format.sr:%d, slave_get_sr:%d\n",__func__, spdif_format.sample_rate, spdif_slave_get_sr()); */
         //矫错机制, 放宽矫错机制，LSB时钟会实时变化导致硬件算出的采样率有可能是不准的
         if (__builtin_abs((int)(spdif_format.sample_rate - spdif_slave_get_sr())) <= SPDIF_SR_ERROR_TOLERANT_WIDTH) {
-            if (++hdl->format_correct_cnt == 5) {
+            if (++hdl->format_correct_cnt == 20) {
                 //认为spdif格式获取稳定
                 hdl->format_correct_cnt = 0;
                 if (spdif_format.sample_rate > 48000 && spdif_format.sample_rate <= 96000) {
@@ -648,7 +771,7 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     }
 
     //hdl->have_data 置1标示接收到数据, 此时打开数据流
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     if (hdl->have_data == 0 && spdif_format.get_fmt_complete == 1 && get_broadcast_role() != BROADCAST_ROLE_RECEIVER) {
 #elif (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN))
     if (hdl->have_data == 0 && spdif_format.get_fmt_complete == 1 && get_auracast_role() != APP_AURACAST_AS_SINK) {
@@ -710,7 +833,6 @@ static void spdif_data_isr_cb(void *buf, u32 len)
 #if SPDIF_FADE_IN_EN
         hdl->new_frame_can_fade_in = 1;
         float step = SPDIF_FADE_IN_STEP;
-
         if (hdl->need_fade_in_flag) {
             if (hdl->spdif_slave_parm.data_mode == SPDIF_S_DAT_16BIT) {
                 for (int i = 0; i < len / 2; i++) {
@@ -749,7 +871,25 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     } else {	//非PCM
         return;
     }
-
+#if SPDIF_FIX_PACKAGE_EN
+    if (hdl->fix_package_time_const && spdif_format.sample_rate <= SPDIF_FIX_PACKAGE_VALID_SR) {
+        if (hdl->fix_package_timer_id == 0 && hdl->start_fix_package_flag == 0) {
+            //正常第一次起中断
+            spdif_fix_package_gptimer_open();
+        } else if (hdl->fix_package_timer_id && hdl->start_fix_package_flag == 0) {
+            //正常起中断
+            spdif_fix_package_gptimer_set_period(hdl->fix_package_time_const * 1000);
+        } else if (hdl->fix_package_timer_id && hdl->start_fix_package_flag == 1) {
+            //一段时间没起中断，第一次恢复中断
+            spdif_fix_package_gptimer_set_period(hdl->fix_package_time_const * 1000);
+#if SPDIF_FIX_START_MUTE_EN
+            y_printf("<< Spdif UnMute!\n");
+            audio_app_mute_en(0);
+#endif
+        }
+    }
+    hdl->start_fix_package_flag = 0;
+#endif
     frame = source_plug_get_output_frame(source_node, len);
     if (!frame) {
         return;
@@ -758,14 +898,53 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     frame->len       = len;
 #if 1
     frame->flags     = FRAME_FLAG_TIMESTAMP_ENABLE | FRAME_FLAG_PERIOD_SAMPLE | FRAME_FLAG_UPDATE_TIMESTAMP;
-    frame->timestamp = spdifrx_isr_timestamp * TIMESTAMP_US_DENOMINATOR;
+    frame->timestamp = hdl->spdifrx_isr_timestamp * TIMESTAMP_US_DENOMINATOR;
 #else
     frame->flags  = FRAME_FLAG_SYS_TIMESTAMP_ENABLE;
-    frame->timestamp = spdifrx_isr_timestamp;
+    frame->timestamp = hdl->spdifrx_isr_timestamp;
 #endif
     memcpy(frame->data, buf, len);
     source_plug_put_output_frame(source_node, frame);
 }
+
+
+#if SPDIF_FIX_PACKAGE_EN
+static void spdif_fix_package_gptimer_open(void)
+{
+    struct spdif_file_hdl *hdl = spdif_file_t;
+    if (hdl && hdl->fix_package_timer_id == 0) {
+        const struct gptimer_config timer_config = {
+            .timer.period_us = hdl->fix_package_time_const * 1000, //定时周期, 6ms
+            .irq_cb = spdif_fix_package_timerout_cb, //设置中断回调函数
+            .irq_priority = 1, //中断优先级
+            .mode = GPTIMER_MODE_TIMER, //设置工作模式
+            .private_data = NULL,
+        };
+        u32 id = gptimer_init(TIMERx, &timer_config); //初始化timer配置,成功会返回分配的timer_id, 失败返回-1
+        hdl->fix_package_timer_id = id;
+        printf("timer_demo id:%d\n", id);
+        gptimer_start(id); //启动timer
+    }
+}
+
+static void spdif_fix_package_gptimer_close(void)
+{
+    struct spdif_file_hdl *hdl = spdif_file_t;
+    if (hdl && hdl->fix_package_timer_id) {
+        gptimer_deinit(hdl->fix_package_timer_id);
+        hdl->fix_package_timer_id = 0;
+    }
+}
+
+static void spdif_fix_package_gptimer_set_period(u32 us_time)
+{
+    struct spdif_file_hdl *hdl = spdif_file_t;
+    if (hdl && hdl->fix_package_timer_id) {
+        gptimer_set_timer_period(hdl->fix_package_timer_id, us_time);
+    }
+}
+#endif
+
 
 #if SPDIF_ONLINE_DET_EN
 /*
@@ -778,7 +957,7 @@ static void spdif_online_det_timer(void *priv)
 {
     struct spdif_file_hdl *hdl = spdif_file_t;
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     //广播下不做掉线检查
     if (get_broadcast_role()) {
         if (hdl->irq_running_cnt) {
@@ -826,6 +1005,11 @@ static void spdif_online_det_timer(void *priv)
                         //这种情况是HDMI插入但电视给错误信号或者电视不给信号的情况
                         //这种暂时不做处理
                         putchar('N');
+                        if (hdmi_cec_get_state() == 0) {
+                            r_printf("\n>>>>>>>>>>>> TV OffLive !! <<<<<<<<<<<<<\n");
+                            hdl->online_flag = 0;
+                            spdif_restart_by_taskq();	//重启: close_player + spdif_start
+                        }
                     } else {
                         // 拔掉HDMI的情况
                         r_printf("\n>>>>>>>>>>>> HDMI LOST CONNECTION !! <<<<<<<<<<<<<\n");
@@ -860,6 +1044,18 @@ static void spdif_open_online_det_timer(void)
 #else
     r_printf(">>>>> %s, %d, open spdif online detect timer failed!\n", __func__, __LINE__);
 #endif
+#if SPDIF_FIX_PACKAGE_EN
+    if (spdif_file_t->spdif_data_isr_diff_time) {
+        float det_time_tmp1 = (float)spdif_file_t->spdif_data_isr_diff_time;
+        float det_time_tmp = (float)(SPDIF_FIRST_FIX_PACKAGE_TIME * (float)spdif_file_t->spdif_data_isr_diff_time);
+        det_time_tmp = round(det_time_tmp / 1000.0f);
+        det_time_tmp1 = round(det_time_tmp1 / 1000.0f);
+        spdif_file_t->fix_package_time = (u32)det_time_tmp1;
+        spdif_file_t->fix_package_time_const = (u32)det_time_tmp;
+        y_printf(">>>>>>>> spdif_file_t->fix_package_time_const:%d, %d\n", spdif_file_t->fix_package_time_const, spdif_file_t->fix_package_time);
+    }
+#endif
+
 }
 
 
@@ -985,6 +1181,12 @@ int spdif_start(void)
         return -1;
     }
     printf("\n=========  spdif_start  =========\n");
+
+#if SPDIF_FIX_START_MUTE_EN
+    y_printf("<< Spdif UnMute!\n");
+    audio_app_mute_en(0);
+#endif
+
     if (hdl->state != AUDIO_SPDIF_STATE_INIT) {		// state = 2
         spdif_driver_init();
     }
@@ -1080,6 +1282,9 @@ static int spdif_ioctl(void *_hdl, int cmd, int arg)
         if (hdl->start) {
             hdl->start = 0;
             ret = spdif_stop();
+#if SPDIF_FIX_PACKAGE_EN
+            spdif_fix_package_gptimer_close();
+#endif
         }
         break;
     }
@@ -1363,6 +1568,49 @@ void spdif_io_loop_switch(void)
 
     }
 }
+
+
+// 获取spdif数据中断的间隔时间
+int get_spdif_data_isr_time_diff(void)
+{
+    if (spdif_file_t) {
+        if (spdif_file_t->start) {
+            return spdif_file_t->spdif_data_isr_diff_time;;
+        }
+    }
+    return 0;
+}
+
+#if SPDIF_FIX_PACKAGE_EN
+/*
+ * spdif 修包函数，当spdif丢包时，模拟spdif往数据流后面推包
+ */
+static void spdif_fix_one_package(void)
+{
+    struct spdif_file_hdl *hdl = spdif_file_t;
+    if (!hdl || hdl->start == 0 || hdl->online_flag == 0) {
+        return;
+    }
+    putchar('@');
+
+    spin_lock(&spdif_lock);
+    struct stream_frame *frame;
+    struct stream_node  *source_node = hdl->source_node;
+
+    u32 size = spdif_format.spdif_data_dma_len / 2;
+    hdl->spdifrx_isr_timestamp = hdl->spdifrx_isr_timestamp + hdl->spdif_data_isr_diff_time;
+
+    frame = source_plug_get_output_frame(source_node, size);
+    frame->len    = size;
+    frame->flags  = FRAME_FLAG_SYS_TIMESTAMP_ENABLE | FRAME_FLAG_FILL_PACKET;
+    frame->timestamp = hdl->spdifrx_isr_timestamp;
+    memset(frame->data, 0, size);
+    source_plug_put_output_frame(source_node, frame);
+    spin_unlock(&spdif_lock);
+}
+#endif
+
+
 
 REGISTER_SOURCE_NODE_PLUG(spdif_file_plug) = {
     .uuid       = NODE_UUID_SPDIF,

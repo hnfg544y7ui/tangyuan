@@ -26,7 +26,7 @@
 #include "audio_config.h"
 #include "le_audio_player.h"
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 
 /**************************************************************************************************
   Macros
@@ -254,7 +254,7 @@ void broadcast_init(void)
 
     broadcast_init_flag = 1;
 
-#if LEA_BIG_CTRLER_TX_EN
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN)
     //初始化bis发送参数及注册回调
     ret = wireless_trans_init("big_tx", NULL);
     if (ret != 0) {
@@ -262,7 +262,7 @@ void broadcast_init(void)
     }
 #endif
 
-#if LEA_BIG_CTRLER_RX_EN
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_RX_EN)
     //初始化bis接收参数及注册回调
     ret = wireless_trans_init("big_rx", NULL);
     if (ret != 0) {
@@ -287,14 +287,14 @@ void broadcast_uninit(void)
 
     broadcast_init_flag = 0;
 
-#if LEA_BIG_CTRLER_TX_EN
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN)
     ret = wireless_trans_uninit("big_tx", NULL);
     if (ret != 0) {
         log_error("wireless_trans_uninit fail:0x%x\n", ret);
     }
 #endif
 
-#if LEA_BIG_CTRLER_RX_EN
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_RX_EN)
     ret = wireless_trans_uninit("big_rx", NULL);
     if (ret != 0) {
         log_error("wireless_trans_uninit fail:0x%x\n", ret);
@@ -523,7 +523,7 @@ int broadcast_transmitter(big_parameter_t *params)
 {
     int ret;
 
-#if !LEA_BIG_CTRLER_TX_EN
+#if !(TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN)
     log_error("broadcast transmitter open fail");
     return -EPERM;
 #endif
@@ -1092,7 +1092,7 @@ int broadcast_receiver(big_parameter_t *params)
 {
     int ret;
 
-#if !LEA_BIG_CTRLER_RX_EN
+#if !(TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_RX_EN)
     log_error("broadcast receiver open fail");
     return -EPERM;
 #endif
@@ -1462,6 +1462,59 @@ int broadcast_audio_recorder_reset(u16 big_hdl)
                 }
             }
 
+            params.fmt.nch = get_big_audio_coding_nch();
+            params.fmt.bit_rate = get_big_audio_coding_bit_rate();
+            params.fmt.coding_type = LE_AUDIO_CODEC_TYPE;
+            params.fmt.frame_dms = get_big_audio_coding_frame_duration();
+            params.fmt.sdu_period = get_big_sdu_period_us();
+            params.fmt.isoIntervalUs = get_big_sdu_period_us();
+            params.fmt.sample_rate = LE_AUDIO_CODEC_SAMPLERATE;
+            params.fmt.dec_ch_mode = LEA_TX_DEC_OUTPUT_CHANNEL;
+            params.latency = get_big_tx_latency();
+            params.conn = p->latch_bis_hdl;
+
+            //重新打开新的recorder
+            for (i = 0; i < bis_num; i++) {
+                if (!p->bis_hdl_info[i].recorder) {
+                    if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_open) {
+                        recorder = le_audio_switch_ops->tx_le_audio_open(&params);
+                        spin_lock(&broadcast_lock);
+                        p->bis_hdl_info[i].recorder = recorder;
+                        spin_unlock(&broadcast_lock);
+                    }
+                }
+            }
+        }
+    }
+    broadcast_mutex_post(&broadcast_mutex, __LINE__);
+
+    return 0;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 供外部手动打开recorder模块
+ *
+ * @param big_hdl:recorder模块所对应的big_hdl
+ *
+ * @return 0:success
+ */
+/* ----------------------------------------------------------------------------*/
+int broadcast_audio_recorder_open(u16 big_hdl)
+{
+    u8 i;
+    u8 bis_num = get_bis_num(BROADCAST_ROLE_TRANSMITTER);
+    struct broadcast_hdl *p;
+    void *recorder = 0;
+    struct le_audio_stream_params params = {0};
+
+    if (broadcast_role != BROADCAST_ROLE_TRANSMITTER) {
+        return -EPERM;
+    }
+
+    broadcast_mutex_pend(&broadcast_mutex, __LINE__);
+    list_for_each_entry(p, &broadcast_list_head, entry) {
+        if (p->big_hdl == big_hdl) {
             params.fmt.nch = get_big_audio_coding_nch();
             params.fmt.bit_rate = get_big_audio_coding_bit_rate();
             params.fmt.coding_type = LE_AUDIO_CODEC_TYPE;

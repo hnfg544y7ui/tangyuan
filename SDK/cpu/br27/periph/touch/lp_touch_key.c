@@ -8,8 +8,8 @@
 #include "app_config.h"
 #include "app_msg.h"
 #include "key_driver.h"
-#include "asm/power/p11.h"
-#include "asm/power/p33.h"
+/* #include "asm/power/p11.h" */
+/* #include "asm/power/p33.h" */
 /* #include "asm/lp_touch_key_alog.h" */
 #include "asm/lp_touch_key_api.h"
 #include "asm/lp_touch_key_tool.h"

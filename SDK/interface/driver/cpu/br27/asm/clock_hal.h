@@ -150,6 +150,7 @@ u32 clk_out_fixed_io_check(u32 gpio);
 //for bt
 void clk_set_osc_cap(u8 sel_l, u8 sel_r);
 u32 clk_get_osc_cap();
+u32 get_btosc_info_for_update(void *info);
 
 
 #define BT_CLOCK_IN(x)          SFR(JL_CLOCK->CLK_CON4,  16,  2,  x)

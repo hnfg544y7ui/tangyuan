@@ -46,8 +46,11 @@ static u8 g_play_addr[6];
 static u8 g_slience_addr[6];
 static u8 a2dp_play_status = 0;
 
-void app_set_a2dp_play_status(u8 st)
+void app_set_a2dp_play_status(u8 *bt_addr, u8 st)
 {
+    if ((st == 0) && (memcmp(bt_addr, g_play_addr, 6) != 0)) {
+        return;
+    }
     a2dp_play_status = st;
 }
 
@@ -63,7 +66,10 @@ void a2dp_play_close(u8 *bt_addr)
     a2dp_player_close(bt_addr);
     bt_stop_a2dp_slience_detect(bt_addr);
     a2dp_media_close(bt_addr);
-    memset(g_play_addr, 0xff, 6);
+    if (memcmp(bt_addr, g_play_addr, 6) == 0) {
+        memset(g_play_addr, 0xff, 6);
+    }
+    app_set_a2dp_play_status(bt_addr, 0);
 }
 
 static void a2dp_play_in_task(u8 *data)
@@ -83,6 +89,13 @@ static void a2dp_play_in_task(u8 *data)
     case CMD_A2DP_PLAY:
         puts("app_msg_bt_a2dp_play\n");
         put_buf(bt_addr, 6);
+#if (TCFG_BT_BACKGROUND_ENABLE)
+        if (bt_background_active()) {
+            g_printf("background active start slience\n");
+            bt_start_a2dp_slience_detect(bt_addr, 50); //处理后台已经执行挂起但是蓝牙模式还没退出的情况，不打开a2dp_player
+            return;
+        }
+#endif
 #if (TCFG_BT_A2DP_PLAYER_ENABLE == 0)
         break;
 #endif
@@ -109,10 +122,20 @@ static void a2dp_play_in_task(u8 *data)
         musci_vocal_remover_update_parm();
         break;
     case CMD_A2DP_CLOSE:
-        if (le_audio_scene_deal(LE_AUDIO_A2DP_STOP) > 0) {
-            a2dp_media_close(bt_addr);
-            break;
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
+        u8 *addr = le_audio_a2dp_recorder_get_btaddr();
+        if (addr && memcmp(addr, bt_addr, 6) == 0)  {
+            //当前正在进行广播的设备地址跟蓝牙音频暂停地址一致时才处理（1T2逻辑）
+            if (le_audio_scene_deal(LE_AUDIO_A2DP_STOP) > 0) {
+                memset(g_play_addr, 0xff, 6);
+                a2dp_media_close(bt_addr);
+                break;
+            }
         }
+#endif
         a2dp_play_close(bt_addr);
         if (bt_slience_get_detect_addr(bt_addr)) {
             bt_stop_a2dp_slience_detect(bt_addr);
@@ -158,14 +181,6 @@ static int a2dp_bt_status_event_handler(int *event)
     u8 data[8];
     u8 btaddr[6];
     struct bt_event *bt = (struct bt_event *)event;
-#if  LEA_BIG_CTRLER_RX_EN && (LEA_BIG_FIX_ROLE==2) && !TCFG_KBOX_1T3_MODE_EN
-    if (get_broadcast_connect_status() && \
-        (bt->event == BT_STATUS_A2DP_MEDIA_START)) {
-        printf("BIS receiving state does not support the event %d", bt->event);
-        bt_key_music_pp();
-        return 0;
-    }
-#endif
 
     switch (bt->event) {
     case BT_STATUS_A2DP_MEDIA_START:
@@ -174,7 +189,7 @@ static int a2dp_bt_status_event_handler(int *event)
         if (app_var.goto_poweroff_flag) {
             break;
         }
-        app_set_a2dp_play_status(1);
+        app_set_a2dp_play_status(bt->args, 1);
         if (bt_get_call_status_for_addr(bt->args) == BT_CALL_INCOMING) {
             //小米11来电挂断偶现没有hungup过来，hfp链路异常，重新断开hfp再连接
             puts("<<<<<<<<waring a2dp start hfp_incoming\n");
@@ -201,12 +216,11 @@ static int a2dp_bt_status_event_handler(int *event)
         break;
     case BT_STATUS_A2DP_MEDIA_STOP:
         puts("BT_STATUS_A2DP_MEDIA_STOP\n");
-        app_set_a2dp_play_status(0);
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_AURACAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_JL_UNICAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SINK_EN | LE_AUDIO_JL_UNICAST_SINK_EN))
+        app_set_a2dp_play_status(bt->args, 0);
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
         if (get_le_audio_curr_role() == 1) {
             /* void *device = btstack_get_conn_device(bt->args); */
             /* if ((btstack_get_device_a2dp_state(device) != BT_MUSIC_STATUS_STARTING)) { */
@@ -243,7 +257,7 @@ static int a2dp_bt_hci_event_handler(int *event)
 
     switch (bt->event) {
     case HCI_EVENT_DISCONNECTION_COMPLETE:
-        app_set_a2dp_play_status(0);
+        app_set_a2dp_play_status(bt->args, 0);
         a2dp_play_close(bt->args);
         break;
     }
@@ -263,13 +277,26 @@ static int a2dp_app_msg_handler(int *msg)
     switch (msg[0]) {
     case APP_MSG_BT_A2DP_PAUSE:
         puts("app_msg_bt_a2dp_pause\n");
-        if (a2dp_player_is_playing(bt_addr)) {
+        u8 is_play = a2dp_player_is_playing(bt_addr);
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
+        app_broadcast_close_transmitter();
+#endif
+        if (is_play) {      //先关了recorder地址会被清除状态要提前读出来
             a2dp_play_slience_detect(bt_addr, 1);
         }
         break;
     case APP_MSG_BT_A2DP_PLAY:
-        puts("app_msg_bt_a2dp_play\n");
+        puts("app_msg_bt_a2dp_play1\n");
+        put_buf(bt_addr, 6);
+        memcpy(g_play_addr, bt_addr, 6);
+        bt_stop_a2dp_slience_detect(bt_addr);
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
+        if (!app_broadcast_open_transmitter()) {
+            a2dp_play(bt_addr, 1);
+        }
+#else
         a2dp_play(bt_addr, 1);
+#endif
         break;
     }
     return 0;
@@ -317,11 +344,10 @@ int bt_get_low_latency_mode()
     return a2dp_file_get_low_latency_status();
 }
 
-#if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_AURACAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_JL_UNICAST_SOURCE_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SINK_EN | LE_AUDIO_JL_UNICAST_SINK_EN))
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 static int get_a2dp_play_status(void)
 {
     if (get_le_audio_app_mode_exit_flag()) {
@@ -359,9 +385,6 @@ static int a2dp_local_audio_close(void)
     if (get_a2dp_play_status() == LOCAL_AUDIO_PLAYER_STATUS_PLAY) {
         //关闭本地播放
         a2dp_player_close(get_g_play_addr());
-#if  LEA_BIG_CTRLER_RX_EN && (LEA_BIG_FIX_ROLE==2) && !TCFG_KBOX_1T3_MODE_EN
-        bt_key_music_pp();
-#endif
     }
     return 0;
 }

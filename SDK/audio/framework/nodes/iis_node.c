@@ -426,6 +426,9 @@ static void iis_handle_frame(struct stream_iport *iport, struct stream_note *not
 // flag   0:time  1:points
 static int iis_ioc_get_delay(struct iis_node_hdl *hdl, struct audio_iis_channel *ch)
 {
+    if (!hdl->iis_start) {
+        return 0;
+    }
     int len = audio_iis_data_len(ch);
     if (len == 0) {
         return 0;
@@ -482,18 +485,14 @@ static int iis_ioc_negotiate(struct stream_iport *iport, int nego_state)
             ret = NEGO_STA_CONTINUE;
         }
     } else {
-        if (hdl->scene != STREAM_SCENE_ESCO) {
-            if (hdl->sample_rate) {
-                sample_rate = hdl->sample_rate;
-            } else {
-                if (params->sample_rate) {
-                    sample_rate = params->sample_rate;
-                } else {
-                    sample_rate = in_fmt->sample_rate;
-                }
-            }
+        if (hdl->sample_rate) {
+            sample_rate = hdl->sample_rate;
         } else {
-            sample_rate = in_fmt->sample_rate;
+            if (params->sample_rate) {
+                sample_rate = params->sample_rate;
+            } else {
+                sample_rate = in_fmt->sample_rate;
+            }
         }
         if (in_fmt->sample_rate != sample_rate) {
             if (!(nego_state & NEGO_STA_SAMPLE_RATE_LOCK)) {
@@ -555,11 +554,9 @@ static void iis_ioc_start(struct iis_node_hdl *hdl)
         }
 
         if (!iis_hdl[hdl->module_idx]) {
-            int dma_len = audio_iis_fix_dma_len(hdl->module_idx, TCFG_AUDIO_DAC_BUFFER_TIME_MS, AUDIO_IIS_IRQ_POINTS, hdl->bit_width, hdl->nch);
-
             struct alink_param params = {0};
             params.module_idx = hdl->module_idx;
-            params.dma_size   = dma_len;
+            params.dma_size   = audio_iis_fix_dma_len(hdl->module_idx, TCFG_AUDIO_DAC_BUFFER_TIME_MS, AUDIO_IIS_IRQ_POINTS, hdl->bit_width, hdl->nch);
             params.sr         = hdl->sample_rate;
             params.bit_width  = hdl->bit_width;
             params.fixed_pns  = const_out_dev_pns_time_ms;
@@ -573,6 +570,9 @@ static void iis_ioc_start(struct iis_node_hdl *hdl)
 
         audio_iis_new_channel(iis_hdl[hdl->module_idx], (void *)&hdl->iis_ch);
         audio_iis_channel_set_attr(&hdl->iis_ch, &hdl->attr);
+
+        audio_iis_check_hw_cfg_status(hdl->module_idx, hdl->attr.ch_idx, ALINK_DIR_TX);
+
     }
 }
 
@@ -670,7 +670,7 @@ static int iis_adapter_ioctl(struct stream_iport *iport, int cmd, int arg)
         iis_adapter_syncts_ioctl(hdl, (struct audio_syncts_ioc_params *)arg);
         break;
     case NODE_IOC_GET_ODEV_CACHE:
-        return audio_iis_data_len(&hdl->iis_ch);
+        return hdl->iis_start ? audio_iis_data_len(&hdl->iis_ch) : 0;
     case NODE_IOC_SET_PARAM:
         hdl->reference_network = arg;
         break;

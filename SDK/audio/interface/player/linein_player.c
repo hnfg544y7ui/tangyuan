@@ -64,11 +64,9 @@ int linein_player_open()
 
 #ifdef AUDIO_LINEIN_IRQ_POINTS
     jlstream_node_ioctl(player->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, AUDIO_LINEIN_IRQ_POINTS);
-    jlstream_node_ioctl(player->stream, NODE_UUID_VOCAL_TRACK_SYNTHESIS, NODE_IOC_SET_PRIV_FMT, AUDIO_LINEIN_IRQ_POINTS);//四声道时，指定声道合并单个声道的点数
 #else
     jlstream_node_ioctl(player->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, AUDIO_ADC_IRQ_POINTS);
 
-    jlstream_node_ioctl(player->stream, NODE_UUID_VOCAL_TRACK_SYNTHESIS, NODE_IOC_SET_PRIV_FMT, AUDIO_ADC_IRQ_POINTS);//四声道时，指定声道合并单个声道的点数
 #endif
     jlstream_set_callback(player->stream, player->stream, linein_player_callback);
     jlstream_set_scene(player->stream, STREAM_SCENE_LINEIN);

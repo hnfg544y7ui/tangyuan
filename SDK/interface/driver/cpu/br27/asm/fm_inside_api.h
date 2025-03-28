@@ -2,6 +2,10 @@
 #define __FM_INSIDE_API_H_
 #include "typedef.h"
 
+enum {
+    SET_FM_INSIDE_SCAN_ARG1,
+};
+void fm_inside_io_ctrl(int ctrl, ...);
 void fm_inside_on(void);
 void fm_inside_off(void);
 u8   fm_inside_freq_set(u32 freq);
@@ -13,6 +17,7 @@ void fm_inside_set_stereo(u8 set);
 u32 fm_inside_get_stereo(void);
 s32  fm_inside_rssi_read(void); //unit DB
 s32 fm_inside_cnr_read(void);
+u8 fm_inside_set_scan_status(u8 status);
 //more inside fm api function, see file fm_inside_api.h
 
 //Following function Call is valid Only after fm_inside_on();

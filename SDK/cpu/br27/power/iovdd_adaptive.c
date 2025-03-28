@@ -45,7 +45,7 @@ void miovdd_adaptive_adjustment(void)
         return;
     }
     u8 miovdd_level = 0;
-    u16 vbat_vol = adc_get_voltage(AD_CH_PMU_VBAT) * 4;
+    u16 vbat_vol = gpadc_battery_get_voltage();
     if (vbat_vol >= 3600) {
         miovdd_level = VDDIOM_VOL_33V;
     } else {
