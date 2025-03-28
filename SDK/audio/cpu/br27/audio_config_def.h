@@ -53,6 +53,13 @@
 #define AFX_SW_EQ_AT_RAM                    0   //软件EQ
 #define AFx_SPATIAL_EFFECT_AT_RAM           1   //空间音效
 #define AFx_DAC_IO_IRQ_HANDLER_AT_RAM       1   //dac io中断代码放ram
+#define AFx_MIXER_TEXT_AT_RAM               1   //mixer
+#define AFx_DAC_TEXT_AT_RAM                 1   //dac
+#define AFx_CONVERT_TEXT_AT_RAM             1   //convert,bitwidth convert
+#define AFx_VOCAL_REMOVER_TEXT_AT_RAM       1   //人声消除
+#define AFx_SPECTRUM_ADV_TEXT_AT_RAM        1   //频谱计算
+#define AUDIO_JLSTREAM_TEXT_AT_RAM          1   //数据流
+
 /*通话语音处理算法*/
 #define AUDIO_CVP_TEXT_AT_RAM	    	0	//COMMON TEXT
 #define AUDIO_CVP_AEC_AT_RAM	    	0	//AEC
@@ -74,6 +81,7 @@
 #define AUDIO_CVSD_CODEC_AT_RAM		    0	//CVSD 编解码
 #define AUDIO_JLA_CODEC_AT_RAM			0	//JLA 编解码
 #define AUDIO_LC3_CODEC_AT_RAM			0	//LC3 编解码
+#define AUDIO_JLA_V2_CODEC_AT_RAM		0	//JLA_V2 编解码
 
 /*语音识别算法编译链接配置*/
 #define AUDIO_KWS_COMMON_AT_RAM             0   //kws公共部分 ，0:放flash，1:放ram
@@ -94,6 +102,7 @@
 // 			音效使能控制
 //**************************************
 #define AUDIO_VBASS_LINK_VOLUME     0 //虚拟低音与音量联动调节
+#define AUDIO_EQ_LINK_VOLUME        0 //EQ与音量联动调节
 
 //***************End********************
 
@@ -102,14 +111,22 @@
 // 			ADC模块配置
 //**************************************
 //ADC中断点数
+#if defined(TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE) && TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE
+#define AUDIO_ADC_IRQ_POINTS 354
+#else
 #define AUDIO_ADC_IRQ_POINTS 128
+#endif
 #define AUDIO_ADC_IRQ_POINTS_MUSIC_MODE 256
 
 //**************************************
 // 			IIS模块配置
 //**************************************
 //IIS中断点数
+#if defined(TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE) && TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE
+#define AUDIO_IIS_IRQ_POINTS 354
+#else
 #define AUDIO_IIS_IRQ_POINTS 128
+#endif
 
 //**************************************
 // 			麦克风音效配置

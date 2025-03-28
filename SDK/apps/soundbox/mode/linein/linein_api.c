@@ -155,6 +155,7 @@ void linein_stop(void)
 
 int linein_volume_pp(void)
 {
+    //cppcheck-suppress knownConditionTrueFalse
     int ret = 0;
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
@@ -194,6 +195,7 @@ int linein_volume_pp(void)
     }
 #endif
 
+    //cppcheck-suppress knownConditionTrueFalse
     if (ret <= 0) {
         if (__this->onoff) {
             linein_stop();
@@ -244,7 +246,12 @@ void linein_tone_play(u8 index, u8 preemption)
 void linein_key_vol_up()
 {
     s16 vol;
+#if defined(TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE) && TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE
+    //27环绕声
+    if (__this->volume < app_audio_volume_max_query(Vol_VIRTUAL_SURROUND)) {
+#else
     if (__this->volume < app_audio_volume_max_query(AppVol_LINEIN)) {
+#endif
         __this->volume ++;
         linein_volume_set(__this->volume);
     } else {

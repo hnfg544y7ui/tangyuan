@@ -12,6 +12,7 @@ extern const int config_ch_adapter_32bit_enable;
 extern const int config_mixer_32bit_enable;
 extern const int config_jlstream_fade_32bit_enable;
 extern const int config_audio_eq_xfade_enable;
+extern const int config_audio_vocal_track_synthesis_32bit_enable;
 
 extern const int CONFIG_MAX_ENC_DATA_CACHE_SIZE;
 extern const int CONFIG_LOG_OUTPUT_ENABLE;
@@ -24,6 +25,8 @@ extern const int config_audio_dac_dma_buf_realloc_enable;
  *						DAC Configs
  *******************************************************************
  */
+extern const int config_audio_dac_output_channel;
+extern const int config_audio_dac_output_mode;
 extern const int config_audio_dac_channel_left_enable;
 extern const int config_audio_dac_channel_right_enable;
 extern const int config_audio_dac_power_on_mode;
@@ -34,6 +37,9 @@ extern const int config_audio_dac_power_off_lite;
  *						ADC Configs
  *******************************************************************
  */
+extern const u8 const_mic_capless_open_delay_debug;
+extern const u8 const_mic_capless_trim_delay_debug;
+extern const u8 const_adc_async_en;						//是否支持多个ADC异步打开
 
 /*
  *******************************************************************

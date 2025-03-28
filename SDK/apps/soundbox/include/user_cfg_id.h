@@ -49,6 +49,8 @@
 #define     CFG_WIRELESS_MIC0_VOLUME         29
 #define     CFG_WIRELESS_MIC1_VOLUME         30
 
+#define     CFG_DACLDO_TRIM                  31//保存DACLDO配置参数id
+
 #define     CFG_RCSP_ADV_EQ_DATA_SETTING     48
 #define     CFG_RCSP_ADV_EQ_MODE_SETTING     49
 #define     CFG_RCSP_ADV_HIGH_LOW_VOL        50

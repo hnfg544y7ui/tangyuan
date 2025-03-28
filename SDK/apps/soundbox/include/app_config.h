@@ -169,6 +169,10 @@
 #define TCFG_AUDIO_SPDIF_ENABLE     TCFG_APP_SPDIF_EN
 #endif
 
+#ifndef TCFG_AUDIO_MIC_ENABLE
+#define TCFG_AUDIO_MIC_ENABLE     TCFG_APP_MIC_EN
+#endif
+
 /* ------------------rule check------------------ */
 #ifndef TCFG_APP_MUSIC_EN
 #define TCFG_APP_MUSIC_EN  0
@@ -825,6 +829,10 @@
 
 #define TCFG_USER_RSSI_TEST_EN   0   //通过spp获取耳机RSSI值，需要使能USER_SUPPORT_PROFILE_SPP
 
+
+#ifdef CONFIG_CODE_MOVABLE_ENABLE
+///支持代码动态加载到ram
+
 //FM 一部分代码动态加载到ram
 #define TCFG_CODE_RUN_RAM_FM_CODE            1
 
@@ -854,6 +862,15 @@
 #define TCFG_CODE_RUN_RAM_MIC_EFF_CODE       1
 #endif
 
+#else
+///不支持代码动态加载到ram
+#define TCFG_CODE_RUN_RAM_FM_CODE            0
+#define TCFG_CODE_RUN_RAM_BT_CODE            0
+#define TCFG_CODE_RUN_RAM_AAC_CODE           0
+#define TCFG_CODE_RUN_RAM_AEC_CODE           0
+#define TCFG_CODE_RUN_RAM_MIC_EFF_CODE       0
+#endif
+
 #ifndef TCFG_LP_TOUCH_KEY_ENABLE
 #define TCFG_LP_TOUCH_KEY_ENABLE 	0
 #endif
@@ -869,8 +886,22 @@
 #error "IAP 与 MSD 只能开启其中一个"
 #endif
 
+#define TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE (TCFG_VIRTUAL_SURROUND_PRO_MODULE_NODE_ENABLE || TCFG_VIRTUAL_SURROUND_2T4_MODULE_NODE_ENABLE || TCFG_VIRTUAL_SURROUND_2T5_MODULE_NODE_ENABLE)
+
+
+//遇到效率不够的情况遇到酌情考虑减少icache当普通ram使用
+#if (TCFG_VIRTUAL_SURROUND_2T4_MODULE_NODE_ENABLE || TCFG_VIRTUAL_SURROUND_2T5_MODULE_NODE_ENABLE)  //4.1\5.1环绕声使用icache做普通ram
+#define TCFG_FREE_ICACHE0_WAY_NUM              5
+#define TCFG_FREE_ICACHE1_WAY_NUM              5
+#define TCFG_FREE_DCACHE_WAY_NUM               3
+#elif TCFG_VIRTUAL_SURROUND_PRO_MODULE_NODE_ENABLE  //2.0\2.1不使用icache以提高效率
+#define TCFG_FREE_ICACHE0_WAY_NUM              0
+#define TCFG_FREE_ICACHE1_WAY_NUM              0
+#define TCFG_FREE_DCACHE_WAY_NUM               3
+#else
 #define TCFG_FREE_ICACHE0_WAY_NUM              0
 #define TCFG_FREE_ICACHE1_WAY_NUM              0
 #define TCFG_FREE_DCACHE_WAY_NUM               0
+#endif
 
 #endif

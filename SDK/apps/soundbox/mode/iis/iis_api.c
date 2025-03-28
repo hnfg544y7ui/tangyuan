@@ -315,15 +315,8 @@ static void *iis_tx_le_audio_open(void *args)
         le_audio = le_audio_stream_create(params->conn, &params->fmt);
 
 #if LEA_DUAL_STREAM_MERGE_TRANS_MODE
-        //需要配置两种编码参数
-        struct le_audio_stream_format lea_fmt = {0};
-        lea_fmt.nch = 1;
-        lea_fmt.bit_rate = 48000;
-        lea_fmt.coding_type = LE_AUDIO_CODEC_TYPE;
-        lea_fmt.frame_dms = 50;
-        lea_fmt.sample_rate = 8000;
-
-        err = le_audio_muti_ch_iis_recorder_open((void *)&params->fmt, &lea_fmt, le_audio, params->latency);
+        y_printf(">>>>>>>>>>>> call le_audio_muti_ch_iis_recorder_open!\n");
+        err = le_audio_muti_ch_iis_recorder_open((void *)&params->fmt, (void *)&params->fmt2, le_audio, params->latency);
 #else
         err = le_audio_iis_recorder_open((void *)&params->fmt, le_audio, params->latency);
 #endif

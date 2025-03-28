@@ -94,6 +94,8 @@ const u8 const_adc_async_en = 1;
 #endif/*TCFG_DAC_TRIM_PRECISION*/
 const s16 const_dac_trim_precision = TCFG_DAC_TRIM_PRECISION;
 
+const int config_audio_dac_output_channel = TCFG_AUDIO_DAC_CONNECT_MODE;
+const int config_audio_dac_output_mode    = TCFG_AUDIO_DAC_MODE;
 
 //<DAC NoiseGate>
 #if (defined(TCFG_AUDIO_DAC_NOISEGATE_ENABLE) && TCFG_AUDIO_DAC_NOISEGATE_ENABLE)
@@ -365,7 +367,7 @@ const int LC3_PLC_FADE_OUT_START_POINT = 480;   //丢包后维持音量的点数
 const int LC3_PLC_FADE_OUT_POINTS = 120 * 5;    //丢包维持指定点数后,淡出的速度,音量从满幅到0需要的点数.
 const int LC3_PLC_FADE_IN_POINTS = 120 * 5;     //丢包后收到正确包淡入,淡入的速度,音量从0到满幅需要的点数.
 
-#if(HW_FFT_VERSION == FFT_EXT) 			//支持非2的指数次幂点数的fft 时 置1
+#if(HW_FFT_VERSION == FFT_EXT || HW_FFT_VERSION == FFT_EXT_V2) 			//支持非2的指数次幂点数的fft 时 置1
 const int LC3_HW_FFT = 1;
 #else
 const int LC3_HW_FFT = 0;
@@ -390,10 +392,10 @@ const int LC3_DECODE_O24bit_ENABLE = MEDIA_24BIT_ENABLE;   //解码输出pcm数�
 //* 	JLA Codec      *
 //***********************
 const  int  JLA_PLC_EN = 1;           //0_fade,1_时域,2_频域,3静音;
-#if(HW_FFT_VERSION == FFT_EXT) 			//支持非2的指数次幂点数的fft 时 置1
-const  int  JLA_HW_FFT = 1;           //br27/br28置1，其他芯片置0
+#if(HW_FFT_VERSION == FFT_EXT || HW_FFT_VERSION == FFT_EXT_V2) 			//支持非2的指数次幂点数的fft 时 置1
+const  int  JLA_HW_FFT = 1;
 #else
-const  int  JLA_HW_FFT = 0;           //br27/br28置1，其他芯片置0
+const  int  JLA_HW_FFT = 0;
 #endif
 const  int  JLA_QUALTIY_CONFIG = 4;   //可选1/2/3/4
 #ifdef LE_AUDIO_CODEC_FRAME_LEN
@@ -429,8 +431,9 @@ const int JLA_DECODE_O24bit_ENABLE = MEDIA_24BIT_ENABLE;
 const int JLA_CODEC_HARD_DECISION_ENABLE = 0;
 const int JLA_CODEC_SOFT_DECISION_ENABLE = 0;
 
-#if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_V2)
-
+//***********************
+//* 	JLA_V2 Codec      *
+//***********************
 //{32, 40, 48, 60, 64, 80, 96, 120, 128, 160, 240, 320, 400, 480}; 0~13. 编码支持得输入点数
 
 //0~12位: 编码支持得输入点数配置, 代码优化使用，可以禁用掉不用的点数,节省代码量
@@ -443,10 +446,10 @@ const int JLA_V2_DECODE_O24bit_ENABLE = MEDIA_24BIT_ENABLE;
 
 //HW_FFT配置  支持非2的指数次幂点的硬件FFT版本 可以设置为1调用硬件FFT加速运算
 //不支持的点数    fr_idx = 0/2/6.  对应帧长32/48/96点.
-#if(HW_FFT_VERSION == FFT_EXT) 			//支持非2的指数次幂点数的fft 时 置1
-const  int  JLA_V2_HW_FFT = 1;           //br27/br28置1，其他芯片置0
+#if(HW_FFT_VERSION == FFT_EXT || HW_FFT_VERSION == FFT_EXT_V2) 			//支持非2的指数次幂点数的fft 时 置1
+const  int  JLA_V2_HW_FFT = 1;
 #else
-const  int  JLA_V2_HW_FFT = 0;           //br27/br28置1，其他芯片置0
+const  int  JLA_V2_HW_FFT = 0;
 #endif
 
 const int JLA_V2_PLC_EN = 2;     //pcl类型配置：0_fade,1_时域plc,2_频域plc,3补静音包;
@@ -454,20 +457,21 @@ const int JLA_V2_PLC_FADE_OUT_START_POINT = 480;   //plc维持音量的点数.
 const int JLA_V2_PLC_FADE_OUT_POINTS = 120 * 5;    //plc维持指定点数后,淡出的速度,音量从满幅到0需要的点数.
 const int JLA_V2_PLC_FADE_IN_POINTS = 120 * 5;     //plc后收到正确包淡入,淡入的速度,音量从0到满幅需要的点数.
 
-#endif
 
 //***********************
 //* 	JLA_LL Codec      *
 //***********************
-
-#if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_LL)
-
 #define JLA_LL_ORDER1  0 //jla_ll 一阶编码
 #define JLA_LL_ORDER2  1 //jla_ll 二阶编码
 
 #define JLA_LL_CODING_ORDER_TYPE    JLA_LL_ORDER1 //JLA_LL 编码阶数类型配置
 
+#ifdef LE_AUDIO_CODEC_FRAME_LEN //使能le_audio
 #define JLA_LL_CODEC_INPUT_POINT  	(LE_AUDIO_CODEC_SAMPLERATE * LE_AUDIO_CODEC_FRAME_LEN  * LE_AUDIO_CODEC_CHANNEL / 10 / 1000)
+#else
+#define JLA_LL_CODEC_INPUT_POINT  	(32000 * 10  * 1 / 10 / 1000) //默认配置
+#endif
+
 #if (JLA_LL_CODING_ORDER_TYPE == JLA_LL_ORDER1)
 //编码压缩比配置。0 ~ JLA_LL_CODEC_INPUT_POINT,  0 :压缩率最高,
 //长度需要减少N个byte ,则((JLA_LL_CODEC_INPUT_POINT - 8 * 2 * (N >> 1) - (N & 1) * 4) )
@@ -486,14 +490,10 @@ const int JLA_LL_CODEC_CR = JLA_LL_CODEC_CR_CONFIG;
 const int JLA_LL_PLC_EN = 1;
 const int JLA_LL_PLC_FSPEED = 120;//PLC连续丢包时的衰减系数，建议 70到124，不得超过127， 越小衰减越快
 
-#endif
-
 
 //***********************
 //* 	JLA_LW Codec      *
 //***********************
-
-#if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_LW)
 const int JLA_LW_PLC_EN = 1;
 const int JLA_LW_PLC_FADE_OUT_START_POINT = 120;
 const int JLA_LW_PLC_FADE_OUT_POINTS = 120;
@@ -503,7 +503,6 @@ const int JLA_LW_PLC_FADE_IN_POINTS = 120;
 //+X 表示压制，-X 标志提升,建议±10以内.最高±100以内
 //编解码必须要配置一致。
 const int JLA_LW_BITSTREAM_WEIGHT_TAB[8] = { -2, 0, 0, 0, 4, 7, 9, 12 };
-#endif
 
 //***********************
 //* 	LE Audio        *
@@ -685,7 +684,13 @@ const int DOWN_S_FLAG 				= 0; //混响降采样处理使能
 //***********************
 //*   	Reverb          *
 //***********************
+#if (CONFIG_CPU_BR56)
+const int PLATE_REVERB_ROOM_SIZE_Mutiplier = 1; // 影响了plateReverb的nee_buf的大小( 约等于 33k * PLATE_REVERB_ROOM_SIZE_Mutiplier)，对应的是roomsize=100对应的是多大
+#else
 const int PLATE_REVERB_ROOM_SIZE_Mutiplier = 2; // 影响了plateReverb的nee_buf的大小( 约等于 33k * PLATE_REVERB_ROOM_SIZE_Mutiplier)，对应的是roomsize=100对应的是多大
+#endif
+
+
 
 //reverb lite 配置项
 const int PLATE_REVERB_LITE_24BIT_EN = 0;//配置是否支持24bit，置0可优化24bit代码

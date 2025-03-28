@@ -33,11 +33,16 @@ struct le_audio_stream_format {
 
 enum LEA_SERVICE {
     LEA_SERVICE_MEDIA,
-    LEA_SERVICE_CALL
+    LEA_SERVICE_CALL,
+    LEA_SERVICE_WL_MIC
 };
 
 struct le_audio_stream_params {
     struct le_audio_stream_format fmt;
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+    //环绕声项目需要两个广播解码参数
+    struct le_audio_stream_format fmt2;		//环绕声这个是做单声道，fmt那个是双声道
+#endif
     enum LEA_SERVICE service_type;
     int latency;
     u16 conn;

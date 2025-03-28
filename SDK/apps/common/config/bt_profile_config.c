@@ -50,10 +50,12 @@ extern service_record_item_t  sdp_record_item_end[];
 const int config_stack_modules = BT_BTSTACK_LE;
 #else /* TCFG_BLE_AUDIO_TEST_EN */
 
-#if ((THIRD_PARTY_PROTOCOLS_SEL==0)&&(TCFG_LE_AUDIO_APP_CONFIG==0)&&TCFG_USER_BLE_ENABLE)
-const int config_stack_modules = (BT_BTSTACK_CLASSIC | BT_BTSTACK_LE_ADV);
+#if (THIRD_PARTY_PROTOCOLS_SEL && TCFG_USER_BLE_ENABLE)
+const int config_stack_modules = (BT_BTSTACK_CLASSIC | BT_BTSTACK_LE);
+#elif TCFG_USER_BLE_ENABLE
+const int config_stack_modules = BT_BTSTACK_CLASSIC | BT_BTSTACK_LE_ADV;
 #else
-const int config_stack_modules = BT_BTSTACK_CLASSIC | BT_BTSTACK_LE;
+const int config_stack_modules = BT_BTSTACK_CLASSIC;
 #endif
 
 #endif /* TCFG_BLE_AUDIO_TEST_EN */

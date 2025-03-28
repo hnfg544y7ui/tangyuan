@@ -857,6 +857,7 @@
 <Unit filename="apps/soundbox/include/linein_dev.h" />
 <Unit filename="apps/soundbox/include/local_tws.h" />
 <Unit filename="apps/soundbox/include/low_latency.h" />
+<Unit filename="apps/soundbox/include/mic.h" />
 <Unit filename="apps/soundbox/include/mic_effect.h" />
 <Unit filename="apps/soundbox/include/mix_record_api.h" />
 <Unit filename="apps/soundbox/include/music_ui.h" />
@@ -872,6 +873,7 @@
 <Unit filename="apps/soundbox/include/soundbox.h" />
 <Unit filename="apps/soundbox/include/spdif.h" />
 <Unit filename="apps/soundbox/include/spdif_player.h" />
+<Unit filename="apps/soundbox/include/surround_sound.h" />
 <Unit filename="apps/soundbox/include/ui/lcd_seg/lcd_seg3x9_driver.h" />
 <Unit filename="apps/soundbox/include/ui/lcd_spi/lcd_drive.h" />
 <Unit filename="apps/soundbox/include/ui/led7/led7_driver.h" />
@@ -957,6 +959,10 @@
 <Unit filename="apps/soundbox/mode/local_tws/local_tws.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/local_tws/sink.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/local_tws/sink_key_msg_table.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/mic/mic.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/mic/mic_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/mic/mic_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/mic/mic_key_msg_table.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/mic_effect/mic_effect.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/music/music.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/music/music_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
@@ -981,6 +987,11 @@
 <Unit filename="apps/soundbox/mode/spdif/spdif_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/spdif/spdif_key_msg_table.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/spdif/spdif_player.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/surround_sound/surround_sound.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/surround_sound/surround_sound_api.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/surround_sound/surround_sound_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/surround_sound/surround_sound_key_msg_table.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/surround_sound/surround_sound_role_ctrl.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/undef_func.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/update/update.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/scene/ability_uuid.h" />
@@ -1049,6 +1060,8 @@
 <Unit filename="audio/common/audio_event_handler.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/audio_export_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/audio_general.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/common/audio_iis_lrclk_capture.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/common/audio_iis_lrclk_capture.h" />
 <Unit filename="audio/common/audio_node_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/audio_noise_gate.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/audio_noise_gate.h" />
@@ -1063,6 +1076,7 @@
 <Unit filename="audio/common/bt_audio_energy_detection.h" />
 <Unit filename="audio/common/debug/audio_debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/debug/audio_debug.h" />
+<Unit filename="audio/common/demo/audio_alink_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/demo/audio_eq_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/demo/codec_demo/audio_enc_file_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/demo/codec_demo/audio_file_dec_demo.c"><Option compilerVer="CC"/></Unit>
@@ -1078,6 +1092,8 @@
 <Unit filename="audio/common/online_debug/audio_capture.h" />
 <Unit filename="audio/common/online_debug/audio_online_debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/online_debug/audio_online_debug.h" />
+<Unit filename="audio/common/pcm_data/sine_pcm.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/common/pcm_data/sine_pcm.h" />
 <Unit filename="audio/common/power/mic_power_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/power/mic_power_manager.h" />
 <Unit filename="audio/common/uartPcmSender.c"><Option compilerVer="CC"/></Unit>
@@ -1090,10 +1106,6 @@
 <Unit filename="audio/cpu/br27/audio_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/cpu/br27/audio_config.h" />
 <Unit filename="audio/cpu/br27/audio_config_def.h" />
-<Unit filename="audio/cpu/br27/audio_dai/audio_iis.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="audio/cpu/br27/audio_dai/audio_iis.h" />
-<Unit filename="audio/cpu/br27/audio_dai/audio_link.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="audio/cpu/br27/audio_dai/audio_link.h" />
 <Unit filename="audio/cpu/br27/audio_dai/audio_pdm.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/cpu/br27/audio_dai/audio_pdm.h" />
 <Unit filename="audio/cpu/br27/audio_dai/audio_spdif_master.c"><Option compilerVer="CC"/></Unit>
@@ -1106,7 +1118,6 @@
 <Unit filename="audio/cpu/br27/audio_demo/audio_dac_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/cpu/br27/audio_demo/audio_demo.h" />
 <Unit filename="audio/cpu/br27/audio_demo/audio_fft_demo.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="audio/cpu/br27/audio_demo/audio_link_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/cpu/br27/audio_setup.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/cpu/br27/media_memory_manager.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/effect/audio_dc_offset_remove.c"><Option compilerVer="CC"/></Unit>
@@ -1200,7 +1211,6 @@
 <Unit filename="audio/framework/plugs/source/le_audio_file.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/linein_file.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/local_tws_file.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="audio/framework/plugs/source/multi_ch_adc_file.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/multi_ch_iis_file.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/pc_spk_file.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/pc_spk_file.h" />
@@ -1229,6 +1239,7 @@
 <Unit filename="audio/interface/include/le_audio_recorder.h" />
 <Unit filename="audio/interface/include/linein_player.h" />
 <Unit filename="audio/interface/include/local_tws_player.h" />
+<Unit filename="audio/interface/include/mic_player.h" />
 <Unit filename="audio/interface/include/pc_mic_recoder.h" />
 <Unit filename="audio/interface/include/pc_spk_player.h" />
 <Unit filename="audio/interface/include/reference_time.h" />
@@ -1247,6 +1258,7 @@
 <Unit filename="audio/interface/player/le_audio_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/linein_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/local_tws_player.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/interface/player/mic_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/pc_spk_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/reference_time.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/ring_player.c"><Option compilerVer="CC"/></Unit>
@@ -1496,6 +1508,7 @@
 <Unit filename="interface/media/audio_energy_detect.h" />
 <Unit filename="interface/media/audio_event_manager.h" />
 <Unit filename="interface/media/audio_general.h" />
+<Unit filename="interface/media/audio_iis.h" />
 <Unit filename="interface/media/audio_splicing.h" />
 <Unit filename="interface/media/audio_stream.h" />
 <Unit filename="interface/media/automute.h" />
@@ -1509,6 +1522,7 @@
 <Unit filename="interface/media/cpu/br27/asm/audio_adc.h" />
 <Unit filename="interface/media/cpu/br27/asm/audio_common.h" />
 <Unit filename="interface/media/cpu/br27/asm/audio_linein.h" />
+<Unit filename="interface/media/cpu/br27/asm/audio_link.h" />
 <Unit filename="interface/media/cpu/br27/asm/audio_src.h" />
 <Unit filename="interface/media/cpu/br27/asm/audio_src_base.h" />
 <Unit filename="interface/media/cpu/br27/asm/audio_sync_resample.h" />
@@ -1634,6 +1648,7 @@
 <Unit filename="interface/media/sync/audio_syncts.h" />
 <Unit filename="interface/media/tech_lib/LFaudio_plc_api.h" />
 <Unit filename="interface/media/tech_lib/bt_audio_energy_det_api.h" />
+<Unit filename="interface/media/tech_lib/jla_ll_codec_api.h" />
 <Unit filename="interface/media/tech_lib/jlsp_kws.h" />
 <Unit filename="interface/media/tech_lib/jlsp_vad.h" />
 <Unit filename="interface/media/tws/jl_tws.h" />

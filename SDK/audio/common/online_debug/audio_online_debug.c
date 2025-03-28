@@ -30,7 +30,6 @@ int audio_online_debug_init(void)
 int audio_online_debug_open()
 {
     printf("%s", __func__);
-#ifndef BR56_FPGA_CODE_VERIFY
     /*空间音频陀螺仪数据导出*/
 #if (defined(TCFG_AUDIO_SPATIAL_EFFECT_ENABLE) && TCFG_AUDIO_SPATIAL_EFFECT_ENABLE &&  (TCFG_SENSOR_DATA_EXPORT_ENABLE == SENSOR_DATA_EXPORT_USE_SPP))
     aud_data_export_open();
@@ -45,7 +44,6 @@ int audio_online_debug_open()
 #if (defined(TCFG_AUDIO_SPATIAL_EFFECT_ENABLE) && TCFG_AUDIO_SPATIAL_EFFECT_ENABLE && TCFG_SPATIAL_EFFECT_ONLINE_ENABLE)
     aud_spatial_effect_dut_open();
 #endif /*(defined(TCFG_SPATIAL_EFFECT_ONLINE_ENABLE) && (TCFG_SPATIAL_EFFECT_ONLINE_ENABLE == 1))*/
-#endif
     return 0;
 }
 __initcall(audio_online_debug_open);

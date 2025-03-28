@@ -29,15 +29,21 @@
 #include "spdif_file.h"
 #include "spdif.h"
 #include "soundbox.h"
-/* #include "mic.h" */
+#include "mic.h"
 #include "iis.h"
 #include "pc_spk_player.h"
 #include "bt_slience_detect.h"
+#include "multi_protocol_main.h"
 
 #if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
 #include "ble_rcsp_server.h"
 #include "btstack_rcsp_user.h"
 #endif
+
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+#include "surround_sound.h"
+#endif
+
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 
@@ -117,8 +123,8 @@ static u8 save_sync_status_table[5][2] = {0};
 
 static u8 bis_switch_onoff = 0;
 
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
-static int rcsp_connect_dev_detect_timer = 0;
+#if THIRD_PARTY_PROTOCOLS_SEL
+static int ble_connect_dev_detect_timer = 0;
 #endif
 /**************************************************************************************************
   Function Declarations
@@ -290,6 +296,11 @@ static int app_broadcast_conn_status_event_handler(int *msg)
 
     switch (event[0]) {
     case BIG_EVENT_TRANSMITTER_CONNECT:
+        if (!app_broadcast_init_flag) {
+            //防止切模式概率性跑完app_broadcast_uninit后，该事件才响应,导致下面的代码获取不到互斥量
+            g_printf("%s ,broadcast uninit", __FUNCTION__);
+            break;
+        }
         g_printf("BIG_EVENT_TRANSMITTER_CONNECT");
         //由于是异步操作需要加互斥量保护，避免broadcast_close的代码与其同时运行,添加的流程请放在互斥量保护区里面
         app_broadcast_mutex_pend(&mutex, __LINE__);
@@ -777,13 +788,19 @@ int app_broadcast_open()
 
 
     bis_switch_onoff = 1;
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
-    ble_module_enable(0);
-    if (bt_rcsp_ble_conn_num() > 0) {
-        rcsp_connect_dev_detect_timer = sys_timeout_add((void *)0, app_broadcast_retry_open, 250); //由于非标准广播使用私有hci事件回调所以需要等RCSP断连事件处理完后才能开广播
+
+#if THIRD_PARTY_PROTOCOLS_SEL
+    multi_protocol_bt_ble_enable(0);
+#if THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN
+    u8 conn_num = bt_rcsp_ble_conn_num();
+#else
+    u8 conn_num = multi_protocol_bt_ble_connect_num();
+#endif
+    if (conn_num > 0) {
+        ble_connect_dev_detect_timer = sys_timeout_add((void *)0, app_broadcast_retry_open, 250); //由于非标准广播使用私有hci事件回调所以需要等RCSP断连事件处理完后才能开广播
         return -EPERM;
     } else {
-        rcsp_connect_dev_detect_timer = 0;
+        ble_connect_dev_detect_timer = 0;
     }
 #endif
     log_info("broadcast_open");
@@ -873,14 +890,19 @@ int app_broadcast_open_with_role(u8 role)
     }
 
     bis_switch_onoff = 1;
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
-    ble_module_enable(0);
-    if (bt_rcsp_ble_conn_num() > 0) {
-        u32 temp_role = role + 1;
-        rcsp_connect_dev_detect_timer = sys_timeout_add((void *)temp_role, app_broadcast_retry_open, 250); //由于非标准广播使用私有hci事件回调所以需要等RCSP断连事件处理完后才能开广播
+#if THIRD_PARTY_PROTOCOLS_SEL
+    multi_protocol_bt_ble_enable(0);
+    u32 temp_role = role + 1;
+#if THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN
+    u8 conn_num = bt_rcsp_ble_conn_num();
+#else
+    u8 conn_num = multi_protocol_bt_ble_connect_num();
+#endif
+    if (conn_num > 0) {
+        ble_connect_dev_detect_timer = sys_timeout_add((void *)temp_role, app_broadcast_retry_open, 250); //由于非标准广播使用私有hci事件回调所以需要等RCSP断连事件处理完后才能开广播
         return -EPERM;
     } else {
-        rcsp_connect_dev_detect_timer = 0;
+        ble_connect_dev_detect_timer = 0;
     }
 #endif
 
@@ -954,9 +976,9 @@ int app_broadcast_close(u8 status)
 
     log_info("broadcast_close");
 
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
-    if (rcsp_connect_dev_detect_timer) {
-        sys_timeout_del(rcsp_connect_dev_detect_timer);
+#if THIRD_PARTY_PROTOCOLS_SEL
+    if (ble_connect_dev_detect_timer) {
+        sys_timeout_del(ble_connect_dev_detect_timer);
     }
 #endif
     //由于是异步操作需要加互斥量保护，避免和开启开广播的流程同时运行,添加的流程请放在互斥量保护区里面
@@ -990,10 +1012,10 @@ int app_broadcast_close(u8 status)
 
     bis_switch_onoff = 0;
 
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
+#if THIRD_PARTY_PROTOCOLS_SEL
     if (status != APP_BROADCAST_STATUS_SUSPEND) {
         ll_set_private_access_addr_pair_channel(0);
-        ble_module_enable(1);
+        multi_protocol_bt_ble_enable(1);
     }
 #endif
 
@@ -1019,10 +1041,22 @@ int app_broadcast_switch(void)
     }
 
     mode = app_get_current_mode();
+
+
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+    //5.1环绕声特殊广播条件判断
+    //无线环绕声目前只支持IIS、Surround Sound模式下的广播
+    if (mode) {
+        if (surround_sound_broadcast_limit(mode->name) != 0) {
+            ;
+            //不支持打开广播
+            return -EPERM;
+        }
+    }
+#endif
+
     if (mode && (mode->name == APP_MODE_BT) &&
         (bt_get_call_status() != BT_CALL_HANGUP)) {
-
-
         return -EPERM;
     }
 
@@ -1419,6 +1453,7 @@ static void broadcast_pair_rx_event_callback(const PAIR_EVENT event, void *priv)
 
     case PAIR_EVENT_RX_CLOSE_PAIR_MODE_SUCCESS:
         g_printf("PAIR_EVENT_RX_CLOSE_PAIR_MODE_SUCCESS");
+        app_broadcast_open();
         break;
 
     default:
@@ -1452,6 +1487,8 @@ static void broadcast_pair_tx_event_callback(const PAIR_EVENT event, void *priv)
 
     case PAIR_EVENT_TX_CLOSE_PAIR_MODE_SUCCESS:
         g_printf("PAIR_EVENT_TX_CLOSE_PAIR_MODE_SUCCESS");
+        app_broadcast_open();
+
         break;
 
     default:
@@ -1474,7 +1511,9 @@ void app_broadcast_enter_pair(u8 role, u8 mode)
 
     app_broadcast_close(APP_BROADCAST_STATUS_STOP);
 
-    ret = syscfg_read(VM_WIRELESS_PAIR_CODE0, &private_connect_access_addr, sizeof(u32));
+    if (mode == 0) {
+        ret = syscfg_read(VM_WIRELESS_PAIR_CODE0, &private_connect_access_addr, sizeof(u32));
+    }
     if (role == BROADCAST_ROLE_UNKNOW) {
         if (is_broadcast_as_transmitter()) {
             broadcast_enter_pair(BROADCAST_ROLE_TRANSMITTER, mode, (void *)&pair_tx_cb, private_connect_access_addr);

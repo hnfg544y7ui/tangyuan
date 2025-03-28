@@ -13,7 +13,7 @@ void fm_inside_int_set(u8 mute);
 void fm_inside_start(void);
 void fm_inside_pause(void);
 u16  fm_inside_id_read(void);
-void fm_inside_set_stereo(u8 set);
+void fm_inside_set_stereo(u8 set, u8 select);
 u32 fm_inside_get_stereo(void);
 s32  fm_inside_rssi_read(void); //unit DB
 s32 fm_inside_cnr_read(void);

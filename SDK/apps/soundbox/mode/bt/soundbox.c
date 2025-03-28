@@ -889,6 +889,11 @@ int bt_mode_try_exit()
 {
     putchar('k');
 
+    if (g_bt_hdl.init_ok == 0 && g_bt_hdl.wait_exit == 0) {
+        //如果没有确保蓝牙协议栈初始化完就退出,会导致状态混乱
+        return -EBUSY;
+    }
+
     if (g_bt_hdl.wait_exit) {
         //等待蓝牙断开或者音频资源释放或者电话资源释放
         if (!g_bt_hdl.exiting) {

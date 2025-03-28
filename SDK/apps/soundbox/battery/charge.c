@@ -58,7 +58,7 @@ static void charge_full_deal(void)
     log_info("%s\n", __func__);
 
     charge_full_flag = 1;
-    charge_close();
+    /* charge_close(); */
 
     for_each_app_charge_handler(handler) {
         handler->handler(CHARGE_EVENT_CHARGE_FULL, 0);

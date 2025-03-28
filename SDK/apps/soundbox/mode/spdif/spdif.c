@@ -98,11 +98,10 @@ int spdif_app_msg_handler(int *msg)
         break;
     case APP_MSG_MUSIC_PP:
         puts("APP_MSG_MUSIC_PP\n");
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
         app_spdif_hd.mute_mark ^= 1;
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==0)
         if (!get_broadcast_role()) {
-            audio_app_mute_en(app_spdif_hd.mute_mark);
         } else {
             if (get_broadcast_role() == 2) {
                 //如果此时是接收端, 则需要转为发送端
@@ -116,7 +115,6 @@ int spdif_app_msg_handler(int *msg)
         }
 #elif (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && (LEA_BIG_FIX_ROLE==0)
         if (!get_auracast_role()) {
-            audio_app_mute_en(app_spdif_hd.mute_mark);
         } else {
             if (get_auracast_role() == 2) {
                 //如果此时是接收端, 则需要转为发送端
@@ -129,9 +127,9 @@ int spdif_app_msg_handler(int *msg)
             }
         }
 #else
-        audio_app_mute_en(app_spdif_hd.mute_mark);
 #endif
 
+        spdif_set_data_clean(app_spdif_hd.mute_mark);
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
         if (get_broadcast_role()) {
             le_audio_spdif_volume_pp();
@@ -250,33 +248,38 @@ int spdif_app_msg_handler(int *msg)
             u8 mute_ctl = msg[1];
             printf("\n CEC_MUTE CTL %d \n", mute_ctl);
             if (mute_ctl > 1) {
+#if TCFG_DAC_NODE_ENABLE
                 if (get_sys_aduio_mute_statu()) {
                     app_audio_mute(AUDIO_UNMUTE_DEFAULT);
                 } else {
                     app_audio_mute(AUDIO_MUTE_DEFAULT);
                 }
+#endif
                 hdmi_cec_send_volume(app_audio_get_volume(APP_AUDIO_STATE_MUSIC));
             } else {
+#if TCFG_DAC_NODE_ENABLE
                 if (mute_ctl) {
                     app_audio_mute(AUDIO_MUTE_DEFAULT);
                 } else {
                     app_audio_mute(AUDIO_UNMUTE_DEFAULT);
                 }
+#endif
             }
 
             app_send_message(APP_MSG_MUTE_CHANGED, get_sys_aduio_mute_statu());
         }
         break;
     case APP_MSG_SYS_MUTE:
+#if TCFG_DAC_NODE_ENABLE
         u8 sys_audio_mute_statu = app_audio_get_dac_digital_mute() ^ 1;
         if (sys_audio_mute_statu) {
             app_audio_mute(AUDIO_MUTE_DEFAULT);
         } else {
             app_audio_mute(AUDIO_UNMUTE_DEFAULT);
         }
-
         update_spdif_player_mute_state();
         app_send_message(APP_MSG_MUTE_CHANGED, sys_audio_mute_statu);
+#endif
         break;
     default:
         app_common_key_msg_handler(msg);
@@ -333,9 +336,6 @@ void app_spdif_exit()
     } else {
         spdif_stop();
         spdif_release(app_spdif_hd.spdif_hdl);
-    }
-    if (app_spdif_hd.mute_mark) {
-        audio_app_mute_en(0);
     }
     app_spdif_hd.spdif_hdl = NULL;
     spdif_idle_flag = 1;
@@ -476,10 +476,10 @@ static int spdif_local_audio_open(void)
             if (app_spdif_hd.close_broadcast_open_lacal_audio_need_mute == 1) {
                 //需要恢复mute状态
                 app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 0;
-                app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+                app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
                 if (app_spdif_hd.mute_mark == 0) {
                     app_spdif_hd.mute_mark ^= 1;
-                    audio_app_mute_en(app_spdif_hd.mute_mark);
+                    spdif_set_data_clean(app_spdif_hd.mute_mark);
                 }
             }
         }
@@ -494,10 +494,10 @@ static int spdif_local_audio_open(void)
             if (app_spdif_hd.close_broadcast_open_lacal_audio_need_mute == 1) {
                 //需要恢复mute状态
                 app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 0;
-                app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+                app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
                 if (app_spdif_hd.mute_mark == 0) {
                     app_spdif_hd.mute_mark ^= 1;
-                    audio_app_mute_en(app_spdif_hd.mute_mark);
+                    spdif_set_data_clean(app_spdif_hd.mute_mark);
                 }
             }
         }
@@ -509,19 +509,19 @@ static int spdif_local_audio_open(void)
     if (app_spdif_hd.close_broadcast_open_lacal_audio_need_mute == 1) {
         //需要恢复mute状态
         app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 0;
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
         if (app_spdif_hd.mute_mark == 0) {
             app_spdif_hd.mute_mark ^= 1;
-            audio_app_mute_en(app_spdif_hd.mute_mark);
+            spdif_set_data_clean(app_spdif_hd.mute_mark);
         }
     }
     if (app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute == 1) {
         //打开广播前是unmute状态，关闭广播时需要解mute
         app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute = 0;
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
         if (app_spdif_hd.mute_mark == 1) {
             app_spdif_hd.mute_mark ^= 1;
-            audio_app_mute_en(app_spdif_hd.mute_mark);
+            spdif_set_data_clean(app_spdif_hd.mute_mark);
         }
     }
 #endif
@@ -531,19 +531,20 @@ static int spdif_local_audio_open(void)
     if (app_spdif_hd.close_broadcast_open_lacal_audio_need_mute == 1) {
         //需要恢复mute状态
         app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 0;
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
+
         if (app_spdif_hd.mute_mark == 0) {
             app_spdif_hd.mute_mark ^= 1;
-            audio_app_mute_en(app_spdif_hd.mute_mark);
+            spdif_set_data_clean(app_spdif_hd.mute_mark);
         }
     }
     if (app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute == 1) {
         //打开广播前是unmute状态，关闭广播时需要解mute
         app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute = 0;
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
         if (app_spdif_hd.mute_mark == 1) {
             app_spdif_hd.mute_mark ^= 1;
-            audio_app_mute_en(app_spdif_hd.mute_mark);
+            spdif_set_data_clean(app_spdif_hd.mute_mark);
         }
     }
 #endif
@@ -557,11 +558,11 @@ static int spdif_local_audio_close(void)
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==0)
         //没有固定发送端或者是固定接收端
         if (get_broadcast_role()) {
-            app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+            app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
             if (app_spdif_hd.mute_mark) {
                 //此时是mute状态，需要解mute
                 app_spdif_hd.mute_mark ^= 1;
-                app_audio_set_mute_state(APP_AUDIO_STATE_MUSIC, app_spdif_hd.mute_mark);
+                spdif_set_data_clean(app_spdif_hd.mute_mark);
                 app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 1;	//关闭广播时需要恢复mute状态
             }
         }
@@ -569,11 +570,11 @@ static int spdif_local_audio_close(void)
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && (LEA_BIG_FIX_ROLE==0)
         //没有固定发送端或者是固定接收端
         if (get_auracast_role()) {
-            app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+            app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
             if (app_spdif_hd.mute_mark) {
                 //此时是mute状态，需要解mute
                 app_spdif_hd.mute_mark ^= 1;
-                app_audio_set_mute_state(APP_AUDIO_STATE_MUSIC, app_spdif_hd.mute_mark);
+                spdif_set_data_clean(app_spdif_hd.mute_mark);
                 app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 1;	//关闭广播时需要恢复mute状态
             }
         }
@@ -585,11 +586,11 @@ static int spdif_local_audio_close(void)
         //1、mute住的情况下打开广播,此时发送端mute住，但接收端有声音, 发送端需要解mute. 关闭广播时需要重新给mute住
         //2、unmute的情况下打开广播，在关闭广播时需要解mute
         //打开广播(发送端)会先关闭本地音频，再打开发送，可以在关闭本地音频时先解mute，记录下此时音频状态，在广播结束打开本地音频时恢复状态
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
         if (app_spdif_hd.mute_mark) {
             //此时是mute状态，需要解mute
             app_spdif_hd.mute_mark ^= 1;
-            audio_app_mute_en(app_spdif_hd.mute_mark);
+            spdif_set_data_clean(app_spdif_hd.mute_mark);
             app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 1;	//关闭广播时需要恢复mute状态
             app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute = 0;
         } else {
@@ -604,11 +605,11 @@ static int spdif_local_audio_close(void)
         //如果固定为接收端，则可能会存在两种情况：
         //1、mute住的情况下打开广播，此时进入接收端也是mute的状态，需要解mute；当关闭广播接收的时候，需要mute回去
         //2、unmute的情况下打开广播，在关闭广播时需要解mute
-        app_spdif_hd.mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
+        app_spdif_hd.mute_mark = spdif_get_data_clean_flag();
         if (app_spdif_hd.mute_mark) {
             //此时是mute状态，需要解mute
             app_spdif_hd.mute_mark ^= 1;
-            app_audio_set_mute_state(APP_AUDIO_STATE_MUSIC, 0);
+            spdif_set_data_clean(0);
             app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 1;	//关闭广播时需要恢复mute状态
             app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute = 0;
         } else {

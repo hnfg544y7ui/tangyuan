@@ -12,6 +12,9 @@
 #include "audio_config_def.h"
 #include "effects/audio_vbass.h"
 #include "audio_dai/audio_tdm.h"
+#if AUDIO_EQ_LINK_VOLUME
+#include "effects/eq_config.h"
+#endif
 struct tdm_player {
     struct jlstream *stream;
     s8 tdm_pitch_mode;
@@ -30,6 +33,9 @@ static void tdm_player_callback(void *private_data, int event)
 #endif
 #if AUDIO_VBASS_LINK_VOLUME
         vbass_link_volume();
+#endif
+#if AUDIO_EQ_LINK_VOLUME
+        eq_link_volume();
 #endif
         break;
     }

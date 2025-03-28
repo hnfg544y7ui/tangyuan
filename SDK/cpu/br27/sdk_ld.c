@@ -205,11 +205,8 @@ SECTIONS
         *(.volatile_ram_code)
         *(.*.text.cache.L1)
         *(.*.text.const.cache.L2)
-		*(.jlstream.text.cache.L2)
         *(.ui_ram)
-        *(.spectrum_adv.text)
-        *(.SPECTRUMTOOL.text)
-        *(.SPECTRUMTOOL.text.L2)
+
 
          . = ALIGN(4);
          __fm_movable_slot_start = .;

@@ -109,9 +109,15 @@ int pc_spk_player_open(void)
     int err = 0;
     struct pc_spk_player *player = NULL;;
 
-    if (g_pc_spk_player || !app_in_mode(APP_MODE_PC)) {
+    if (g_pc_spk_player) {
         return 0;
     }
+
+#ifndef CONFIG_WIRELESS_MIC_ENABLE
+    if (!app_in_mode(APP_MODE_PC)) {
+        return 0;
+    }
+#endif
 
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"pc_spk");
     if (uuid == 0) {
@@ -135,6 +141,14 @@ int pc_spk_player_open(void)
     jlstream_node_ioctl(player->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, 192);
     jlstream_set_callback(player->stream, player->stream, pc_spk_player_callback);
     jlstream_set_scene(player->stream, STREAM_SCENE_PC_SPK);
+#if defined(TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE) && TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE
+    //iphone sbc解码帧长短得情况下，使用三线程推数
+    jlstream_add_thread(player->stream, "media0");
+    jlstream_add_thread(player->stream, "media1");
+#if defined(CONFIG_CPU_BR28)
+    jlstream_add_thread(player->stream, "media2");
+#endif
+#endif
     err = jlstream_start(player->stream);
     if (err) {
         goto __exit1;
@@ -311,7 +325,7 @@ int usb_device_event_handler(int *msg)
     case APP_MSG_PC_AUDIO_PLAY_OPEN:
         pc_player_status = 1;
         printf("APP_MSG_PC_AUDIO_PLAY_OPEN\n");
-#if TCFG_KBOX_1T3_MODE_EN
+#if (TCFG_KBOX_1T3_MODE_EN || WIRELESS_MIC_PRODUCT_MODE)
         if (pc_spk_player_runing() == 0) {
             //打开播放器
             pc_spk_player_open();

@@ -160,7 +160,7 @@ SUPPORTED_LIST = CONFIG_SUPPORTED_CHIP_VERSION;
 [SYS_CFG_PARAM]
 SPI = CAT4(CONFIG_SPI_DATA_WIDTH, CONFIG_SPI_CLK_DIV, CONFIG_SPI_MODE, CONFIG_SPI_PORT);	//width_clk_mode_port;
 
-#if (CONFIG_PLL_SOURCE_USING_LRC == 1)
+#if ((defined TCFG_CLOCK_SYS_SRC) && (TCFG_CLOCK_SYS_SRC == 1))
 PLL_SRC = LRC; //PLL时钟源：屏蔽或！=LRC; 默认选择晶振。 值=LRC,且用no_ota_uboot,则时钟源选LRC
 #endif
 
@@ -216,7 +216,7 @@ PSRAM = 1_2_A;
 /* UTRX = PP00; //串口升级[PB00 PB05 PA05] */
 /* #endif */
 
-RESET = CAT3(CONFIG_RESET_PIN, CONFIG_RESET_TIME, CONFIG_RESET_LEVEL);	//port口_长按时间_有效电平（长按时间有00、01、02、04、08三个值可选，单位为秒，当长按时间为00时，则关闭长按复位功能。）
+/* RESET = CAT3(CONFIG_RESET_PIN, CONFIG_RESET_TIME, CONFIG_RESET_LEVEL);	//port口_长按时间_有效电平（长按时间有00、01、02、04、08三个值可选，单位为秒，当长按时间为00时，则关闭长按复位功能。） */
 
 /* #ifdef CONFIG_SUPPORT_RESET1 */
 /* RESET1 = CAT3(CONFIG_RESET1_PIN, CONFIG_RESET1_TIME, CONFIG_RESET1_LEVEL);	//port口_长按时间_有效电平（长按时间有00、01、02、04、08三个值可选，单位为秒，当长按时间为00时，则关闭长按复位功能。） */

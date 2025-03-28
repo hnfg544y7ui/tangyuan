@@ -4,7 +4,7 @@
 #include "jlstream.h"
 #include "iis_file.h"
 #include "app_config.h"
-#include "audio_iis.h"
+#include "media/audio_iis.h"
 #include "sync/audio_clk_sync.h"
 #include "gpio.h"
 #include "audio_config.h"
@@ -212,53 +212,13 @@ static void iis_rxx_handle(void *priv, void *buf, int len, int ch_idx)
 #endif
 
 }
-#define IO_DEBUG_1(i,x)       {JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT |= BIT(x);}
-#define IO_DEBUG_0(i,x)       {JL_PORT##i->DIR &= ~BIT(x), JL_PORT##i->OUT &= ~BIT(x);}
-
-#define TCFG_SOUND_PCM_DELAY_TEST   1
-
-#if (defined TCFG_SOUND_PCM_DELAY_TEST && TCFG_SOUND_PCM_DELAY_TEST)
-static int test_count = 0;
-static u16 sin_data_offset = 0;
-const s16 sin_48k[48] = {
-    0, 2139, 4240, 6270, 8192, 9974, 11585, 12998,
-    14189, 15137, 15826, 16244, 16384, 16244, 15826, 15137,
-    14189, 12998, 11585, 9974, 8192, 6270, 4240, 2139,
-    0, -2139, -4240, -6270, -8192, -9974, -11585, -12998,
-    -14189, -15137, -15826, -16244, -16384, -16244, -15826, -15137,
-    -14189, -12998, -11585, -9974, -8192, -6270, -4240, -2139
-};
-static int get_sine_data(s16 *data, u16 points, u8 ch)
-{
-    while (points--) {
-        if (sin_data_offset >= ARRAY_SIZE(sin_48k)) {
-            sin_data_offset = 0;
-        }
-        *data++ = sin_48k[sin_data_offset];
-        if (ch == 2) {
-            *data++ = sin_48k[sin_data_offset];
-        }
-        sin_data_offset++;
-    }
-    return 0;
-}
-#endif
-
 static void iis_rx0_handle(void *priv, void *addr, int len)	//中断回调
 {
-
-#if (defined TCFG_SOUND_PCM_DELAY_TEST && TCFG_SOUND_PCM_DELAY_TEST)
-    get_sine_data(addr, len / 4, 2);
-#endif
-    IO_DEBUG_1(C, 3);
     iis_rxx_handle(priv, addr, len, 0);
-    IO_DEBUG_0(C, 3);
 }
 static  void iis_rx1_handle(void *priv, void *addr, int len)	//中断回调
 {
-    IO_DEBUG_1(C, 4);
     iis_rxx_handle(priv, addr, len, 1);
-    IO_DEBUG_0(C, 4);
 }
 static  void iis_rx2_handle(void *priv, void *addr, int len)	//中断回调
 {
@@ -311,7 +271,7 @@ static void iis_rx_init(struct iis_file_hdl *hdl)
     if (!iis_hdl[hdl->module_idx]) {
         struct alink_param aparams = {0};
         aparams.module_idx = hdl->module_idx;
-        aparams.dma_size   = audio_iis_fix_dma_len(hdl->module_idx, TCFG_AUDIO_DAC_BUFFER_TIME_MS, AUDIO_IIS_IRQ_POINTS, hdl->bit_width, 2);
+        aparams.dma_size   = audio_iis_fix_dma_len(hdl->module_idx, TCFG_AUDIO_DAC_BUFFER_TIME_MS, AUDIO_IIS_IRQ_POINTS, hdl->bit_width, IIS_CH_NUM, AUDIO_DAC_MAX_SAMPLE_RATE);
         aparams.sr         = hdl->sample_rate;
         aparams.bit_width  = hdl->bit_width;
         iis_hdl[hdl->module_idx] = audio_iis_init(aparams);

@@ -23,6 +23,9 @@
 #include "spdif.h"
 #include "le_audio_recorder.h"
 #include "le_broadcast.h"
+#if AUDIO_EQ_LINK_VOLUME
+#include "effects/eq_config.h"
+#endif
 
 #if TCFG_SPDIF_ENABLE
 
@@ -53,6 +56,9 @@ static void spdif_player_callback(void *private_data, int event)
         app_send_message(APP_MSG_MUTE_CHANGED, !spdif_last_vol_state);
 #if AUDIO_VBASS_LINK_VOLUME
         vbass_link_volume();
+#endif
+#if AUDIO_EQ_LINK_VOLUME
+        eq_link_volume();
 #endif
         break;
     }
@@ -109,6 +115,13 @@ int spdif_player_open(void)
 
     jlstream_set_callback(player->stream, player->stream, spdif_player_callback);
     jlstream_set_scene(player->stream, STREAM_SCENE_SPDIF);
+#if defined(TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE) && TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE
+    jlstream_add_thread(player->stream, "media0");
+    jlstream_add_thread(player->stream, "media1");
+#if defined(CONFIG_CPU_BR28)
+    jlstream_add_thread(player->stream, "media2");
+#endif
+#endif
     err = jlstream_start(player->stream);
     if (err) {
         goto __exit1;
@@ -232,6 +245,11 @@ int spdif_restart_by_taskq(void)
     return ret;
 }
 
+static void delay_open_spdif_player(void *priv)
+{
+    printf(">>>>>>>>>>>> Enter Func: %s\n", __func__);
+    spdif_open_player_by_taskq();
+}
 
 /* 打开 spdif player */
 static void spdif_open_player(int arg)

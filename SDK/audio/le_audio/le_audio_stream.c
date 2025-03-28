@@ -14,6 +14,11 @@
 #include "circular_buf.h"
 #include "system/timer.h"
 #include "app_config.h"
+#include "wireless_trans.h"
+#include "tech_lib/jla_ll_codec_api.h"
+#if LEA_DUAL_STREAM_MERGE_TRANS_MODE
+#include "surround_sound.h"
+#endif
 #define LE_AUDIO_TX_TEST        0
 
 struct le_audio_stream_buf {
@@ -344,6 +349,10 @@ void *le_audio_stream_tx_open(void *le_audio, int coding_type, void *priv, int (
         frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000 + 2;
     } else if (ctx->fmt.coding_type == AUDIO_CODING_JLA_V2) {
         frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000 + 2;
+#if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_LL)
+    } else if (ctx->fmt.coding_type == AUDIO_CODING_JLA_LL) {
+        frame_size = jla_ll_enc_frame_len();
+#endif
     } else {
         //TODO : 其他格式的buffer设置
     }
@@ -450,6 +459,10 @@ void *le_audio_stream_rx_open(void *le_audio, int coding_type)
         frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000 + 2;
     } else if (coding_type == AUDIO_CODING_JLA_V2) {
         frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000 + 2;
+#if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_LL)
+    } else if (coding_type == AUDIO_CODING_JLA_LL) {
+        frame_size = jla_ll_enc_frame_len();;
+#endif
     } else if (coding_type == AUDIO_CODING_PCM) {
         frame_size = ctx->fmt.frame_dms * ctx->fmt.sample_rate * ctx->fmt.nch * (ctx->fmt.bit_width ? 4 : 2) / 10000;
     }
@@ -607,8 +620,10 @@ int le_audio_stream_rx_frame(void *stream, void *data, int len, u32 timestamp)
 #if LEA_DUAL_STREAM_MERGE_TRANS_MODE //环绕音
     if (len > 2) { //丢包判断
         int rlen = 0;
-#if 1 //立体声(LS(解码左声道)//RS(解码右声道))
-        rlen = 122; //获取立体声编码帧长
+#if (SURROUND_SOUND_FIX_ROLE_EN && (SURROUND_SOUND_ROLE == 1) || (SURROUND_SOUND_ROLE == 2))
+        //如果角色固定，并且是立体声数据流
+        //立体声(LS(解码左声道)//RS(解码右声道))
+        rlen = get_enc_dual_output_frame_len(); //获取立体声编码帧长
         frame = malloc(sizeof(struct le_audio_frame) + rlen);
         if (!frame) {
             return 0;
@@ -617,9 +632,11 @@ int le_audio_stream_rx_frame(void *stream, void *data, int len, u32 timestamp)
         memcpy(frame->data, data, rlen);
         frame->len = rlen;
         len = rlen;
-#else//单声道(SW)    62(立体声的编码长度)
-        rlen = 32; //获取单声道编码帧长
-        int offset = 122; // 获取立体声道编码帧长
+#elif (SURROUND_SOUND_FIX_ROLE_EN && (SURROUND_SOUND_ROLE == 3))
+        //如果角色固定，并且是单声道数据
+        //单声道(SW)    62(立体声的编码长度)
+        rlen = get_enc_mono_output_frame_len(); //获取单声道编码帧长
+        int offset = get_enc_dual_output_frame_len(); // 获取立体声道编码帧长
         frame = malloc(sizeof(struct le_audio_frame) + rlen);
         if (!frame) {
             return 0;
@@ -629,6 +646,36 @@ int le_audio_stream_rx_frame(void *stream, void *data, int len, u32 timestamp)
         frame->len = rlen;
         len = rlen;
         /* printf("len :%d",frame->len); */
+#elif (SURROUND_SOUND_FIX_ROLE_EN == 0)
+        //如果角色不固定
+        //立体声(LS(解码左声道)//RS(解码右声道))
+        u8 role = get_surround_sound_role();
+        if (role == SURROUND_SOUND_RX1_DUAL_L || role == SURROUND_SOUND_RX2_DUAL_R) {
+            rlen = get_enc_dual_output_frame_len(); //获取立体声编码帧长
+            frame = malloc(sizeof(struct le_audio_frame) + rlen);
+            if (!frame) {
+                return 0;
+            }
+            frame->data = (u8 *)(frame + 1);
+            memcpy(frame->data, data, rlen);
+            frame->len = rlen;
+            len = rlen;
+        } else if (role == SURROUND_SOUND_RX3_MONO) {
+            //单声道(SW)    62(立体声的编码长度)
+            rlen = get_enc_mono_output_frame_len(); //获取单声道编码帧长
+            int offset = get_enc_dual_output_frame_len(); // 获取立体声道编码帧长
+            frame = malloc(sizeof(struct le_audio_frame) + rlen);
+            if (!frame) {
+                return 0;
+            }
+            frame->data = (u8 *)(frame + 1);
+            memcpy(frame->data, (u8 *)data + offset, rlen);
+            frame->len = rlen;
+            len = rlen;
+        } else {
+            ASSERT(0, "err!! %s, %d, surround sound role is error:%d\n", __func__, __LINE__, role);
+        }
+
 #endif
     } else { // 丢包数据
         frame = malloc(sizeof(struct le_audio_frame) + len);

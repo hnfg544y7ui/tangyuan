@@ -120,6 +120,7 @@ struct spdif_file_hdl {
 struct spdif_file_hdl *spdif_file_t = NULL;
 
 static DEFINE_SPINLOCK(spdif_lock);
+static u8 spdif_data_clean_flag; //该变量用来判断是否要清除spdif的数据，完成pp无声的控制
 
 struct spdif_file_cfg spdif_cfg;	//spdif的配置参数信息
 
@@ -315,6 +316,7 @@ const static u32 spdif_sample_rate_table[] = {
     960,
     1764,
     1920,
+    2160,
 };
 
 static int spdif_get_sr(void)
@@ -659,6 +661,29 @@ static void spdif_fix_package_timerout_cb()
 }
 #endif
 
+/*
+ * @description: spdif 数据清零设置函数
+ * @return：无
+ * @note: spdif模式pp暂停会将数据流清零达到无声的效果，set 1无声，set 0有声
+ */
+void spdif_set_data_clean(u8 on)
+{
+    if (on) {
+        spdif_data_clean_flag = 1;
+    } else {
+        spdif_data_clean_flag = 0;
+    }
+}
+
+/*
+ * @description: spdif 数据清零标志位获取
+ * @return：无
+ * @note: spdif模式pp键暂停，return 1 清理数据无声，return 0恢复数据有声
+ */
+u8 spdif_get_data_clean_flag(void)
+{
+    return spdif_data_clean_flag;
+}
 
 /*
  * @description: spdif 数据中断回调函数
@@ -670,12 +695,19 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     struct spdif_file_hdl *hdl = spdif_file_t;
     struct stream_frame *frame = NULL;
 
-    s16 *s16_buf = (s16 *)buf;
-    s32 *s32_buf = (s32 *)buf;
-
     if (!hdl) {
         return;
     }
+
+    if (spdif_data_clean_flag) {
+        if (len) {
+            memset(buf, 0, len);
+        }
+    }
+
+    s16 *s16_buf = (s16 *)buf;
+    s32 *s32_buf = (s32 *)buf;
+
     struct stream_node  *source_node = hdl->source_node;
     hdl->spdifrx_isr_timestamp = audio_jiffies_usec();
 
@@ -712,9 +744,9 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     }
 
     // 滤掉超过192k采样率的,  spdif_slave_get_sr 的值会到216k左右
-    if (spdif_slave_get_sr() > 200000 && spdif_get_sr() == 192000) {
-        return;
-    }
+    /* if (spdif_slave_get_sr() > 200000 && spdif_get_sr() == 192000) { */
+    /* return; */
+    /* } */
 
 
     // 先获取已知的格式
@@ -1324,18 +1356,18 @@ void *spdif_init(void)
  */
 void spdif_release(void *_hdl)
 {
-    struct spdif_file_hdl *hdl = (struct spdif_file_hdl *)_hdl;
-
-    y_printf(" --- spdif_release ---\n");
+    struct spdif_file_hdl *hdl = spdif_file_t;
 
     spin_lock(&spdif_lock);
-    if (!hdl) {
-        hdl = spdif_file_t;
-        if (!hdl) {
-            spin_unlock(&spdif_lock);
-            return;
-        }
+
+    if (spdif_file_t == NULL) {
+        r_printf("spdif_file_t is NULL!\n");
+        spin_unlock(&spdif_lock);
+        return;
     }
+
+
+    y_printf(" --- spdif_release ---\n");
     // 需要先调用spdif_stop 函数
     if (hdl->state != AUDIO_SPDIF_STATE_STOP) {
         printf("Need call spdif_stop() function before spdif_release() function!\n");
@@ -1373,6 +1405,7 @@ static void *spdif_file_init(void *source_node, struct stream_node *node)
     printf("--- spdif_file_init ---\n");
 
     if (hdl) {
+        spdif_file_t = hdl;
         hdl->source_node = source_node;
         hdl->node = node;
         node->type |= NODE_TYPE_IRQ;
@@ -1602,8 +1635,13 @@ static void spdif_fix_one_package(void)
 
     frame = source_plug_get_output_frame(source_node, size);
     frame->len    = size;
+#if 1
+    frame->flags        = FRAME_FLAG_TIMESTAMP_ENABLE | FRAME_FLAG_PERIOD_SAMPLE | FRAME_FLAG_UPDATE_TIMESTAMP | FRAME_FLAG_FILL_PACKET;
+    frame->timestamp = hdl->spdifrx_isr_timestamp * TIMESTAMP_US_DENOMINATOR;
+#else
     frame->flags  = FRAME_FLAG_SYS_TIMESTAMP_ENABLE | FRAME_FLAG_FILL_PACKET;
     frame->timestamp = hdl->spdifrx_isr_timestamp;
+#endif
     memset(frame->data, 0, size);
     source_plug_put_output_frame(source_node, frame);
     spin_unlock(&spdif_lock);

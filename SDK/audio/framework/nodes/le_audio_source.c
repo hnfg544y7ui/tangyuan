@@ -13,6 +13,8 @@
 #include "sync/audio_syncts.h"
 #include "le_audio_stream.h"
 #include "effects/effects_adj.h"
+#include "tech_lib/jla_ll_codec_api.h"
+#include "app_config.h"
 
 #define LE_AUDIO_TX_SOURCE      0
 #define LE_AUDIO_LOCAL_SOURCE   1
@@ -213,6 +215,10 @@ static int le_audio_source_ioc_start(struct stream_iport *iport)
         frame_size = hdl->frame_dms * hdl->bit_rate / 8 / 10000 + 2;
     } else if (hdl->coding_type == AUDIO_CODING_JLA_V2) {
         frame_size = hdl->frame_dms * hdl->bit_rate / 8 / 10000 + 2;
+#if (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_LL)
+    } else if (hdl->coding_type == AUDIO_CODING_JLA_LL) {
+        frame_size = jla_ll_enc_frame_len();
+#endif
     } else {
         //TODO : 其他格式的buffer设置
     }

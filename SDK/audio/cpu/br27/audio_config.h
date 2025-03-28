@@ -31,9 +31,12 @@ static const char *audio_vol_str[] = {
     "Vol_FileMusic",
     "Vol_FmMusic",
     "Vol_SpdMusic",
+    "Vol_IISMusic",
+    "Vol_MicMusic",
     "Vol_USBMusic",
     "Vol_SysTone",
     "Vol_SysKTone",
+    "VolLRMedia",
     "NULL",
 };
 
@@ -46,10 +49,13 @@ typedef enum {
     AppVol_MUSIC,
     AppVol_FM,
     AppVol_SPDIF,
+    AppVol_IIS,
+    AppVol_MIC,
     AppVol_USB,
 
     SysVol_TONE,
     SysVol_KEY_TONE,
+    Vol_VIRTUAL_SURROUND,	//环绕声
     Vol_NULL,
 
 } audio_vol_index_t;

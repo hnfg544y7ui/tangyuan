@@ -115,11 +115,15 @@ int pc_mic_recoder_open(void)
     source_uuid = NODE_UUID_ADC;
 
     if (!recoder->stream) {
+        recoder->stream = jlstream_pipeline_parse(uuid, NODE_UUID_IIS0_RX);
+        source_uuid = NODE_UUID_IIS0_RX;
+    }
+    if (!recoder->stream) {
         goto __exit0;
     }
 
-    //设置ADC的中断点数
-    int err = jlstream_node_ioctl(recoder->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, AUDIO_ADC_IRQ_POINTS);
+    //设置ADC的中断点数,通话算法节点要求输入点数是256
+    int err = jlstream_node_ioctl(recoder->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, 256);
     if (err) {
         goto __exit1;
     }

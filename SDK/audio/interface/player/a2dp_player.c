@@ -41,6 +41,10 @@
 #include "audio_anc.h"
 #endif
 
+#if AUDIO_EQ_LINK_VOLUME
+#include "effects/eq_config.h"
+#endif
+
 extern struct audio_dac_hdl dac_hdl;
 struct a2dp_player {
     u8 bt_addr[6];
@@ -132,6 +136,9 @@ static void a2dp_player_callback(void *private_data, int event)
     case STREAM_EVENT_START:
 #if AUDIO_VBASS_LINK_VOLUME
         vbass_link_volume();
+#endif
+#if AUDIO_EQ_LINK_VOLUME
+        eq_link_volume();
 #endif
 #if TCFG_TWS_DUAL_CHANNEL
         a2dp_player_update_steromix_param(player, player->channel);
@@ -286,7 +293,7 @@ int a2dp_player_open(u8 *btaddr)
                              BREAKER_TARGER_NODE_UUID, BREAKER_TARGER_NODE_NEME);
 #endif
 
-#if TCFG_VIRTUAL_SURROUND_PRO_MODULE_NODE_ENABLE
+#if defined(TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE) && TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE
     //iphone sbc解码帧长短得情况下，使用三线程推数
     jlstream_add_thread(player->stream, "media0");
     jlstream_add_thread(player->stream, "media1");

@@ -603,6 +603,10 @@ c_SRC_FILES := \
 	apps/soundbox/mode/local_tws/local_tws.c \
 	apps/soundbox/mode/local_tws/sink.c \
 	apps/soundbox/mode/local_tws/sink_key_msg_table.c \
+	apps/soundbox/mode/mic/mic.c \
+	apps/soundbox/mode/mic/mic_api.c \
+	apps/soundbox/mode/mic/mic_app_msg_handler.c \
+	apps/soundbox/mode/mic/mic_key_msg_table.c \
 	apps/soundbox/mode/mic_effect/mic_effect.c \
 	apps/soundbox/mode/music/music.c \
 	apps/soundbox/mode/music/music_app_msg_handler.c \
@@ -627,6 +631,11 @@ c_SRC_FILES := \
 	apps/soundbox/mode/spdif/spdif_app_msg_handler.c \
 	apps/soundbox/mode/spdif/spdif_key_msg_table.c \
 	apps/soundbox/mode/spdif/spdif_player.c \
+	apps/soundbox/mode/surround_sound/surround_sound.c \
+	apps/soundbox/mode/surround_sound/surround_sound_api.c \
+	apps/soundbox/mode/surround_sound/surround_sound_app_msg_handler.c \
+	apps/soundbox/mode/surround_sound/surround_sound_key_msg_table.c \
+	apps/soundbox/mode/surround_sound/surround_sound_role_ctrl.c \
 	apps/soundbox/mode/undef_func.c \
 	apps/soundbox/mode/update/update.c \
 	apps/soundbox/scene/bt_ability.c \
@@ -686,6 +695,7 @@ c_SRC_FILES := \
 	audio/common/audio_event_handler.c \
 	audio/common/audio_export_demo.c \
 	audio/common/audio_general.c \
+	audio/common/audio_iis_lrclk_capture.c \
 	audio/common/audio_node_config.c \
 	audio/common/audio_noise_gate.c \
 	audio/common/audio_ns.c \
@@ -694,6 +704,7 @@ c_SRC_FILES := \
 	audio/common/audio_volume_mixer.c \
 	audio/common/bt_audio_energy_detection.c \
 	audio/common/debug/audio_debug.c \
+	audio/common/demo/audio_alink_demo.c \
 	audio/common/demo/audio_eq_demo.c \
 	audio/common/demo/codec_demo/audio_enc_file_demo.c \
 	audio/common/demo/codec_demo/audio_file_dec_demo.c \
@@ -703,14 +714,13 @@ c_SRC_FILES := \
 	audio/common/online_debug/aud_mic_dut.c \
 	audio/common/online_debug/audio_capture.c \
 	audio/common/online_debug/audio_online_debug.c \
+	audio/common/pcm_data/sine_pcm.c \
 	audio/common/power/mic_power_manager.c \
 	audio/common/uartPcmSender.c \
 	audio/common/wm8978/iic.c \
 	audio/common/wm8978/wm8978.c \
 	audio/cpu/br27/audio_accelerator/hw_fft.c \
 	audio/cpu/br27/audio_config.c \
-	audio/cpu/br27/audio_dai/audio_iis.c \
-	audio/cpu/br27/audio_dai/audio_link.c \
 	audio/cpu/br27/audio_dai/audio_pdm.c \
 	audio/cpu/br27/audio_dai/audio_spdif_master.c \
 	audio/cpu/br27/audio_dai/audio_spdif_slave.c \
@@ -718,7 +728,6 @@ c_SRC_FILES := \
 	audio/cpu/br27/audio_demo/audio_adc_demo.c \
 	audio/cpu/br27/audio_demo/audio_dac_demo.c \
 	audio/cpu/br27/audio_demo/audio_fft_demo.c \
-	audio/cpu/br27/audio_demo/audio_link_demo.c \
 	audio/cpu/br27/audio_setup.c \
 	audio/cpu/br27/media_memory_manager.c \
 	audio/effect/audio_dc_offset_remove.c \
@@ -796,7 +805,6 @@ c_SRC_FILES := \
 	audio/framework/plugs/source/le_audio_file.c \
 	audio/framework/plugs/source/linein_file.c \
 	audio/framework/plugs/source/local_tws_file.c \
-	audio/framework/plugs/source/multi_ch_adc_file.c \
 	audio/framework/plugs/source/multi_ch_iis_file.c \
 	audio/framework/plugs/source/pc_spk_file.c \
 	audio/framework/plugs/source/pdm_mic_file.c \
@@ -818,6 +826,7 @@ c_SRC_FILES := \
 	audio/interface/player/le_audio_player.c \
 	audio/interface/player/linein_player.c \
 	audio/interface/player/local_tws_player.c \
+	audio/interface/player/mic_player.c \
 	audio/interface/player/pc_spk_player.c \
 	audio/interface/player/reference_time.c \
 	audio/interface/player/ring_player.c \

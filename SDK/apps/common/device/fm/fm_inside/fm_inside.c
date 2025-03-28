@@ -49,7 +49,7 @@ u8 fm_inside_init(void *priv)
 
     fm_inside_on();  //fm analog init
     fm_inside_io_ctrl(SET_FM_INSIDE_SCAN_ARG1, FMSCAN_CNR,  SEEK_CNT_MAX, SEEK_CNT_ZERO_MAX);
-    fm_inside_set_stereo(TCFG_FM_INSIDE_STEREO_ENABLE);  //0 mono, 1 stereo.
+    fm_inside_set_stereo(TCFG_FM_INSIDE_STEREO_ENABLE, TCFG_FM_INSIDE_STEREO_SEPARATION_SELECTION); //TCFG_FM_INSIDE_STEREO_ENABLE: 0 mono, 1 stereo. TCFG_FM_INSIDE_STEREO_SEPARATION_SELECTION:选择立体声分离度0 1 2
 #if TCFG_FM_INSIDE_AGC_ENABLE
     fm_inside_agc_en_set(1);
     fm_inside_agc_timer = sys_timer_add(NULL, __fm_inside_agc_trim, 1000);
@@ -81,6 +81,13 @@ void fm_inside_dac_clk_set(u32 freq)
         tone_player_stop();
         mic_effect_player_pause(1);
 #endif
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
+        if (!get_fm_scan_status()) {
+            tone_player_stop();
+            app_broadcast_close_transmitter();
+        }
+#endif
+        //切DAC时钟前要将数据流都关掉，待切完时钟后再打开。
         if (fm_player_runing()) {
             fm_player_close();
             audio_common_clock_switch(target_dac_clk);
@@ -89,6 +96,11 @@ void fm_inside_dac_clk_set(u32 freq)
             audio_common_clock_switch(target_dac_clk);
         }
         /* printf("freq = %d, cur_dac_clk = %d, target_dac_clk = %d, dac_clk_get = %d\n", freq, cur_dac_clk, target_dac_clk, audio_common_clock_get()); */
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
+        if (!get_fm_scan_status()) {
+            app_broadcast_open_transmitter();
+        }
+#endif
 #if TCFG_MIC_EFFECT_ENABLE
         if (!get_fm_scan_status()) {
             mic_effect_player_pause(0);
