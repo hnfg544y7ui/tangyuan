@@ -52,10 +52,42 @@ const int config_audio_cfg_online_enable = 0;
 #endif
 
 const int config_audio_dac_dma_buf_realloc_enable = 1;
+#ifdef TCFG_DAC_POWER_MODE
+const int config_audio_dac_power_mode = TCFG_DAC_POWER_MODE;
+#endif
 
 const int config_audio_gain_enable = TCFG_GAIN_NODE_ENABLE;
 const int config_audio_split_gain_enable = TCFG_SPLIT_GAIN_NODE_ENABLE;
 const int config_audio_stereomix_enable = TCFG_STEROMIX_NODE_ENABLE;
+
+const int config_audio_adc0_enable = TCFG_ADC0_ENABLE;
+const int config_audio_adc1_enable = TCFG_ADC1_ENABLE;
+const int config_audio_adc2_enable = 0;
+const int config_audio_adc3_enable = 0;
+const int config_audio_adc4_enable = 0;
+const int config_audio_adc5_enable = 0;
+const int config_audio_adc6_enable = 0;
+const int config_audio_adc7_enable = 0;
+const int config_audio_adc0_input_mode = TCFG_ADC0_MODE;
+const int config_audio_adc1_input_mode = TCFG_ADC1_MODE;
+const int config_audio_adc2_input_mode = 0;
+const int config_audio_adc3_input_mode = 0;
+const int config_audio_adc4_input_mode = 0;
+const int config_audio_adc5_input_mode = 0;
+const int config_audio_adc6_input_mode = 0;
+const int config_audio_adc7_input_mode = 0;
+
+/*
+ *******************************************************************
+ *						Audio CVP Config
+ *******************************************************************
+ */
+const int config_audio_cvp_ref_source = 1;/*0:DAC Internal 1:External*/
+#ifdef TCFG_AUDIO_SIDETONE_ENABLE
+const int config_audio_cvp_ref_ch_recognize_enable = TCFG_AUDIO_SIDETONE_ENABLE;
+#else
+const int config_audio_cvp_ref_ch_recognize_enable = 0;
+#endif
 /*
  *******************************************************************
  *						Audio Codec Config
@@ -300,8 +332,19 @@ const int voicechanger_effect_v_config = (0
         /* | BIT(EFFECT_VOICECHANGE_FEEDBACK) */
                                          );
 
-/*mb limiter 3带使能(1.2k) */
-const int mb_limiter_3band_run_en       = 1;
+/*mb drc/limiter 3带使能(1.2k) */
+const int audio_crossover_3band_enable       = 1;
+
+/*
+ * 某些算法参数更新需要重新申请buffer，
+ * 为防止重新申请时内存不足导致异常，
+ * 此处设置需要保留的内存大小，
+ * 当判断若重新申请buf后，系统内存小于该值则不重新申请，
+ * 打印"xxx buf realloc fail"(需要打开log_tag_const_d_EFFECTS)
+ * 可视化工具界面显示"流程打开buf失败"
+ */
+const int audio_effect_realloc_reserve_mem = (13 * 1024);
+
 /*
  *******************************************************************
  *						Audio Mic Capless Config
@@ -390,7 +433,7 @@ int audio_general_init()
 #if defined(TCFG_SCENE_UPDATE_ENABLE) && TCFG_SCENE_UPDATE_ENABLE
     //若流程中有较多音效模块（或渲染封装节点），会导致此处遍历模块耗时较长
     get_music_pipeline_node_uuid();
-#if TCFG_MIC_EFFECT_ENABLE
+#if (TCFG_MIC_EFFECT_ENABLE || (defined CONFIG_WIRELESS_MIC_ENABLE))
     get_mic_pipeline_node_uuid();
 #endif
 #endif

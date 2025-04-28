@@ -18,6 +18,7 @@
 #include "scene_switch.h"
 #include "uac_stream.h"
 #include "audio_cvp.h"
+#include "volume_node.h"
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #include "le_broadcast.h"
@@ -73,6 +74,7 @@ static void pc_spk_player_callback(void *private_data, int event)
     struct pc_spk_player *player = g_pc_spk_player;
     struct jlstream *stream = (struct jlstream *)private_data;
 
+    printf("pc spk player callback : %d\n", event);
     switch (event) {
     case STREAM_EVENT_START:
 
@@ -108,6 +110,18 @@ int pc_spk_player_open(void)
 {
     int err = 0;
     struct pc_spk_player *player = NULL;;
+#if TCFG_LOCAL_TWS_ENABLE
+    struct local_tws_stream_params *local_tws_fmt = {0};
+
+    struct stream_enc_fmt fmt = {
+        .channel = LOCAL_TWS_CODEC_CHANNEL,
+        .bit_width = LOCAL_TWS_CODEC_BIT_WIDTH,
+        .frame_dms = LOCAL_TWS_CODEC_FRAME_LEN,
+        .sample_rate = LOCAL_TWS_CODEC_SAMPLERATE,
+        .bit_rate = LOCAL_TWS_CODEC_BIT_RATE,
+        .coding_type = LOCAL_TWS_CODEC_TYPE,
+    };
+#endif
 
     if (g_pc_spk_player) {
         return 0;
@@ -149,11 +163,20 @@ int pc_spk_player_open(void)
     jlstream_add_thread(player->stream, "media2");
 #endif
 #endif
+#if TCFG_LOCAL_TWS_ENABLE
+    err = jlstream_ioctl(player->stream, NODE_IOC_SET_ENC_FMT, (int)&fmt);
+    if (err == 0) {
+        err = jlstream_start(player->stream);
+    }
+#else
     err = jlstream_start(player->stream);
+#endif
     if (err) {
         goto __exit1;
     } else {
+#if TCFG_DAC_NODE_ENABLE
         dac_try_power_on_task_delete();
+#endif
     }
 
     g_pc_spk_state = PC_SPK_STA_OPEN;
@@ -294,6 +317,20 @@ int pcspk_restart_player_by_taskq(void)
 
 static void pc_spk_set_volume(void)
 {
+#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE))
+    char *vol_name = "Vol_PcspkMusic";
+    s16 cur_vol = app_audio_get_volume(APP_AUDIO_STATE_MUSIC);
+    u16 l_vol = 0, r_vol = 0;
+    uac_speaker_stream_get_volume(&l_vol, &r_vol);
+    if (cur_vol != ((l_vol + r_vol) / 2)) {
+        struct volume_cfg cfg = {0};
+        cfg.bypass = VOLUME_NODE_CMD_SET_VOL;
+        cfg.cur_vol = (l_vol + r_vol) / 2;
+        int err = jlstream_set_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg)) ;
+        printf(">>> pc vol: %d", app_audio_get_volume(APP_AUDIO_CURRENT_STATE));
+    }
+    return;
+#endif
     if (app_get_current_mode()->name == APP_MODE_PC) {
         s16 cur_vol = app_audio_get_volume(APP_AUDIO_STATE_MUSIC);
         u16 l_vol = 0, r_vol = 0;
@@ -360,7 +397,7 @@ int usb_device_event_handler(int *msg)
     case APP_MSG_PC_AUDIO_PLAY_CLOSE:
         pc_player_status = 0;
         printf("APP_MSG_PC_AUDIO_PLAY_CLOSE\n");
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))&& (!(defined CONFIG_WIRELESS_MIC_ENABLE))
         if (get_broadcast_role()) {
             //广播（发送端）
             printf(">>[PC] spk lost audio stream, broadcast audio need suspend!\n");

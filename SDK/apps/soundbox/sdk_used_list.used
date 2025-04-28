@@ -23,9 +23,15 @@ bt_audio_sync_node_adapter
 adc_file_plug
 
 
+
 tone_file_plug
+
+
 ring_file_plug
+
+
 key_tone_file_plug
+
 
 
 
@@ -55,15 +61,11 @@ sbc_encoder_soft_plug
 
 
 cvsd_encoder_plug
-
-
-
-mp3_encoder_plug
 linein_file_plug
 
 
 
-fm_file_plug
+
 
 
 music_file_plug
@@ -76,9 +78,61 @@ music_file_plug
 
 convert_node_adapter
 convert_data_round_node_adapter
+
+
+
+
+
+
+
+three_band_merge_node_adapter
+
+
+
+
+
+
+
+bass_treble_eq_node_adapter
+
+
+
+
 sound_splitter_node_adapter
 wdrc_node_adapter
+voice_changer_node_adapter
+
+
+
+
+
+
+
 noisegate_node_adapter
+
+
+
+frequency_shift_node_adapter
+
+
+
+howling_suppress_node_adapter
+
+
+
+
+
+
+
+plate_reverb_advance_node_adapter
+
+
+
+echo_node_adapter
+autotune_node_adapter
+
+
+
 vocal_remover_node_adapter
 
 
@@ -88,14 +142,6 @@ vocal_remover_node_adapter
 
 
 eq_node_adapter
-g729_dec_plug
-
-
-
-
-
-
-
 wav_dec_plug
 mp3_dec_plug
 
@@ -116,10 +162,6 @@ jla_encoder_plug
 
 
 jla_dec_plug
-
-
-
-
 fat_vfs_ops
 
 
@@ -139,13 +181,21 @@ wireless_custom_data_trans
 wireless_key_sync
 le_audio_source_adapter
 capture_sync_adapter
-jla_v2_enc_plug
-
-jla_v2_dec_plug
-
 le_audio_file_plug
+indicator_node_adapter
+
+
+
+
+
+
+
 channel_expander_node_adapter
-local_tws_file_plug
+packager_adapter
+
+
+
+write_file_adapter
 a2dp_1sbc_codec_private
 
 

@@ -12,13 +12,16 @@ ${OBJCOPY} -O binary -j .data_code $1.elf data_code.bin
 ${OBJCOPY} -O binary -j .overlay_aec $1.elf aec.bin
 ${OBJCOPY} -O binary -j .overlay_aac $1.elf aac.bin
 ${OBJCOPY} -O binary -j .ps_ram_data_code $1.elf ps_ram_data_code.bin
+${OBJCOPY} -O binary -j .dcache_ram_data $l.elf d_ram_data.bin
+${OBJCOPY} -O binary -j .icache0_ram_data_code $1.elf i0_ram_data_code.bin
+${OBJCOPY} -O binary -j .icache1_ram_data_code $1.elf i1_ram_data_code.bin
 
 ${OBJDUMP} -section-headers -address-mask=0x7ffffff $1.elf > segment_list.txt
-${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 >  symbol_tbl.txt 
+${OBJSIZEDUMP} -lite -skip-zero -enable-dbg-info $1.elf | sort -k 1 >  symbol_tbl.txt
 
 /opt/utils/report_segment_usage --sdk_path ${ROOT} --tbl_file symbol_tbl.txt --seg_file segment_list.txt  --map_file $1.map --module_depth "{\"apps\":1,\"lib\":2,\"[lib]\":2}"
 
-cat text.bin data.bin data_code.bin aec.bin aac.bin ps_ram_data_code.bin > app.bin
+cat text.bin data.bin data_code.bin aec.bin aac.bin ps_ram_data_code.bin d_ram_data.bin i0_ram_data_code.bin i1_ram_data_code.bin > app.bin
 
 cat segment_list.txt
 
@@ -96,15 +99,16 @@ REM %OBJDUMP% -D -address-mask=0x7ffffff -print-imm-hex -mcpu=r3 -print-dbg sdk.
 %OBJCOPY% -O binary -j .overlay_aec %ELFFILE% aec.bin
 %OBJCOPY% -O binary -j .overlay_aac %ELFFILE% aac.bin
 %OBJCOPY% -O binary -j .ps_ram_data_code %ELFFILE% ps_ram_data_code.bin
-
-
-
+%OBJCOPY% -O binary -j .dcache_ram_data %ELFFILE%  d_ram_data.bin
+%OBJCOPY% -O binary -j .icache0_ram_data_code %ELFFILE%  i0_ram_data_code.bin
+%OBJCOPY% -O binary -j .icache1_ram_data_code %ELFFILE%  i1_ram_data_code.bin
 
 %OBJDUMP% -section-headers -address-mask=0x7ffffff %ELFFILE%
 REM %OBJDUMP% -t %ELFFILE% >  symbol_tbl.txt
 
-copy /b text.bin + data.bin + data_code.bin + aec.bin + aac.bin + ps_ram_data_code.bin app.bin
+copy /b text.bin + data.bin + data_code.bin + aec.bin + aac.bin + ps_ram_data_code.bin + d_ram_data.bin + i0_ram_data_code.bin + i1_ram_data_code.bin app.bin
 
+del text.bin data.bin data_code.bin aec.bin aac.bin ps_ram_data_code.bin d_ram_data.bin i0_ram_data_code.bin i1_ram_data_code.bin
 
 
 isd_download.exe -tonorflash -dev br27 -boot 0x120000 -div8 -wait 300 -uboot uboot.boot -app app.bin -tone %TONE_FILES% -res cfg_tool.bin p11_code.bin stream.bin %LCD_SOURCE_FILES% %KEY_FILE% %FORMAT%

@@ -312,6 +312,7 @@ void setup_arch()
     efuse_init();
 
     clk_voltage_init(TCFG_CLOCK_MODE, DVDD_VOL_SEL_1025V);
+
     //系统时钟源选择
 #if (TCFG_CLOCK_SYS_SRC == SYS_CLOCK_INPUT_PLL_RCL)
     clk_early_init(PLL_REF_LRC, TCFG_CLOCK_OSC_HZ, 320 * MHz);

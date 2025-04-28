@@ -241,7 +241,9 @@ static void retry_start_a2dp_player(void *p)
     if (g_a2dp_player && g_a2dp_player->stream) {
         int err = jlstream_start(g_a2dp_player->stream);
         if (err == 0) {
+#if TCFG_DAC_NODE_ENABLE
             dac_try_power_on_task_delete();
+#endif
             sys_timer_del(g_a2dp_player->retry_timer);
             g_a2dp_player->retry_timer = 0;
         }
@@ -310,7 +312,9 @@ int a2dp_player_open(u8 *btaddr)
             g_a2dp_player->retry_timer = sys_timer_add(NULL, retry_start_a2dp_player, 200);
             return 0;
         } else {
+#if TCFG_DAC_NODE_ENABLE
             dac_try_power_on_task_delete();
+#endif
         }
     }
     if (err) {

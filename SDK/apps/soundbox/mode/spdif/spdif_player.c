@@ -86,6 +86,18 @@ int spdif_player_open(void)
 
     printf("\n>>>>>>>>>>>> spdif_player_open!\n\n");
 
+#if TCFG_LOCAL_TWS_ENABLE
+    struct local_tws_stream_params *local_tws_fmt = {0};
+
+    struct stream_enc_fmt fmt = {
+        .channel = LOCAL_TWS_CODEC_CHANNEL,
+        .bit_width = LOCAL_TWS_CODEC_BIT_WIDTH,
+        .frame_dms = LOCAL_TWS_CODEC_FRAME_LEN,
+        .sample_rate = LOCAL_TWS_CODEC_SAMPLERATE,
+        .bit_rate = LOCAL_TWS_CODEC_BIT_RATE,
+        .coding_type = LOCAL_TWS_CODEC_TYPE,
+    };
+#endif
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"spdif");
     if (uuid == 0) {
         return -EFAULT;
@@ -122,7 +134,14 @@ int spdif_player_open(void)
     jlstream_add_thread(player->stream, "media2");
 #endif
 #endif
+#if TCFG_LOCAL_TWS_ENABLE
+    err = jlstream_ioctl(player->stream, NODE_IOC_SET_ENC_FMT, (int)&fmt);
+    if (err == 0) {
+        err = jlstream_start(player->stream);
+    }
+#else
     err = jlstream_start(player->stream);
+#endif
     if (err) {
         goto __exit1;
     }
@@ -280,7 +299,7 @@ static void spdif_open_player(int arg)
             if (le_audio == NULL) {
                 r_printf("=========================> [%s, %d] le_audio == NULL\n", __func__, __LINE__);
             }
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
             sys_timeout_add(NULL, delay_open_spdif_player, 1000);
 #endif
         }
@@ -310,7 +329,7 @@ static void spdif_open_player(int arg)
             if (le_audio == NULL) {
                 r_printf("=========================> [%s, %d] le_audio == NULL\n", __func__, __LINE__);
             }
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
             sys_timeout_add(NULL, delay_open_spdif_player, 1000);
 #endif
         }

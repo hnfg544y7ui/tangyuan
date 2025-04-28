@@ -76,6 +76,13 @@
 #endif
 #endif /*CONFIG_CODE_MOVABLE_ENABLE*/ 
 
+#if AUDIO_LLNS_DNS_CODEC_AT_RAM
+    *(.llns_dns.const)
+    *(.llns_dns.code)
+    *(.llns_dns_param_data_single)
+    *(.llns_dns_common_data)
+    *(.llns_dns_16k_data)
+#endif
     . = ALIGN(4);
     *(.pSOUND360TD_cal_sparse_code)
     *(.pSOUND360TD_cal_code)

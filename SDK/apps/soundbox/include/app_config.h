@@ -146,6 +146,19 @@
 // #define  TCFG_LOWPOWER_LOWPOWER_SEL 0x0//低功耗连接还有问题
 #endif
 
+#define LEA_TRANS_SIMPLEX       (1 << 0)
+#define LEA_TRANS_DUPLEX        (1 << 1)
+
+#define LEA_ROLE_UNFIX          (0 << 0)
+#define LEA_ROLE_AS_TX          (1 << 0)
+#define LEA_ROLE_AS_RX          (1 << 1)
+
+#define LEA_ROLE_AS_CENTRAL     (1 << 0)
+#define LEA_ROLE_AS_PERIPHERAL  (1 << 1)
+
+#define LEA_CIG_1T1R_MODE       (1 << 0)
+#define LEA_CIG_2T1R_MODE       (1 << 1)
+#define LEA_CIG_1T2R_MODE       (1 << 2)
 
 /* -----------------独立模式 PC/LINEIN/SPDIF 模块默认控制------- */
 //没有独立模式的 需要在sdk_config.h定义对应的宏，有独立模式的，根据模式宏的值默认定义对应的宏
@@ -888,19 +901,14 @@
 
 #define TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE (TCFG_VIRTUAL_SURROUND_PRO_MODULE_NODE_ENABLE || TCFG_VIRTUAL_SURROUND_2T4_MODULE_NODE_ENABLE || TCFG_VIRTUAL_SURROUND_2T5_MODULE_NODE_ENABLE)
 
-
-//遇到效率不够的情况遇到酌情考虑减少icache当普通ram使用
-#if (TCFG_VIRTUAL_SURROUND_2T4_MODULE_NODE_ENABLE || TCFG_VIRTUAL_SURROUND_2T5_MODULE_NODE_ENABLE)  //4.1\5.1环绕声使用icache做普通ram
-#define TCFG_FREE_ICACHE0_WAY_NUM              5
-#define TCFG_FREE_ICACHE1_WAY_NUM              5
-#define TCFG_FREE_DCACHE_WAY_NUM               3
-#elif TCFG_VIRTUAL_SURROUND_PRO_MODULE_NODE_ENABLE  //2.0\2.1不使用icache以提高效率
+//cache配置放到可视化工具板级配置来配
+#ifndef TCFG_FREE_ICACHE0_WAY_NUM
 #define TCFG_FREE_ICACHE0_WAY_NUM              0
+#endif
+#ifndef TCFG_FREE_ICACHE1_WAY_NUM
 #define TCFG_FREE_ICACHE1_WAY_NUM              0
-#define TCFG_FREE_DCACHE_WAY_NUM               3
-#else
-#define TCFG_FREE_ICACHE0_WAY_NUM              0
-#define TCFG_FREE_ICACHE1_WAY_NUM              0
+#endif
+#ifndef TCFG_FREE_DCACHE_WAY_NUM
 #define TCFG_FREE_DCACHE_WAY_NUM               0
 #endif
 

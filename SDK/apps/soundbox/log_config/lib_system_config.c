@@ -101,7 +101,7 @@ const int device_bulk_read_async_enable = 0;
 //================================================//
 const int SCALE_EFFECT_WITHOUT_PSRAM_ENABLE     = 0;
 const int ENABLE_LUA_VIRTUAL_MACHINE = 0;
-const int UI_DATA_STORE_IN_NORFLASH = 0;
+const int UI_DATA_STORE_IN_NORFLASH = 1;
 
 const int ARABIC_MODE_SWITCH      = 0;
 const int HEBREW_MODE_SWITCH      = 0;
@@ -200,6 +200,17 @@ const int config_dlog_reset_erase_enable = TCFG_DEBUG_DLOG_RESET_ERASE;
 #else
 const int config_dlog_enable = 0;
 const int config_dlog_reset_erase_enable = 0;
+#endif
+
+//================================================//
+// 默认由宏来控制,请勿修改
+// 0x00000000:表示使能压缩data、data_code功能
+// 0xFFFFFFFF:表示关闭压缩data、data_code功能
+//================================================//
+#ifdef CONFIG_LZ4_DATA_CODE_ENABLE
+const int LZ4_DATA_CODE_ENABLE = 0x00000000;
+#else
+const int LZ4_DATA_CODE_ENABLE = 0xFFFFFFFF;
 #endif
 
 /**

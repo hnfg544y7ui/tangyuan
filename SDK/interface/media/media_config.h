@@ -18,6 +18,8 @@ extern const int CONFIG_MAX_ENC_DATA_CACHE_SIZE;
 extern const int CONFIG_LOG_OUTPUT_ENABLE;
 extern const int config_audio_cfg_online_enable;
 extern const int config_audio_dac_dma_buf_realloc_enable;
+extern const int config_audio_cvp_ref_ch_recognize_enable;
+extern const int CONFIG_MEDIA_MEM_DEBUG;
 
 
 /*
@@ -31,12 +33,34 @@ extern const int config_audio_dac_channel_left_enable;
 extern const int config_audio_dac_channel_right_enable;
 extern const int config_audio_dac_power_on_mode;
 extern const int config_audio_dac_power_off_lite;
+extern const int config_audio_dac_mix_enable;
+extern const int config_audio_dac_noisefloor_optimize_enable;
+extern const char config_audio_dac_trim_enable;
+extern const int config_audio_dac_mute_timeout;
+extern const int config_audio_dac_pa_mode;
+extern const int config_audio_dac_power_mode;
 
 /*
  *******************************************************************
  *						ADC Configs
  *******************************************************************
  */
+extern const int config_audio_adc0_enable;
+extern const int config_audio_adc1_enable;
+extern const int config_audio_adc2_enable;
+extern const int config_audio_adc3_enable;
+extern const int config_audio_adc4_enable;
+extern const int config_audio_adc5_enable;
+extern const int config_audio_adc6_enable;
+extern const int config_audio_adc7_enable;
+extern const int config_audio_adc0_input_mode;
+extern const int config_audio_adc1_input_mode;
+extern const int config_audio_adc2_input_mode;
+extern const int config_audio_adc3_input_mode;
+extern const int config_audio_adc4_input_mode;
+extern const int config_audio_adc5_input_mode;
+extern const int config_audio_adc6_input_mode;
+extern const int config_audio_adc7_input_mode;
 extern const u8 const_mic_capless_open_delay_debug;
 extern const u8 const_mic_capless_trim_delay_debug;
 extern const u8 const_adc_async_en;						//是否支持多个ADC异步打开
@@ -71,7 +95,7 @@ extern const int config_audio_gain_enable;
 extern const int config_audio_split_gain_enable;
 extern const int config_audio_stereomix_enable;
 extern const int voicechanger_effect_v_config;
-extern const int mb_limiter_3band_run_en;
+extern const int audio_crossover_3band_enable;
 extern const int limiter_run_mode;
 extern const int drc_advance_run_mode;
 extern const int drc_run_mode;

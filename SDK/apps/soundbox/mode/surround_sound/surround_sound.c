@@ -130,6 +130,7 @@ static int surround_sound_mode_try_enter(int arg)
 
 static int surround_sound_mode_try_exit()
 {
+    int ret = 0;
 #if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
 #if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN)
     le_audio_scene_deal(LE_AUDIO_APP_MODE_EXIT);
@@ -146,18 +147,18 @@ static int surround_sound_mode_try_exit()
 #endif
 
 #if (!TCFG_KBOX_1T3_MODE_EN)
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     app_broadcast_deal(LE_AUDIO_APP_MODE_EXIT);
 #if (!TCFG_BT_BACKGROUND_ENABLE)
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
-    return 0;
+    return ret;
 }
 
 static const struct app_mode_ops surround_sound_mode_ops = {

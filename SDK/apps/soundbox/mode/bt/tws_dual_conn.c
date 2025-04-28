@@ -43,6 +43,7 @@ struct dual_conn_handle {
 
 static struct dual_conn_handle g_dual_conn;
 static u8 page_mode_active = 0;
+static u8 page_timeout = 0;         //用来两边同时按下才发起配对的情况下，TWS未配对发起回连的超时之后插入可发现可连接
 
 void clr_page_mode_active(void)
 {
@@ -270,6 +271,10 @@ static u8 *get_device_addr_in_page_list()
 
 static void tws_wait_pair_timeout(void *p)
 {
+    u32 rets;//, reti;
+    __asm__ volatile("%0 = rets":"=r"(rets));
+    g_printf("__func__ %s %x\n", __func__, rets);
+
     g_dual_conn.timer = 0;
     tws_api_cancle_wait_pair();
     dual_conn_page_device();
@@ -478,11 +483,31 @@ void tws_dual_conn_state_handler()
         }
 #else
 
-        if (have_page_device) {
-            write_scan_conn_enable(0, 0);
-            dual_conn_page_device();
-        } else if ((bt_name || connect_device == 0) && edr_background_active) {
-            write_scan_conn_enable(1, 1);
+        if (edr_background_active && page_mode_active == 0) {
+            if (have_page_device) {
+                if (page_timeout) {     //回连超时插入2s手机的可发现可连接
+                    page_timeout = 0;
+                    //增加2s可发现可连接时间
+                    if (bt_name || connect_device == 0) {
+                        write_scan_conn_enable(1, 1);
+                    } else if (connect_device == 1) {
+#if TCFG_BT_DUAL_CONN_ENABLE
+                        write_scan_conn_enable(0, 1);
+#endif
+                    }
+                    g_dual_conn.timer = sys_timeout_add(NULL, tws_wait_pair_timeout,
+                                                        6000);
+                } else {
+                    write_scan_conn_enable(0, 0);
+                    dual_conn_page_device();
+                }
+            } else if (bt_name || connect_device == 0) {
+                write_scan_conn_enable(1, 1);
+            } else if (connect_device == 1) {
+#if TCFG_BT_DUAL_CONN_ENABLE
+                write_scan_conn_enable(0, 1);
+#endif
+            }
         }
 #endif
 #elif CONFIG_TWS_PAIR_MODE == CONFIG_TWS_PAIR_BY_AUTO
@@ -555,6 +580,7 @@ static void dual_conn_page_device_timeout(void *p)
             }
             bt_cmd_prepare(USER_CTRL_PAGE_CANCEL, 0, NULL);
             page_mode_active = 0;
+            page_timeout = 1;
             tws_dual_conn_state_handler();
             break;
         }
@@ -593,6 +619,7 @@ void dual_conn_page_device()
                                           TCFG_BT_PAGE_TIMEOUT * 1000);
             bt_cmd_prepare(USER_CTRL_START_CONNEC_VIA_ADDR, 6, info->mac_addr);
             page_mode_active = 1;
+            page_timeout = 0;
             return;
         }
     }
@@ -777,6 +804,16 @@ static int dual_conn_hci_event_handler(int *_event)
         }
         break;
     case HCI_EVENT_CONNECTION_COMPLETE:
+        if (page_mode_active) {
+            struct page_device_info *info, *n;
+            list_for_each_entry_safe(info, n, &g_dual_conn.page_head, entry) {
+                if (info->timer) {
+                    if (memcmp(info->mac_addr, event->args, 6) == 0) {
+                        page_mode_active = 0;
+                    }
+                }
+            }
+        }
         switch (event->value) {
         case ERROR_CODE_SUCCESS :
             if (g_dual_conn.timer) {
@@ -926,6 +963,10 @@ static int dual_conn_tws_event_handler(int *_event)
 #if TCFG_BACKGROUND_WITHOUT_EDR_CONNECT
         edr_background_active = 0;
 #endif
+    }
+#else
+    if (g_bt_hdl.wait_exit) {       //非后台正在退出蓝牙模式,不再响应断开事件处理
+        return 0;
     }
 #endif
 
@@ -1182,6 +1223,10 @@ static int dual_conn_app_event_handler(int *msg)
         switch (msg[0]) {
         case APP_MSG_TWS_PAIRED:
             if (bt_get_total_connect_dev() == 0) {
+                if (g_dual_conn.timer) {
+                    sys_timeout_del(g_dual_conn.timer);
+                    g_dual_conn.timer = 0;
+                }
                 tws_api_create_connection(0);
                 g_dual_conn.timer = sys_timeout_add(NULL, tws_create_conn_timeout,
                                                     TCFG_TWS_CONN_TIMEOUT * 1000);
@@ -1198,6 +1243,10 @@ static int dual_conn_app_event_handler(int *msg)
             u8 tws_can_pair = !bt_get_total_connect_dev();
 #endif
             if (tws_can_pair) {
+                if (g_dual_conn.timer) {
+                    sys_timeout_del(g_dual_conn.timer);
+                    g_dual_conn.timer = 0;
+                }
                 if (bt_get_total_connect_dev() == 0) {
                     tws_api_set_quick_connect_addr(tws_set_auto_pair_code());
                     tws_api_auto_pair(0);

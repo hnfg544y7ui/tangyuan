@@ -9,6 +9,7 @@
 #include "app_le_auracast.h"
 #include "fm_api.h"
 #include "dual_conn.h"
+#include "app_le_connected.h"
 
 #if TCFG_USER_TWS_ENABLE
 void bt_tws_onoff(u8 onoff)
@@ -30,6 +31,10 @@ void bt_tws_onoff(u8 onoff)
 
 int bt_work_mode_select(u8 mode)
 {
+#if TCFG_LE_AUDIO_APP_CONFIG == 0
+    //le_audio不打开的情况下，不响应蓝牙工作模式切换
+    return 0;
+#endif
     //先释放当前模式资源
     r_printf("%s %d %d\n", __func__, mode, g_bt_hdl.work_mode);
     if (mode == g_bt_hdl.work_mode) {
@@ -76,7 +81,10 @@ int bt_work_mode_select(u8 mode)
 #endif
         break;
     case BT_MODE_CIG:
-
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
+        le_audio_scene_deal(LE_AUDIO_APP_CLOSE);
+        app_connected_uninit();
+#endif
         break;
     case BT_MODE_3IN1:
 
@@ -122,6 +130,11 @@ int bt_work_mode_select(u8 mode)
 #endif
         break;
     case BT_MODE_CIG:
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
+        app_connected_init();
+        le_audio_scene_deal(LE_AUDIO_APP_OPEN);
+        app_connected_open(0);
+#endif
 
         break;
     case BT_MODE_3IN1:
@@ -134,7 +147,20 @@ int bt_work_mode_select(u8 mode)
 void bt_work_mode_switch_to_next(void)
 {
     static u8 work_mode = BT_MODE_SIGLE_BOX;
+
+#if TCFG_LE_AUDIO_APP_CONFIG == 0
+    //le_audio不打开的情况下，不响应蓝牙工作模式切换
+    return;
+#endif
     work_mode ++;
+
+#if (TCFG_BT_BACKGROUND_ENABLE == 0)
+    //非后台不在蓝牙模式不切换到TWS模式
+    if ((app_in_mode(APP_MODE_BT) == 0) && (work_mode == BT_MODE_TWS)) {
+        work_mode ++;
+    }
+#endif
+
 #if TCFG_USER_TWS_ENABLE == 0
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     if (work_mode == BT_MODE_TWS) {
@@ -143,6 +169,10 @@ void bt_work_mode_switch_to_next(void)
 #elif (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN))
     if (work_mode == BT_MODE_TWS) {
         work_mode = BT_MODE_AURACAST;
+    }
+#elif (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
+    if (work_mode == BT_MODE_TWS) {
+        work_mode = BT_MODE_CIG;
     }
 #endif
 #endif
@@ -158,10 +188,31 @@ void bt_work_mode_switch_to_next(void)
         work_mode =  BT_MODE_CIG;
     }
 #endif
-    if (work_mode == BT_MODE_CIG) {
+
+#if (!(TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN)))
+    if (work_mode ==  BT_MODE_CIG) {
+        work_mode =  BT_MODE_3IN1;
+    }
+#endif
+    if (work_mode == BT_MODE_3IN1) {
         work_mode = BT_MODE_SIGLE_BOX;
     }
 
     bt_work_mode_select(work_mode);
 }
 
+/*LE_AUDIO暂未支持低功耗*/
+#if TCFG_LE_AUDIO_APP_CONFIG
+static u8 mode_idle_query(void)
+{
+    if (g_bt_hdl.work_mode == BT_MODE_SIGLE_BOX || g_bt_hdl.work_mode == BT_MODE_TWS) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+REGISTER_LP_TARGET(mode_target) = {
+    .name = "mode",
+    .is_idle = mode_idle_query,
+};
+#endif

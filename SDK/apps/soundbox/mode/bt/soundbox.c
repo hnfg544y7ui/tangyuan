@@ -75,7 +75,13 @@
 #define LOG_CLI_ENABLE
 #include "debug.h"
 
+#if TCFG_LE_AUDIO_APP_CONFIG
 struct bt_mode_var g_bt_hdl = {.work_mode = BT_MODE_SIGLE_BOX};
+#elif TCFG_USER_TWS_ENABLE      //不开广播且打开TWS的情况下开机默认为TWS模式
+struct bt_mode_var g_bt_hdl = {.work_mode = BT_MODE_TWS};
+#else
+struct bt_mode_var g_bt_hdl = {.work_mode = BT_MODE_SIGLE_BOX};
+#endif
 
 #if TCFG_APP_BT_EN
 
@@ -398,9 +404,7 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
         log_info("++++++++ BT_STATUS_CONN_A2DP_CH +++++++++  \n");
         u8 a2dp_vol_mac[6];
         memcpy(a2dp_vol_mac, bt->args, 6);
-#ifndef BR56_FPGA_CODE_VERIFY
         app_audio_bt_volume_save_mac(a2dp_vol_mac);
-#endif
         break;
     case BT_STATUS_DISCON_A2DP_CH:
         log_info("++++++++ BT_STATUS_DISCON_A2DP_CH +++++++++  \n");
@@ -1077,7 +1081,7 @@ void btstack_init_for_app(void)
     }
 }
 
-void btstack_exit_for_app(void)
+int btstack_exit_for_app(void)
 {
     if (g_bt_hdl.init_ok) {
 #if TCFG_USER_TWS_ENABLE
@@ -1093,7 +1097,10 @@ void btstack_exit_for_app(void)
         bt_cmd_prepare(USER_CTRL_DISCONNECTION_HCI, 0, NULL);
         btstack_exit();
         g_bt_hdl.init_ok = 0;
+    } else if (g_bt_hdl.initializing) {
+        return -EBUSY;
     }
+    return 0;
 }
 
 void btstack_init_in_other_mode(void)
@@ -1103,11 +1110,13 @@ void btstack_init_in_other_mode(void)
 #endif
 }
 
-void btstack_exit_in_other_mode(void)
+int btstack_exit_in_other_mode(void)
 {
 #if (TCFG_BT_BACKGROUND_ENABLE == 0)
-    btstack_exit_for_app();
+    return btstack_exit_for_app();
 #endif
+    return 0;
 }
+
 
 

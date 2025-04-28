@@ -26,6 +26,7 @@
 #include "record.h"
 #include "mix_record_api.h"
 #include "le_broadcast.h"
+#include "le_connected.h"
 #include "app_le_broadcast.h"
 #include "app_le_connected.h"
 #include "app_le_auracast.h"
@@ -33,6 +34,9 @@
 #include "rcsp_device_status.h"
 #include "btstack_rcsp_user.h"
 #include "bt_key_func.h"
+#if LE_AUDIO_MIX_MIC_EN
+#include "le_audio_mix_mic_recorder.h"
+#endif
 
 static u32 input_number = 0;
 static u16 input_number_timer = 0;
@@ -117,6 +121,18 @@ void app_common_key_msg_handler(int *msg)
 #endif
         app_send_message(APP_MSG_VOL_CHANGED, app_audio_get_volume(APP_AUDIO_STATE_MUSIC));
         break;
+
+    case APP_MSG_LE_AUDIO_MIX_MIC_ON_OFF:
+#if LE_AUDIO_MIX_MIC_EN && (LE_AUDIO_MIX_MIC_EFFECT_EN == 0)
+        y_printf(">>>>>>>>>>>>>>>>>>>>> App Msg LE Audio Mix Mic On Off!\n");
+        if (is_le_audio_mix_mic_recorder_running()) {
+            le_audio_mix_mic_close();
+        } else {
+            le_audio_mix_mic_open();
+        }
+#endif
+        break;
+
 #if TCFG_KBOX_1T3_MODE_EN
 #if TCFG_MIC_EFFECT_ENABLE && (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN) || TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     case APP_MSG_SW_WIRED_MIC_OR_WIRELESS_MIC:
@@ -212,12 +228,44 @@ void app_common_key_msg_handler(int *msg)
             break;
         }
 #endif
+
+#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
+        if (get_le_audio_curr_role() == BROADCAST_ROLE_TRANSMITTER || get_le_audio_curr_role() == CONNECTED_ROLE_CENTRAL) {
+            if (is_le_audio_mix_mic_recorder_running()) {
+                //该函数里会先关闭混响，最后会根据之前状态去恢复
+                le_audio_mix_mic_close();
+            } else {
+                le_audio_mix_mic_open();
+            }
+        } else {
+            if (mic_effect_player_runing()) {
+                mic_effect_player_close();
+            } else {
+                mic_effect_player_open();
+            }
+        }
+#else
         if (mic_effect_player_runing()) {
             mic_effect_player_close();
         } else {
             mic_effect_player_open();
         }
+#endif
         break;
+    case APP_MSG_LE_AUDIO_MIC_ALL_OFF:
+#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
+        //Le Audio 广播下关闭所有Mic
+        if (is_le_audio_mix_mic_recorder_running()) {
+            le_audio_mix_mic_close();
+            mic_effect_player_close();
+        } else {
+            if (mic_effect_player_runing()) {
+                mic_effect_player_close();
+            }
+        }
+#endif
+        break;
+
     case APP_MSG_SWITCH_MIC_EFFECT://混响音效场景切换
         mic_effect_scene_switch();
         break;
@@ -384,15 +432,6 @@ void app_common_device_event_handler(int *msg)
         if (true == app_in_mode(APP_MODE_MUSIC)) {
             music_device_msg_handler(msg);
         }
-        ret = dev_status_event_filter(msg);///解码设备上下线， 设备挂载等处理
-        if (ret == true) {
-            if (msg[1] == DEVICE_EVENT_IN) {
-                ///设备上线， 非解码模式切换到解码模式播放
-                if (true != app_in_mode(APP_MODE_MUSIC)) {
-                    app = APP_MODE_MUSIC;
-                }
-            }
-        }
 #endif
 #if TCFG_APP_RECORD_EN
         if (true == app_in_mode(APP_MODE_RECORD)) {
@@ -402,6 +441,27 @@ void app_common_device_event_handler(int *msg)
 #if TCFG_MIX_RECORD_ENABLE
         mix_record_device_msg_handler(msg);
 #endif // TCFG_MIX_RECORD_ENABLE
+
+        ret = dev_status_event_filter(msg);///解码设备上下线， 设备挂载等处理
+        if (ret == true) {
+            if (msg[1] == DEVICE_EVENT_IN) {
+                ///设备上线， 非解码模式切换到解码模式播放
+#if TCFG_APP_MUSIC_EN
+                if (true != app_in_mode(APP_MODE_MUSIC)) {
+                    app = APP_MODE_MUSIC;
+                    break;
+                }
+#endif
+
+#if  TCFG_APP_RECORD_EN || TCFG_MIX_RECORD_ENABLE
+                //处理仅使能录音模式时，开机有设备在线无法切到record模式
+                if (true == app_in_mode(APP_MODE_IDLE)) {
+                    app = APP_MODE_RECORD;
+                    break;
+                }
+#endif
+            }
+        }
         break;
     case DEVICE_EVENT_FROM_LINEIN:
 #if TCFG_APP_LINEIN_EN

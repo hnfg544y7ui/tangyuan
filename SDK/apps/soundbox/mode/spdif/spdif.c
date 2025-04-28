@@ -45,13 +45,13 @@ struct spdif_ctl {
     u8 close_broadcast_open_lacal_audio_need_mute;
     u8 spdif_broadcast_pp_sw_flag;	//spdif broadcast 按下pp 切换发送端和接收端的标志
 #endif
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     //当关闭广播，打开本地音频时，是否需要mute（固定广播发送端, mute的状态下打开广播，关闭广播时恢复mute状态）
     u8 close_broadcast_open_lacal_audio_need_mute;
     //当关闭广播，打开本地音频时，是否需要解mute（固定广播发送端, unmute的状态下打开广播，关闭广播时需要解mute）
     u8 close_broadcast_open_lacal_audio_need_unmute;
 #endif
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     //当关闭广播，打开本地音频时，是否需要mute（固定广播为接收端, mute的状态下打开广播，关闭广播时恢复mute状态）
     u8 close_broadcast_open_lacal_audio_need_mute;
     //当关闭广播，打开本地音频时，是否需要解mute（固定广播为接收端, unmute的状态下打开广播，关闭广播时需要解mute）
@@ -292,19 +292,31 @@ int spdif_app_msg_handler(int *msg)
 
     return 0;
 }
+
+void spdif_local_start(void *priv)
+{
+    app_send_message(APP_MSG_SPDIF_START, 0);
+}
+
 static int app_spdif_init()
 {
+    int ret = -1;
     puts("\nspdif start\n");
     app_spdif_hd.mute_mark = 0;
     app_spdif_hd.spdif_hdl = NULL;
     spdif_idle_flag = 0;
+#if TCFG_LOCAL_TWS_ENABLE
+    ret = local_tws_enter_mode(get_tone_files()->spdif_mode, NULL);
+#endif //TCFG_LOCAL_TWS_ENABLE
     //开启ui
     /* UI_SHOW_WINDOW(ID_WINDOW_TV);//打开ui主页 */
     /* UI_SHOW_MENU(MENU_TV, 0, 0, NULL); */
-    tone_player_stop();
-    int ret = play_tone_file_callback(get_tone_files()->spdif_mode, NULL, spdif_tone_play_end_callback);
-    if (ret) {
-        spdif_tone_play_end_callback(NULL, STREAM_EVENT_NONE); // 提示音播放失败就直接调用 linein start
+    if (ret != 0) {
+        tone_player_stop();
+        ret = play_tone_file_callback(get_tone_files()->spdif_mode, NULL, spdif_tone_play_end_callback);
+        if (ret) {
+            spdif_tone_play_end_callback(NULL, STREAM_EVENT_NONE); // 提示音播放失败就直接调用 linein start
+        }
     }
 #if TCFG_PITCH_SPEED_NODE_ENABLE
     app_var.pitch_mode = PITCH_0;
@@ -326,6 +338,9 @@ static int app_spdif_init()
 
 void app_spdif_exit()
 {
+#if TCFG_LOCAL_TWS_ENABLE
+    local_tws_exit_mode();
+#endif
     if (app_spdif_hd.spdif_hdl && app_spdif_hd.p_spdif_cfg->hdmi_det_mode == HDMI_DET_UNUSED \
         && (uuid2gpio(app_spdif_hd.p_spdif_cfg->cec_io_port) != 0xff)) {
         hdmi_cec_close();
@@ -382,6 +397,7 @@ static int spdif_mode_try_enter()
 
 static int spdif_mode_try_exit()
 {
+    int ret = 0;
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
@@ -402,7 +418,7 @@ static int spdif_mode_try_exit()
 
 #endif
 #if (!TCFG_KBOX_1T3_MODE_EN)
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
@@ -410,12 +426,12 @@ static int spdif_mode_try_exit()
     le_audio_scene_deal(LE_AUDIO_APP_MODE_EXIT);
 #if (!TCFG_BT_BACKGROUND_ENABLE)
     app_auracast_close_in_other_mode();
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
     /* app_spdif_exit(); */
-    return 0;
+    return ret;
 }
 
 static const struct app_mode_ops spdif_mode_ops = {
@@ -432,6 +448,11 @@ REGISTER_APP_MODE(spdif_mode) = {
     .ops 	= &spdif_mode_ops,
 };
 
+REGISTER_LOCAL_TWS_OPS(spdif) = {
+    .name 	= APP_MODE_SPDIF,
+    .local_audio_open = spdif_local_start,
+    .get_play_status = spdif_player_runing,
+};
 
 static u8 spdif_idle_query(void)
 {
@@ -505,7 +526,7 @@ static int spdif_local_audio_open(void)
 #endif
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==1)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     if (app_spdif_hd.close_broadcast_open_lacal_audio_need_mute == 1) {
         //需要恢复mute状态
         app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 0;
@@ -527,7 +548,7 @@ static int spdif_local_audio_open(void)
 #endif
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==2)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     if (app_spdif_hd.close_broadcast_open_lacal_audio_need_mute == 1) {
         //需要恢复mute状态
         app_spdif_hd.close_broadcast_open_lacal_audio_need_mute = 0;
@@ -581,7 +602,7 @@ static int spdif_local_audio_close(void)
 #endif
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==1)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         //如果固定为发送端，则可能会存在两种情况：
         //1、mute住的情况下打开广播,此时发送端mute住，但接收端有声音, 发送端需要解mute. 关闭广播时需要重新给mute住
         //2、unmute的情况下打开广播，在关闭广播时需要解mute
@@ -601,7 +622,7 @@ static int spdif_local_audio_close(void)
 #endif
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==2)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
         //如果固定为接收端，则可能会存在两种情况：
         //1、mute住的情况下打开广播，此时进入接收端也是mute的状态，需要解mute；当关闭广播接收的时候，需要mute回去
         //2、unmute的情况下打开广播，在关闭广播时需要解mute
@@ -721,7 +742,7 @@ static int le_audio_spdif_volume_pp(void)
         ret = le_audio_scene_deal(LE_AUDIO_MUSIC_START);
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==1)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute == 0) {
             app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute = 1;
         }
@@ -733,7 +754,7 @@ static int le_audio_spdif_volume_pp(void)
         ret = le_audio_scene_deal(LE_AUDIO_MUSIC_STOP);
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==1)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute) {
             app_spdif_hd.close_broadcast_open_lacal_audio_need_unmute = 0;
         }

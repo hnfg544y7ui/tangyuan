@@ -97,9 +97,10 @@ CXXFLAGS :=
 DEFINES := \
 	-DSUPPORT_MS_EXTENSIONS \
 	-DCONFIG_RELEASE_ENABLE \
-	-DCONFIG_SOUNDBOX_CASE \
+	-DCONFIG_SOUNDBOX_CASE_ENABLE \
 	-DCONFIG_CPU_BR27 \
 	-DCONFIG_PRINT_IN_MASK \
+	-DLWIP_USE_BT \
 	-DCONFIG_NEW_BREDR_ENABLE \
 	-DCONFIG_NEW_MODEM_ENABLE \
 	-DCONFIG_NEW_TWS_FORWARD_ENABLE \
@@ -246,6 +247,7 @@ INCLUDES := \
 	-Iapps/common/cJSON \
 	-Iinterface/btstack \
 	-Iinterface/media/cpu/br27 \
+	-Iinterface/driver/cpu/br27/asm \
 	-Iinterface/utils/flash_translation_layer \
 	-Iinterface/ui/jl_ui \
 	-Iinterface/ui/jl_ui/ui/cpu/br27 \
@@ -282,12 +284,29 @@ INCLUDES := \
 	-Iaudio/cpu/br27/audio_common \
 	-Iinterface/media/framework/include \
 	-Iinterface/media/cvp \
+	-Iinterface/net \
+	-Iinterface/net/lwip_2_2_0/lwip/src/include \
+	-Iinterface/net/lwip_2_2_0/lwip/port \
+	-Iinterface/net/lwip_2_2_0/lwip/src/include/netif \
+	-Iinterface/net/lwip_2_2_0/lwip/port/arch \
+	-Iinterface/net/lwip_2_2_0/lwip/app/ctp \
+	-Iinterface/net/lwip_2_2_0/lwip/app/cdp \
+	-Iinterface/net/lwip_2_2_0/lwip/app/dhcp_srv \
+	-Iinterface/net/lwip_2_2_0/lwip/app/dtp \
+	-Iinterface/net/lwip_2_2_0/lwip/app/sock_api \
+	-Iinterface/net/lwip_2_2_0/lwip/app/udtp \
+	-Iinterface/net/lwip_2_2_0/lwip/src/include/lwip \
+	-Iinterface/net/lwip_2_2_0/lwip/app \
+	-Iinterface/net/lwip_2_2_0/lwip/app/mssdp \
+	-Iinterface/net/lwip_2_2_0/lwip/app/ddns \
+	-Iinterface/net/lte_module \
 	-I$(SYS_INC_DIR) \
 
 
 # 需要编译的 .c 文件
 c_SRC_FILES := \
 	apps/common/app_mode_manager/app_mode_manager.c \
+	apps/common/bt_common/bt_fre_offset_storage.c \
 	apps/common/bt_common/bt_test_api.c \
 	apps/common/clock_manager/clock_manager.c \
 	apps/common/config/app_config.c \
@@ -323,7 +342,9 @@ c_SRC_FILES := \
 	apps/common/device/sensor/ntc/ntc_det.c \
 	apps/common/device/storage_device/nandflash/ftl_device.c \
 	apps/common/device/storage_device/nandflash/nandflash.c \
+	apps/common/device/storage_device/norflash/norflash.c \
 	apps/common/device/storage_device/norflash/norflash_sfc.c \
+	apps/common/device/touch_panel/IT7259E.c \
 	apps/common/device/usb/demo/host/udisk_block_test.c \
 	apps/common/device/usb/device/cdc.c \
 	apps/common/device/usb/device/custom_hid.c \
@@ -372,6 +393,11 @@ c_SRC_FILES := \
 	apps/common/music/music_decrypt.c \
 	apps/common/music/music_id3.c \
 	apps/common/music/music_player.c \
+	apps/common/net/lwip_2_2_0/apps/sock_api/sock_api.c \
+	apps/common/net/lwip_2_2_0/port/LwIP.c \
+	apps/common/net/lwip_2_2_0/port/bt_ethernetif.c \
+	apps/common/net/lwip_2_2_0/port/fixme.c \
+	apps/common/net/lwip_2_2_0/port/sys_arch.c \
 	apps/common/temp_trim/dtemp_pll_trim.c \
 	apps/common/test/fs_test.c \
 	apps/common/third_party_profile/common/3th_profile_api.c \
@@ -556,6 +582,7 @@ c_SRC_FILES := \
 	apps/soundbox/mode/bt/bt_key_func.c \
 	apps/soundbox/mode/bt/bt_key_msg_table.c \
 	apps/soundbox/mode/bt/bt_mode_manage.c \
+	apps/soundbox/mode/bt/bt_net_event.c \
 	apps/soundbox/mode/bt/bt_slience_detect.c \
 	apps/soundbox/mode/bt/bt_tws.c \
 	apps/soundbox/mode/bt/dual_conn.c \
@@ -658,6 +685,7 @@ c_SRC_FILES := \
 	apps/soundbox/ui/lcd/STYLE_SOUNDBOX/sink_action.c \
 	apps/soundbox/ui/lcd/STYLE_SOUNDBOX/spdif_action.c \
 	apps/soundbox/ui/lcd/STYLE_SOUNDBOX/system_action.c \
+	apps/soundbox/ui/lcd/STYLE_SOUNDBOX/ui_touch_demo.c \
 	apps/soundbox/ui/lcd/lyrics_api.c \
 	apps/soundbox/ui/lcd/ui_sys_param_api.c \
 	apps/soundbox/ui/led/led_config.c \
@@ -837,6 +865,7 @@ c_SRC_FILES := \
 	audio/interface/recoder/dev_flow_recoder.c \
 	audio/interface/recoder/esco_recoder.c \
 	audio/interface/recoder/file_recorder.c \
+	audio/interface/recoder/le_audio_mix_mic_recorder.c \
 	audio/interface/recoder/le_audio_recorder.c \
 	audio/interface/recoder/pc_mic_recoder.c \
 	audio/jl_kws/jl_kws_algo.c \
@@ -844,6 +873,8 @@ c_SRC_FILES := \
 	audio/jl_kws/jl_kws_event.c \
 	audio/jl_kws/jl_kws_main.c \
 	audio/le_audio/le_audio_stream.c \
+	audio/midi/audio_dec_midi_ctrl.c \
+	audio/midi/audio_dec_midi_file.c \
 	audio/smart_voice/jl_kws_platform.c \
 	audio/smart_voice/kws_event.c \
 	audio/smart_voice/nn_vad.c \
@@ -1005,6 +1036,7 @@ LFLAGS := \
 	cpu/br27/liba/lib_ogg_vorbis_dec.a \
 	cpu/br27/liba/opus_enc_lib.a \
 	cpu/br27/liba/msbc_codec_lib.a \
+	cpu/br27/liba/lib_midi_dec.a \
 	cpu/br27/liba/lib_advaudio_plc.a \
 	cpu/br27/liba/SpectrumShow.a \
 	cpu/br27/liba/DynamicEQ.a \
@@ -1061,6 +1093,7 @@ LFLAGS := \
 	cpu/br27/liba/lib_pingpong_echo.a \
 	cpu/br27/liba/libStereoSpatialWider_pi32v2_OnChip.a \
 	cpu/br27/liba/libdistortion.a \
+	cpu/br27/liba/lib_frequency_compressor.a \
 	cpu/br27/liba/libFFT_pi32v2_OnChip.a \
 	cpu/br27/liba/lib_wtg_dec.a \
 	cpu/br27/liba/bfilterfun_lib.a \
@@ -1074,6 +1107,7 @@ LFLAGS := \
 	cpu/br27/liba/ui_draw_new.a \
 	cpu/br27/liba/font_new.a \
 	cpu/br27/liba/ui_new.a \
+	cpu/br27/liba/lwip_2_2_0.a \
 	cpu/br27/liba/cbuf.a \
 	cpu/br27/liba/lbuf.a \
 	cpu/br27/liba/printf.a \
@@ -1085,6 +1119,7 @@ LFLAGS := \
 	cpu/br27/liba/ftl.a \
 	cpu/br27/liba/debug_record.a \
 	cpu/br27/liba/apple_dock.a \
+	cpu/br27/liba/chargestore.a \
 	--end-group \
 	-Tcpu/br27/sdk.ld \
 	-M=cpu/br27/tools/sdk.map \

@@ -323,3 +323,60 @@ int wireless_trans_exit_pair(const char *name, void *priv)
     return ret;
 }
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 广播获取底层随机生成的pair code，只适用于bst传输
+ *
+ * @param name:dev name for find dev
+ * @param pair_code: ptr for get pair code
+ * @param privacy: pair code type, 0-common code, 1-pri_code
+ *
+ * @return 0:succ, other:err
+ */
+/* ----------------------------------------------------------------------------*/
+int wireless_trans_get_pair_code(const char *name, u8 *pair_code, u8 privacy)
+{
+    int ret = -1;
+    const wireless_trans_ops *wireless_trans;
+    WIRELESS_DEV_ENTER_CRITICAL();
+    list_for_each_wireless_trans(wireless_trans) {
+        if (!strcmp(name, wireless_trans->name)) {
+            if (wireless_trans->ioctrl) {
+                ret = wireless_trans->ioctrl(WIRELESS_DEV_OP_GET_PAIR_CODE, pair_code, privacy);
+            }
+            WIRELESS_DEV_EXIT_CRITICAL();
+            return ret;
+        }
+    }
+    WIRELESS_DEV_EXIT_CRITICAL();
+    return ret;
+}
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 广播设置底层随机生成的pair code，只适用于bst传输
+ *
+ * @param name:dev name for find dev
+ * @param pair_code: ptr for get pair code
+ *
+ * @return 0:succ, other:err
+ */
+/* ----------------------------------------------------------------------------*/
+int wireless_trans_set_pair_code(const char *name, u8 *pair_code)
+{
+    int ret = -1;
+    const wireless_trans_ops *wireless_trans;
+    WIRELESS_DEV_ENTER_CRITICAL();
+    list_for_each_wireless_trans(wireless_trans) {
+        if (!strcmp(name, wireless_trans->name)) {
+            if (wireless_trans->ioctrl) {
+                ret = wireless_trans->ioctrl(WIRELESS_DEV_OP_SET_PAIR_CODE, pair_code);
+            }
+            WIRELESS_DEV_EXIT_CRITICAL();
+            return ret;
+        }
+    }
+    WIRELESS_DEV_EXIT_CRITICAL();
+    return ret;
+}
+

@@ -12,7 +12,6 @@
     *   Copyright:(c)JIELI  2011-2022  @ , All Rights Reserved.
 *********************************************************************************************/
 #include "system/includes.h"
-#include "le_broadcast.h"
 #include "app_le_broadcast.h"
 #include "app_config.h"
 #include "btstack/avctp_user.h"
@@ -34,6 +33,7 @@
 #include "pc_spk_player.h"
 #include "bt_slience_detect.h"
 #include "multi_protocol_main.h"
+#include "le_broadcast.h"
 
 #if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
 #include "ble_rcsp_server.h"
@@ -347,6 +347,13 @@ static int app_broadcast_conn_status_event_handler(int *msg)
 #endif
         app_broadcast_data_sync.coding_type = LE_AUDIO_CODEC_TYPE;
         app_broadcast_data_sync.sample_rate = LE_AUDIO_CODEC_SAMPLERATE;
+#if LEA_COMPATIBLE_WITH_OLD_VERSION
+        app_broadcast_data_sync.nch = LE_AUDIO_CODEC_CHANNEL;
+        app_broadcast_data_sync.frame_size = LE_AUDIO_CODEC_FRAME_LEN;
+#if  LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA
+        app_broadcast_data_sync.coding_type = 0x02000000;
+#endif
+#endif
         broadcast_set_sync_data(hdl->big_hdl, &app_broadcast_data_sync, sizeof(struct broadcast_sync_info));
 
         mode = app_get_current_mode();
@@ -565,9 +572,9 @@ static bool is_broadcast_as_transmitter()
     }
 #endif
 
-#if (LEA_BIG_FIX_ROLE == 1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     return true;
-#elif (LEA_BIG_FIX_ROLE == 2)
+#elif (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     return false;
 #endif
 
@@ -1274,6 +1281,8 @@ int app_broadcast_deal(int scene)
         //当前处于蓝牙模式并且挂起前广播作为发送设备，恢复广播的操作在播放a2dp处执行
         if (mode && (mode->name == APP_MODE_BT)) {
             if (broadcast_last_role == BROADCAST_ROLE_TRANSMITTER) {
+                ret = 1;
+                break;
             }
         }
         //当前处于蓝牙模式并且挂起前广播，恢复广播并作为接收设备

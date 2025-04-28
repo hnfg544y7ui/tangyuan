@@ -30,13 +30,21 @@
 
 #define US_PER_SECOND   (1000000L)
 #define MS_PER_SECOND   (1000L)
+#if defined(CONFIG_CPU_BR52)
+static const u8 spdif_analog_port[4] = {
+    IO_PORTC_01,
+    IO_PORTC_02,
+    IO_PORTC_03,
+    IO_PORTC_04,
+};
+#else
 static const u8 spdif_analog_port[] = {
     IO_PORTA_06,
     IO_PORTA_08,
     IO_PORTC_00,
     IO_PORTC_02,
 };
-
+#endif
 
 /* SPDIF淡入 */
 #define SPDIF_FADE_IN_EN    1		//spdif 淡入使能
@@ -97,7 +105,7 @@ struct spdif_file_hdl {
     u16 online_det_timer_id;	//检测spdif是否在线的定时器id
 #endif
 #if SPDIF_FIX_PACKAGE_EN
-    u32 fix_package_timer_id;	//spdif补包定时器id
+    int fix_package_timer_id;	//spdif补包定时器id
     u32 fix_package_time_const;	//spdif一开始的补包定时器时间, 在spdif数据流开启期间不会变, 为正常常规的spdif补包的检测时间
     u32 fix_package_time;		//spdif开始补包定时器时间
     u8 start_fix_package_flag;
@@ -712,7 +720,6 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     hdl->spdifrx_isr_timestamp = audio_jiffies_usec();
 
 
-
 #if SPDIF_ONLINE_DET_EN
     // irq_running_cnt 作为中断标志
     hdl->irq_running_cnt++;
@@ -905,13 +912,12 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     }
 #if SPDIF_FIX_PACKAGE_EN
     if (hdl->fix_package_time_const && spdif_format.sample_rate <= SPDIF_FIX_PACKAGE_VALID_SR) {
-        if (hdl->fix_package_timer_id == 0 && hdl->start_fix_package_flag == 0) {
+        if (hdl->fix_package_timer_id == -1 && hdl->start_fix_package_flag == 0) {
             //正常第一次起中断
             spdif_fix_package_gptimer_open();
-        } else if (hdl->fix_package_timer_id && hdl->start_fix_package_flag == 0) {
-            //正常起中断
+        } else if ((hdl->fix_package_timer_id != -1) && hdl->start_fix_package_flag == 0) {
             spdif_fix_package_gptimer_set_period(hdl->fix_package_time_const * 1000);
-        } else if (hdl->fix_package_timer_id && hdl->start_fix_package_flag == 1) {
+        } else if ((hdl->fix_package_timer_id != -1) && hdl->start_fix_package_flag == 1) {
             //一段时间没起中断，第一次恢复中断
             spdif_fix_package_gptimer_set_period(hdl->fix_package_time_const * 1000);
 #if SPDIF_FIX_START_MUTE_EN
@@ -922,6 +928,8 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     }
     hdl->start_fix_package_flag = 0;
 #endif
+
+
     frame = source_plug_get_output_frame(source_node, len);
     if (!frame) {
         return;
@@ -936,6 +944,7 @@ static void spdif_data_isr_cb(void *buf, u32 len)
     frame->timestamp = hdl->spdifrx_isr_timestamp;
 #endif
     memcpy(frame->data, buf, len);
+
     source_plug_put_output_frame(source_node, frame);
 }
 
@@ -944,7 +953,7 @@ static void spdif_data_isr_cb(void *buf, u32 len)
 static void spdif_fix_package_gptimer_open(void)
 {
     struct spdif_file_hdl *hdl = spdif_file_t;
-    if (hdl && hdl->fix_package_timer_id == 0) {
+    if (hdl && hdl->fix_package_timer_id == -1) {
         const struct gptimer_config timer_config = {
             .timer.period_us = hdl->fix_package_time_const * 1000, //定时周期, 6ms
             .irq_cb = spdif_fix_package_timerout_cb, //设置中断回调函数
@@ -953,7 +962,7 @@ static void spdif_fix_package_gptimer_open(void)
             .private_data = NULL,
         };
         u32 id = gptimer_init(TIMERx, &timer_config); //初始化timer配置,成功会返回分配的timer_id, 失败返回-1
-        hdl->fix_package_timer_id = id;
+        hdl->fix_package_timer_id = (int)id;
         printf("timer_demo id:%d\n", id);
         gptimer_start(id); //启动timer
     }
@@ -962,16 +971,16 @@ static void spdif_fix_package_gptimer_open(void)
 static void spdif_fix_package_gptimer_close(void)
 {
     struct spdif_file_hdl *hdl = spdif_file_t;
-    if (hdl && hdl->fix_package_timer_id) {
+    if (hdl && hdl->fix_package_timer_id != -1) {
         gptimer_deinit(hdl->fix_package_timer_id);
-        hdl->fix_package_timer_id = 0;
+        hdl->fix_package_timer_id = -1;
     }
 }
 
 static void spdif_fix_package_gptimer_set_period(u32 us_time)
 {
     struct spdif_file_hdl *hdl = spdif_file_t;
-    if (hdl && hdl->fix_package_timer_id) {
+    if (hdl && hdl->fix_package_timer_id != -1) {
         gptimer_set_timer_period(hdl->fix_package_timer_id, us_time);
     }
 }
@@ -1158,7 +1167,11 @@ static int spdif_driver_init(void)
         } else {
             // IO 默认配置
             hdl->spdif_slave_parm.ch_cfg[0].port_sel = SPDIF_IN_DIGITAL_PORT_A;
+#if defined(CONFIG_CPU_BR52)
+            hdl->spdif_slave_parm.ch_cfg[0].data_io = IO_PORTA_07;
+#else
             hdl->spdif_slave_parm.ch_cfg[0].data_io = IO_PORTA_09;
+#endif
         }
 
         if (hdl->spdif_slave_parm.ch_cfg[0].data_io == uuid2gpio(spdif_cfg.hdmi_port[0]) ||
@@ -1217,6 +1230,10 @@ int spdif_start(void)
 #if SPDIF_FIX_START_MUTE_EN
     y_printf("<< Spdif UnMute!\n");
     audio_app_mute_en(0);
+#endif
+
+#if SPDIF_FIX_PACKAGE_EN
+    hdl->fix_package_timer_id = -1;		//默认没开id值为-1
 #endif
 
     if (hdl->state != AUDIO_SPDIF_STATE_INIT) {		// state = 2

@@ -80,7 +80,7 @@ struct fm_opr {
     u16 fm_total_channel;//总共台数
     s16 scan_fre;//搜索过程的虚拟频率,因为--会少于0，使用带符号
     u16 fm_freq_temp;		// 这是虚拟频率,从1计算  real_freq = fm_freq_cur + 874，用来做记录
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==1)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     //固定为发送端
     //暂停中开广播再关闭：暂停。暂停中开广播点击pp后关闭：播放。播歌开广播点击pp后关闭广播：暂停. 该变量为1时表示关闭广播时需要本地音频需要是播放状态
     u8 fm_local_audio_resume_onoff;
@@ -225,6 +225,12 @@ static void __set_fm_station()
     fm_manage_set_fre(REAL_FREQ(__this->fm_freq_cur));
     fm_last_ch_save(__this->fm_freq_channel_cur);
     fm_app_mute(0);
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN)
+    if ((get_broadcast_role() != BROADCAST_ROLE_TRANSMITTER))
+#endif
+    {
+        fm_player_open();
+    }
 }
 
 static void __set_fm_frq()
@@ -233,6 +239,13 @@ static void __set_fm_frq()
     fm_manage_set_fre(REAL_FREQ(__this->fm_freq_cur));
     fm_last_freq_save(REAL_FREQ(__this->fm_freq_cur));
     fm_app_mute(0);
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN)
+    if ((get_broadcast_role() != BROADCAST_ROLE_TRANSMITTER))
+#endif
+    {
+        fm_player_open();
+    }
+
 }
 
 static void __fm_scan_all(void *priv)
@@ -533,14 +546,14 @@ static int le_audio_fm_volume_pp(void)
 
     if (__this->fm_dev_mute) {
         ret = le_audio_scene_deal(LE_AUDIO_MUSIC_STOP);
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (__this->fm_local_audio_resume_onoff) {
             __this->fm_local_audio_resume_onoff = 0;
         }
 #endif
     } else {
         ret = le_audio_scene_deal(LE_AUDIO_MUSIC_START);
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (__this->fm_local_audio_resume_onoff == 0) {
             __this->fm_local_audio_resume_onoff = 1;
         }
@@ -558,7 +571,7 @@ void fm_volume_pp(void)
     }
     //广播角色为接收端，不让控制fm的播放、暂停
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
-#if (LEA_BIG_FIX_ROLE == 2) && !TCFG_KBOX_1T3_MODE_EN
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX) && !TCFG_KBOX_1T3_MODE_EN
     //固定为接收端
     u8 fm_volume_mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
     if (get_broadcast_role()) {	//如果连接上了
@@ -579,7 +592,7 @@ void fm_volume_pp(void)
             fm_player_open();
         }
     }
-#elif (LEA_BIG_FIX_ROLE == 1)
+#elif (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     //固定为发送端
     if (__this->fm_dev_mute == 0) {
         fm_app_mute(1);
@@ -618,7 +631,7 @@ void fm_volume_pp(void)
     }
 #endif
 #elif (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN))
-#if (LEA_BIG_FIX_ROLE == 2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     //固定为接收端
     u8 fm_volume_mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
     if (get_auracast_role()) {	//如果连接上了
@@ -639,7 +652,7 @@ void fm_volume_pp(void)
             fm_player_open();
         }
     }
-#elif (LEA_BIG_FIX_ROLE == 1)
+#elif (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     //固定为发送端
     if (__this->fm_dev_mute == 0) {
         fm_app_mute(1);
@@ -1057,7 +1070,7 @@ static int get_fm_play_status(void)
 
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==1)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     if (__this->fm_local_audio_resume_onoff) {
         __this->fm_dev_mute = 0;
         return LOCAL_AUDIO_PLAYER_STATUS_PLAY;
@@ -1093,23 +1106,23 @@ static int fm_local_audio_close(void)
         //关闭本地播放
         fm_player_close();
 
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==1)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (get_broadcast_role()) {
             __this->fm_local_audio_resume_onoff = 1;
         }
 #endif
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && (LEA_BIG_FIX_ROLE==1)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (get_auracast_role()) {
             __this->fm_local_audio_resume_onoff = 1;
         }
 #endif
     } else {
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==1)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (get_broadcast_role()) {
             __this->fm_local_audio_resume_onoff = 0;
         }
 #endif
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && (LEA_BIG_FIX_ROLE==1)
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (get_auracast_role()) {
             __this->fm_local_audio_resume_onoff = 0;
         }

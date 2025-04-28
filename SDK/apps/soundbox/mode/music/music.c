@@ -45,7 +45,13 @@
 
 static u8 music_idle_flag = 1;
 
+typedef struct __scandisk_msg {
+    struct list_head entry;
+    u8 msg_len;
+    int msg[16];
+} scandisk_msg;
 
+struct list_head scandisk_msg_head;
 
 struct __music music_hdl = {
     .speed_mode = PLAY_SPEED_1,
@@ -420,6 +426,29 @@ static void music_player_decode_err(void *priv, int parm)
     app_send_message(APP_MSG_MUSIC_DEC_ERR, parm);
 }
 
+void scandisk_msg_push(int *msg, u32 len)
+{
+    scandisk_msg *new = malloc(sizeof(scandisk_msg) + len);
+    memcpy(new->msg, (u8 *)msg, len);
+    list_add(&new->entry, &scandisk_msg_head);
+    g_printf("scandisk msg push! %x %d\n", msg[0], msg[1]);
+}
+
+int scandisk_msg_pop(int *msg, int len)
+{
+    scandisk_msg *pop;
+    if (music_idle_flag || list_empty(&scandisk_msg_head)) {
+        return 0;
+    } else {
+        pop = list_first_entry(&scandisk_msg_head,
+                               scandisk_msg, entry);
+        list_del(&pop->entry);
+        memcpy(msg, pop->msg, len);
+        free(pop);
+        g_printf("scandisk msg pop! %x\n", msg[0]);
+        return 1;
+    }
+}
 //*----------------------------------------------------------------------------*/
 /**@brief    music 播放器扫盘打断接口
    @param
@@ -432,7 +461,7 @@ static int music_player_scandisk_break(void)
     ///注意：
     ///需要break fsn的事件， 请在这里拦截,
     ///需要结合MUSIC_PLAYER_ERR_FSCAN错误，做相应的处理
-    int msg[32] = {0};
+    int msg[16] = {0};
     const char *logo = NULL;
     char *evt_logo = NULL;
     struct key_event *key_evt = NULL;
@@ -515,6 +544,9 @@ static int music_player_scandisk_break(void)
             break;
         }
         break;
+    default:
+        scandisk_msg_push(msg, sizeof(msg));
+        break;
     }
     if (__this->scandisk_break) {
         ///查询到需要打断的事件， 返回1， 并且重新推送一次该事件,跑主循环处理流程
@@ -553,6 +585,7 @@ static int app_music_init()
 {
     int err = 0, ret = -1;
     __this->music_busy  = 0;
+    INIT_LIST_HEAD(&scandisk_msg_head);
     music_idle_flag = 0;
     /* ui_update_status(STATUS_MUSIC_MODE); */
 
@@ -648,7 +681,7 @@ static int app_music_init()
     btstack_init_in_other_mode();
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_JL_BIS_TX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE==2)
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_JL_BIS_RX_EN))) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     //当固定为接收端时，其它模式下开广播切进music模式，关闭广播后music模式不会自动播放
     music_set_broadcast_local_open_flag(1);
 #endif
@@ -823,8 +856,10 @@ struct app_mode *app_enter_music_mode(int arg)
     app_music_init();
 
     while (1) {
-        if (!app_get_message(msg, ARRAY_SIZE(msg), music_mode_key_table)) {
-            continue;
+        if (scandisk_msg_pop(msg, ARRAY_SIZE(msg)) == 0) {       /*先从扫盘记录消息中获取msg*/
+            if (!app_get_message(msg, ARRAY_SIZE(msg), music_mode_key_table)) {
+                continue;
+            }
         }
         next_mode = app_mode_switch_handler(msg);
         if (next_mode) {
@@ -858,6 +893,11 @@ static int music_mode_try_enter(int arg)
 
 static int music_mode_try_exit()
 {
+    putchar('l');
+    int ret = 0;
+    if (!list_empty(&scandisk_msg_head)) {
+        return 1;
+    }
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
@@ -875,7 +915,7 @@ static int music_mode_try_exit()
 #endif
 
 #if (!TCFG_KBOX_1T3_MODE_EN)
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
@@ -883,11 +923,11 @@ static int music_mode_try_exit()
     le_audio_scene_deal(LE_AUDIO_APP_MODE_EXIT);
 #if (!TCFG_BT_BACKGROUND_ENABLE)
     app_auracast_close_in_other_mode();
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
-    return __this->music_busy;
+    return __this->music_busy | ret;
 }
 
 static const struct app_mode_ops music_mode_ops = {

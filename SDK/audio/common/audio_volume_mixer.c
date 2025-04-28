@@ -511,7 +511,11 @@ void audio_sw_digital_vol_init(u8 cfg_en)
 #endif/*TCFG_AUDIO_ANC_ENABLE*/
     __this->sys_hw_dvol_max = 16384.0f * dB_Convert_Mag(dB_value);
 
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    int vol = app_audio_volume_max_query(AppVol_WMic);
+#else
     int vol = app_audio_volume_max_query(AppVol_BT_MUSIC);
+#endif
     float temp = 0;
     //printf("sw digital volume list:\n");
     while (vol) {
@@ -523,8 +527,11 @@ void audio_sw_digital_vol_init(u8 cfg_en)
     }
     sw_dig_vol_table[0] = 0;
 
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    audio_digital_vol_init(sw_dig_vol_table, app_audio_volume_max_query(AppVol_WMic));
+#else
     audio_digital_vol_init(sw_dig_vol_table, app_audio_volume_max_query(AppVol_BT_MUSIC));
-
+#endif
     app_var.aec_dac_gain = (app_var.aec_dac_gain > BT_CALL_VOL_LEAVE_MAX) ? BT_CALL_VOL_LEAVE_MAX : app_var.aec_dac_gain;
     __this->call_hw_dvol_max = (u16)(__this->sys_hw_dvol_max * dB_Convert_Mag((BT_CALL_VOL_LEAVE_MAX - app_var.aec_dac_gain) * BT_CALL_VOL_STEP));
     printf("sys_hw_dvol_max:%d,call_hw_dvol_max:%d\n", __this->sys_hw_dvol_max, __this->call_hw_dvol_max);
@@ -774,6 +781,14 @@ int audio_digital_vol_node_name_get(u8 dvol_idx, char *node_name)
                 printf("vol_name:%d,%s\n", __LINE__, node_name);
                 break;
 #endif
+#if TCFG_APP_MIC_EN
+            case APP_MODE_MIC:
+                sprintf(node_name, "%s%s", "Vol_Mic", dvol_type[i]);
+                printf("vol_name:%d,%s\n", __LINE__, node_name);
+                break;
+#endif
+
+
             case APP_MODE_IDLE:
                 sprintf(node_name, "%s%s", "Vol_Sys", dvol_type[i]);
                 printf("vol_name:%d,%s\n", __LINE__, node_name);
@@ -1112,7 +1127,11 @@ void app_audio_mute(u8 value)
 }
 u8 app_audio_get_dac_digital_mute() //获取DAC 是否mute
 {
+#if TCFG_DAC_NODE_ENABLE
     return audio_dac_digital_mute_state(&dac_hdl);
+#else
+    return 0;
+#endif
 }
 
 /*
@@ -1322,9 +1341,15 @@ void app_audio_state_switch(u8 state, s16 max_volume, dvol_handle *dvol_hdl)
     dB_value = (dB_value > ANC_MODE_DIG_VOL_LIMIT) ? ANC_MODE_DIG_VOL_LIMIT : dB_value;
 #endif/*TCFG_AUDIO_ANC_ENABLE*/
 #ifdef CONFIG_CPU_BR56
-    u16 dvol_max = (u16)(16100.0f * dB_Convert_Mag(dB_value));
+    u16 DAC_0dB = 0;
+    if ((JL_SYSTEM->CHIP_VER >= 0xA2) && (JL_SYSTEM->CHIP_VER < 0xAC)) { //C版以后才做DAC TRIM
+        DAC_0dB = dac_digital_gain_tab_version_c[TCFG_DAC_POWER_MODE];
+    } else {
+        DAC_0dB = 16100;
+    }
+    u16 dvol_max = (u16)(DAC_0dB * dB_Convert_Mag(dB_value));
 #else
-    u16 dvol_max = (u16)(16384.0f * dB_Convert_Mag(dB_value));
+    u16 dvol_max = (u16)(16384 * dB_Convert_Mag(dB_value));
 #endif
 
     /*记录当前状态对应的最大音量*/
@@ -1405,7 +1430,11 @@ u8 app_audio_get_state(void)
 s16 app_audio_get_max_volume(void)
 {
     if (__this->state == APP_AUDIO_STATE_IDLE) {
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+        return  app_audio_volume_max_query(AppVol_WMic);
+#else
         return  app_audio_volume_max_query(AppVol_BT_MUSIC);
+#endif
     }
     return __this->max_volume[__this->state];
 }

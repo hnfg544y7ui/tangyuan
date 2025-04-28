@@ -68,7 +68,11 @@
 
 /*任务列表 */
 const struct task_info task_info_table[] = {
+#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
+    {"app_core",            1,     0,   1024 * 2,   768 },
+#else
     {"app_core",            1,     0,   1024,   768 },
+#endif
     {"btctrler",            4,     0,   512,   512 },
     {"btencry",             1,     0,   512,   128 },
 #if (BT_FOR_APP_EN)
@@ -172,6 +176,7 @@ const struct task_info task_info_table[] = {
     {"app_proto",           2,     0,   768,   64  },
 #endif
     {"ui",                  3,     0,   1024,  1024  },
+    {"touch_task",	2,     0,   512,   0  },
 #if (TCFG_DEV_MANAGER_ENABLE)
     {"dev_mg",           	3,     0,   512,   512 },
 #endif
@@ -219,7 +224,9 @@ int eSystemConfirmStopStatus(void)
     return 0;
 #else
     if (get_charge_full_flag()) {
+#if (!TCFG_RECHARGE_ENABLE)
         power_set_soft_poweroff();
+#endif
         return 1;
     } else {
         return 0;
@@ -376,6 +383,11 @@ static struct app_mode *app_task_init()
 #if TCFG_UI_ENABLE
     UI_INIT((void *)&ui_cfg_data);
 #endif /* #if TCFG_UI_ENABLE */
+
+#if (TCFG_TOUCH_PANEL_ENABLE && TCFG_TP_IT7259E_ENABLE)
+    void it7259e_init();
+    it7259e_init();
+#endif
 
 #if TCFG_APP_RTC_EN
     alarm_init();

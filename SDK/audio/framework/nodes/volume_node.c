@@ -215,6 +215,7 @@ static void volume_ioc_start(struct volume_hdl *hdl)
     }
     hdl->bypass = vol_cfg->bypass;
     switch (hdl->scene) {
+#if TCFG_TONE_NODE_ENABLE
     case STREAM_SCENE_TONE:
         hdl->state = APP_AUDIO_STATE_WTONE;
 #if TONE_BGM_FADEOUT
@@ -225,6 +226,8 @@ static void volume_ioc_start(struct volume_hdl *hdl)
         params.fade_step  = TONE_DVOL_FS;
         params.vol_limit  = -1;
         break;
+#endif
+#if TCFG_RING_TONE_NODE_ENABLE
     case STREAM_SCENE_RING:
         hdl->state = APP_AUDIO_STATE_RING;
 #if TONE_BGM_FADEOUT
@@ -235,6 +238,8 @@ static void volume_ioc_start(struct volume_hdl *hdl)
         params.fade_step  = TONE_DVOL_FS;
         params.vol_limit  = -1;
         break;
+#endif
+#if TCFG_KEY_TONE_NODE_ENABLE
     case STREAM_SCENE_KEY_TONE:
         /*puts("set_tone_volume\n");*/
         hdl->state = APP_AUDIO_STATE_KTONE;
@@ -247,6 +252,7 @@ static void volume_ioc_start(struct volume_hdl *hdl)
         params.fade_step  = TONE_DVOL_FS;
         params.vol_limit  = -1;
         break;
+#endif
     case STREAM_SCENE_A2DP:
     case STREAM_SCENE_LINEIN:
     case STREAM_SCENE_IIS:
@@ -465,7 +471,7 @@ static int volume_ioc_update_parm(struct volume_hdl *hdl, int parm)
 #endif
                 hdl->bypass = vol_cfg->bypass;
                 audio_digital_vol_set(hdl->dvol_hdl, vol_cfg->cur_vol);
-                if ((hdl->scene != STREAM_SCENE_MIC_EFFECT) || (hdl->scene != STREAM_SCENE_MIC_EFFECT2)) {//混响在线调试音量不更新音量状态的值
+                if ((hdl->scene != STREAM_SCENE_MIC_EFFECT) && (hdl->scene != STREAM_SCENE_MIC_EFFECT2)) {//混响在线调试音量不更新音量状态的值
                     app_audio_change_volume(app_audio_get_state(), vol_cfg->cur_vol);
                 }
             }

@@ -25,8 +25,12 @@
 #include "bt_event_func.h"
 #include "audio_config.h"
 #include "le_audio_player.h"
+#include "app_main.h"
 #if LEA_DUAL_STREAM_MERGE_TRANS_MODE
 #include "surround_sound.h"
+#endif
+#if LE_AUDIO_MIX_MIC_EN
+#include "le_audio_mix_mic_recorder.h"
 #endif
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
@@ -86,7 +90,6 @@ struct broadcast_hdl {
     struct list_head entry; /*!< big链表项，用于多big管理 */
     u8 del;
     u8 big_hdl;
-    u16 latch_bis_hdl;
     bis_hdl_info_t bis_hdl_info[BIG_MAX_BIS_NUMS];
     u32 big_sync_delay;
     const char *role_name;
@@ -486,14 +489,22 @@ int broadcast_transmitter_connect_deal(void *priv, u8 mode)
     broadcast_hdl->big_hdl = hdl->big_hdl;
     broadcast_hdl->big_sync_delay = hdl->big_sync_delay;
     for (i = 0; i < bis_num; i++) {
-        broadcast_hdl->latch_bis_hdl = hdl->bis_hdl[0];
-        params.conn = broadcast_hdl->latch_bis_hdl;
+        params.conn = hdl->bis_hdl[0];
         broadcast_hdl->bis_hdl_info[i].bis_hdl = hdl->bis_hdl[i];
         //打开广播音频播放
         if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_open) {
             broadcast_hdl->bis_hdl_info[i].recorder = le_audio_switch_ops->tx_le_audio_open(&params);
+#if LE_AUDIO_MIX_MIC_EN
+            if (get_is_need_resume_le_audio_mix_mic() && is_le_audio_mix_mic_recorder_running() == 0) {
+                if (app_get_current_mode()->name != APP_MODE_MIC) {
+                    set_need_resume_le_audio_mix_mic(0);
+                    le_audio_mix_mic_open();
+                }
+            }
+#endif
         }
     }
+
 
     spin_lock(&broadcast_lock);
     list_add_tail(&broadcast_hdl->entry, &broadcast_list_head);
@@ -717,11 +728,7 @@ int broadcast_receiver_connect_deal(void *priv)
     broadcast_hdl->big_hdl = hdl->big_hdl;
     broadcast_hdl->bis_hdl_info[index].bis_hdl = hdl->bis_hdl[0];
 
-    if (!broadcast_hdl->latch_bis_hdl) {
-        broadcast_hdl->latch_bis_hdl = hdl->bis_hdl[0];
-    }
-
-    params.conn = broadcast_hdl->latch_bis_hdl;
+    params.conn = hdl->bis_hdl[0];
     //打开广播音频播放
     if (le_audio_switch_ops && le_audio_switch_ops->rx_le_audio_open) {
         le_audio_switch_ops->rx_le_audio_open(&broadcast_hdl->bis_hdl_info[index].rx_player, &params);
@@ -792,13 +799,6 @@ int broadcast_receiver_disconnect_deal(void *priv)
                 p->bis_hdl_info[index].rx_player.rx_stream = NULL;
             }
 
-            for (i = 0; i < bis_num; i++) {
-                if (p->bis_hdl_info[i].bis_hdl) {
-                    p->latch_bis_hdl = p->bis_hdl_info[i].bis_hdl;
-                    break;
-                }
-            }
-
             spin_unlock(&broadcast_lock);
 
             if (player.le_audio && player.rx_stream) {
@@ -809,7 +809,6 @@ int broadcast_receiver_disconnect_deal(void *priv)
             spin_lock(&broadcast_lock);
 
             if (!bis_connected_num) {
-                p->latch_bis_hdl = 0;
 #if BIS_TIMSTAMP_CONVERT_TO_LOCOAL_TIME
                 memset(&p->ts_convert, 0, sizeof(struct bis_ts_convert_hdl));
 #endif
@@ -1131,12 +1130,12 @@ static int broadcast_rx_padv_data_callback(const void *const buf, size_t length,
     int ret = 0;
 
     if (!length) {
-        return -EINVAL;
+        return -EPERM;
     }
 
     u8 need_deal_flag = 0;
     if (length < sizeof(struct broadcast_sync_info)) {
-        return -EINVAL;
+        return -EPERM;
     }
 
     const u8 *const temp_buf = buf;
@@ -1301,6 +1300,12 @@ int broadcast_close(u8 big_hdl)
                 }
                 spin_unlock(&broadcast_lock);
 
+#if LE_AUDIO_MIX_MIC_EN
+                if (is_le_audio_mix_mic_recorder_running()) {
+                    set_need_resume_le_audio_mix_mic(1);
+                    le_audio_mix_mic_close();
+                }
+#endif
                 if (recorder) {
                     if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_close) {
                         le_audio_switch_ops->tx_le_audio_close(recorder);
@@ -1355,7 +1360,7 @@ int broadcast_close(u8 big_hdl)
         clock_free("le_broadcast");
     }
 
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     //如果广播固定是接收端，则可能是mute的情况下关闭广播接收, 关闭广播需要解mute
     u8 mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
     if (mute_mark == 1) {
@@ -1571,7 +1576,6 @@ int broadcast_audio_recorder_reset(u16 big_hdl)
             params.fmt2.dec_ch_mode = SURROUND_SOUND_MONO_TX_DEC_OUTPUT_CHANNEL;
 
             params.latency = get_big_tx_latency();
-            params.conn = p->latch_bis_hdl;
 
 #elif (SURROUND_SOUND_FIX_ROLE_EN == 0)
             //不固定角色
@@ -1596,7 +1600,6 @@ int broadcast_audio_recorder_reset(u16 big_hdl)
                 params.fmt2.sample_rate = SURROUND_SOUND_MONO_CODEC_SAMPLERATE;
                 params.fmt2.dec_ch_mode = 37;
                 params.latency = get_big_tx_latency();
-                params.conn = p->latch_bis_hdl;
             } else {
                 ASSERT(0, "err!! %s, %d, surround sound role is error:%d\n", __func__, __LINE__, role);
             }
@@ -1613,13 +1616,13 @@ int broadcast_audio_recorder_reset(u16 big_hdl)
             params.fmt.sample_rate = LE_AUDIO_CODEC_SAMPLERATE;
             params.fmt.dec_ch_mode = LEA_TX_DEC_OUTPUT_CHANNEL;
             params.latency = get_big_tx_latency();
-            params.conn = p->latch_bis_hdl;
 #endif
 
             //重新打开新的recorder
             for (i = 0; i < bis_num; i++) {
                 if (!p->bis_hdl_info[i].recorder) {
                     if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_open) {
+                        params.conn = p->bis_hdl_info[i].bis_hdl;
                         recorder = le_audio_switch_ops->tx_le_audio_open(&params);
                         spin_lock(&broadcast_lock);
                         p->bis_hdl_info[i].recorder = recorder;
@@ -1692,13 +1695,13 @@ int broadcast_audio_recorder_open(u16 big_hdl)
             params.fmt.sample_rate = LE_AUDIO_CODEC_SAMPLERATE;
             params.fmt.dec_ch_mode = LEA_TX_DEC_OUTPUT_CHANNEL;
             params.latency = get_big_tx_latency();
-            params.conn = p->latch_bis_hdl;
 #endif
 
             //重新打开新的recorder
             for (i = 0; i < bis_num; i++) {
                 if (!p->bis_hdl_info[i].recorder) {
                     if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_open) {
+                        params.conn = p->bis_hdl_info[i].bis_hdl;
                         recorder = le_audio_switch_ops->tx_le_audio_open(&params);
                         spin_lock(&broadcast_lock);
                         p->bis_hdl_info[i].recorder = recorder;
@@ -1809,7 +1812,12 @@ int broadcast_audio_all_close(u16 big_hdl)
                         p->bis_hdl_info[i].init_ok = 0;
                     }
                     spin_unlock(&broadcast_lock);
-
+#if LE_AUDIO_MIX_MIC_EN
+                    if (is_le_audio_mix_mic_recorder_running()) {
+                        set_need_resume_le_audio_mix_mic(1);
+                        le_audio_mix_mic_close();
+                    }
+#endif
                     if (recorder) {
                         if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_close) {
                             le_audio_switch_ops->tx_le_audio_close(recorder);
@@ -1952,6 +1960,14 @@ int broadcast_audio_all_open(u16 big_hdl)
                 if (!broadcast_hdl->bis_hdl_info[i].recorder) {
                     if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_open) {
                         recorder = le_audio_switch_ops->tx_le_audio_open(&params);
+#if LE_AUDIO_MIX_MIC_EN
+                        if (get_is_need_resume_le_audio_mix_mic() && is_le_audio_mix_mic_recorder_running() == 0) {
+                            if (app_get_current_mode()->name != APP_MODE_MIC) {
+                                set_need_resume_le_audio_mix_mic(0);
+                                le_audio_mix_mic_open();
+                            }
+                        }
+#endif
                         spin_lock(&broadcast_lock);
                         broadcast_hdl->bis_hdl_info[i].recorder = recorder;
                         broadcast_hdl->bis_hdl_info[i].init_ok = 1;

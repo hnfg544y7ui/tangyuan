@@ -83,8 +83,9 @@ void read_le_audio_product_name(void)
 
 void read_le_audio_pair_name(void)
 {
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN)) || \
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_AURACAST_SOURCE_EN)))
     int len = syscfg_read(CFG_LEA_PAIR_NAME, le_audio_pair_name, sizeof(le_audio_pair_name));
     if (len <= 0) {
         r_printf("ERR:Can not read the le audio pair name\n");
@@ -332,7 +333,7 @@ int le_audio_sync_tws_event_handler(int *msg)
     switch (evt->event) {
     case TWS_EVENT_CONNECTED:
 #if (TCFG_KBOX_1T3_MODE_EN)
-#if 0
+#if 1
         le_audio_tws_sync_mic_status();
 #else
         app_send_message(APP_MSG_WIRELESS_MIC_CLOSE, 0);
@@ -453,7 +454,7 @@ u8 get_le_audio_curr_role() //1:transmitter; 2:recevier
 #endif
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
-#if  (LEA_CIG_TRANS_MODE == 2)
+#if  (LEA_CIG_TRANS_MODE == LEA_TRANS_DUPLEX)
     return 1;
 #else
     return get_connected_role();

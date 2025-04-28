@@ -37,6 +37,7 @@ const int CONFIG_LMP_CONNECTION_NUM = 2;
 const int CONFIG_LMP_CONNECTION_NUM = 1;
 #endif
 
+const int CONFIG_DISTURB_SCAN_ENABLE = 0;
 #define TWS_PURE_MONITOR_MODE    0//1:纯监听模式
 
 #if TWS_PURE_MONITOR_MODE
@@ -73,6 +74,13 @@ const int CONFIG_JL_DONGLE_PLAYBACK_LATENCY = 0; // dongle下行播放延时(mse
 const int config_force_bt_pwr_tab_using_normal_level  = 0;
 //配置BLE广播发射功率的等级:0-最大功率等级;1~10-固定发射功率等级
 const int config_ble_adv_tx_pwr_level  = 0;
+
+//only for br52
+#ifdef CONFIG_CPU_BR52
+const u8 config_fre_offset_trim_mode = 1; //0:trim pll 1:trim osc 2:trim pll&osc
+#else
+const u8 config_fre_offset_trim_mode = 0; //0:trim pll 1:trim osc 2:trim pll&osc
+#endif
 
 const int CONFIG_BLE_SYNC_WORD_BIT = 30;
 const int CONFIG_LNA_CHECK_VAL = -80;

@@ -80,7 +80,7 @@ static int app_iis_init(void)
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
     btstack_init_in_other_mode();
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     iis_set_broadcast_local_open_flag(1);
 #endif
 #endif
@@ -151,6 +151,7 @@ static int iis_mode_try_enter(int arg)
 
 static int iis_mode_try_exit()
 {
+    int ret = 0;
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
     app_broadcast_deal(LE_AUDIO_APP_MODE_EXIT);
 
@@ -158,6 +159,7 @@ static int iis_mode_try_exit()
     app_broadcast_close_in_other_mode();
 #endif
 
+    ret = btstack_exit_in_other_mode();
 #endif
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
@@ -166,10 +168,9 @@ static int iis_mode_try_exit()
 #if (!TCFG_BT_BACKGROUND_ENABLE && !TCFG_KBOX_1T3_MODE_EN)
     app_connected_close_in_other_mode();
 #endif
-
+    ret = btstack_exit_in_other_mode();
 #endif
-    btstack_exit_in_other_mode();
-    return 0;
+    return ret;
 }
 
 static const struct app_mode_ops iis_mode_ops = {

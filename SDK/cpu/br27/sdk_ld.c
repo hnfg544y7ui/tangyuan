@@ -544,10 +544,16 @@ SECTIONS
     {
 		icache0_ram_data_code_pc_limit_begin = .;
 		. = ALIGN(4);
-        *(.icache0_pool)
         *(.icache0_code)
 		. = ALIGN(4);
 		icache0_ram_data_code_pc_limit_end = .;
+    } > icache0_ram
+
+    .icache0_ram_bss ALIGN(32):SUBALIGN(4)
+    {
+		. = ALIGN(4);
+        *(.icache0_pool)
+		. = ALIGN(4);
     } > icache0_ram
 
     . = ORIGIN(icache1_ram);
@@ -555,12 +561,17 @@ SECTIONS
     {
 		icache1_ram_data_code_pc_limit_begin = .;
 		. = ALIGN(4);
-        *(.icache1_pool)
         *(.icache1_code)
 		. = ALIGN(4);
 		icache1_ram_data_code_pc_limit_end = .;
     } > icache1_ram
 
+    .icache1_ram_bss ALIGN(32):SUBALIGN(4)
+    {
+		. = ALIGN(4);
+        *(.icache1_pool)
+		. = ALIGN(4);
+    } > icache1_ram
 
     . = ORIGIN(code0);
     .text ALIGN(4):SUBALIGN(4)

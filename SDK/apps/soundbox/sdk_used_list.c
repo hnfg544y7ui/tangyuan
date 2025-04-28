@@ -20,9 +20,15 @@ bt_audio_sync_node_adapter
 adc_file_plug
 #endif
 
+#if TCFG_TONE_NODE_ENABLE
 tone_file_plug
+#endif
+#if TCFG_RING_TONE_NODE_ENABLE
 ring_file_plug
+#endif
+#if TCFG_KEY_TONE_NODE_ENABLE
 key_tone_file_plug
+#endif
 #if TCFG_FILEPLAY_NODE_ENABLE
 file_play_plug
 #endif
@@ -313,6 +319,13 @@ jla_encoder_plug
 jla_dec_plug
 #endif
 
+#if TCFG_ENC_JLA_V2_ENABLE && (TCFG_KBOX_1T3_MODE_EN == 0)
+jla_v2_enc_plug
+#endif
+
+#if TCFG_DEC_JLA_V2_ENABLE
+jla_v2_dec_plug
+#endif
 
 #if CONFIG_FATFS_ENABLE
 fat_vfs_ops
@@ -344,11 +357,6 @@ jla_lw_dec_plug
 jla_ll_encoder_plug
 #endif
 jla_ll_dec_plug
-#elif ((LE_AUDIO_CODEC_TYPE == AUDIO_CODING_JLA_V2) || (SURROUND_SOUND_DUAL_CODEC_TYPE == AUDIO_CODING_JLA_V2) || (SURROUND_SOUND_MONO_CODEC_TYPE == AUDIO_CODING_JLA_V2))
-#if (TCFG_KBOX_1T3_MODE_EN == 0)
-jla_v2_enc_plug
-#endif
-jla_v2_dec_plug
 #endif
 le_audio_file_plug
 #endif
@@ -659,4 +667,18 @@ stereo_spatial_wider_node_adapter
 distortion_clipping_node_adapter
 #endif
 
+#if TCFG_FREQUENCY_COMPRESSOR_NODE_ENABLE
+frequency_compressor_node_adapter
+#endif
 
+#if MIDI_FILE_DEC_ENABLE
+midi_dec_plug
+#endif
+
+#if MIDI_CTRL_DEC_ENABLE
+midi_ctrl_dec_plug
+#endif
+
+#if TCFG_ENC_AAC_ENABLE
+aac_enc_plug
+#endif

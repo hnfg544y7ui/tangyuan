@@ -19,6 +19,8 @@
 #include "media/sync/audio_syncts.h"
 #include "asm/dac.h"
 #include "audio_cvp.h"
+#include "app_main.h"
+#include "volume_node.h"
 #if TCFG_APP_SPDIF_EN
 #include "spdif.h"
 #endif
@@ -68,7 +70,7 @@ static struct le_audio_fm_recorder *g_fm_recorder = NULL;
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))) && TCFG_APP_IIS_EN
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))) && (TCFG_APP_IIS_EN || TCFG_IIS_NODE_ENABLE)
 struct le_audio_iis_recorder {
     void *stream;
 };
@@ -95,6 +97,17 @@ struct le_audio_mic_recorder {
 };
 static struct le_audio_mic_recorder *g_mic_recorder = NULL;
 #endif
+
+struct le_audio_tx_vol {
+    bool mute;
+    s16 dvol_step;
+    s16 dvol;
+    s16 max_dvol;
+    u8 save_vol_cnt;
+    u16 save_vol_timer;
+};
+static struct le_audio_tx_vol g_le_audio_tx_vol = {0};
+static struct le_audio_tx_vol g_le_audio_tx_monitor_vol = {0};
 
 //a2dp流创建但未start的情况下，数据流被打断suspend，a2dp_file.c suspend流程是不走的，需启动HH丢数据处理，避免蓝牙buf满打印ffffff问题
 //丢数据策略选配, 0:使用a2dp_file.c内自带流程 1:播放器内使用timer丢数.因测试覆盖场景有限，默认使用播放器自带timer丢数据
@@ -366,7 +379,7 @@ void le_audio_linein_recorder_close(void)
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SOURCE_EN | LE_AUDIO_UNICAST_SINK_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
-    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))) && TCFG_APP_IIS_EN
+    (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))) && (TCFG_APP_IIS_EN || TCFG_IIS_NODE_ENABLE)
 
 static void muti_ch_iis_recorder_callback(void *private_data, int event)
 {
@@ -473,7 +486,11 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
     }
     int err = 0;
     struct le_audio_stream_format *le_audio_fmt = (struct le_audio_stream_format *)params;
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
+#else
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"iis_le_audio");
+#endif
     struct stream_enc_fmt fmt = {
         .coding_type = le_audio_fmt->coding_type,
         .channel = le_audio_fmt->nch,
@@ -488,7 +505,11 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
             return -ENOMEM;
         }
     }
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    g_iis_recorder->stream = jlstream_pipeline_parse_by_node_name(uuid, "WL_IIS0_RX");
+#else
     g_iis_recorder->stream = jlstream_pipeline_parse_by_node_name(uuid, "IIS0_RX2");
+#endif
     jlstream_set_callback(g_iis_recorder->stream, NULL, iis_recorder_callback);
     jlstream_set_scene(g_iis_recorder->stream, STREAM_SCENE_IIS);
 
@@ -514,6 +535,28 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
         g_iis_recorder = NULL;
         return err;
     }
+
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    char *vol_name = "Vol_WMicTX";
+    struct volume_cfg cfg = {0};
+    int ret = jlstream_get_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg));
+    if (ret > 0) {
+        g_le_audio_tx_vol.max_dvol = (cfg.cfg_level_max >= cfg.cur_vol) ? cfg.cfg_level_max : cfg.cur_vol;
+        g_le_audio_tx_vol.dvol_step = (cfg.cur_vol * g_le_audio_tx_vol.max_dvol) / cfg.cfg_level_max;
+        ret = syscfg_read(CFG_WIRELESS_MIC0_VOLUME, &g_le_audio_tx_vol.dvol, 2);
+        if (ret > 0) {
+            /* g_le_audio_tx_vol.dvol = app_var.mic_eff_volume; //先使用mic_effect的音量配置 */
+            if (g_le_audio_tx_vol.dvol != cfg.cur_vol) {
+                le_audio_wireless_mic_tx_set_dvol(g_le_audio_tx_vol.dvol, 0xff); //有记录的音量先用记录的音量
+            }
+        } else {
+            g_le_audio_tx_vol.dvol = cfg.cur_vol;
+            le_audio_wireless_mic_tx_set_dvol(g_le_audio_tx_vol.dvol, 0xff);
+        }
+        printf(" %s dvol:%d\n", __FUNCTION__, g_le_audio_tx_vol.dvol);
+    }
+#endif
+
     return 0;
 }
 
@@ -530,7 +573,11 @@ void le_audio_iis_recorder_close(void)
 
     free(iis_recorder);
     g_iis_recorder = NULL;
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
+#else
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"iis_le_audio");
+#endif
 }
 #endif
 
@@ -767,7 +814,7 @@ int le_audio_mic_recorder_open(void *params, void *le_audio, int latency)
     struct le_audio_stream_params *lea_params = params;
     struct le_audio_stream_format *le_audio_fmt = &lea_params->fmt;
     u16 source_uuid;
-#if WIRELESS_MIC_PRODUCT_MODE
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
 #else
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_le_audio");
@@ -802,10 +849,14 @@ int le_audio_mic_recorder_open(void *params, void *le_audio, int latency)
         //printf("LEA Recoder:WL_MIC\n");
         jlstream_set_scene(g_mic_recorder->stream, STREAM_SCENE_WIRELESS_MIC);
         u16 irq_point = 0;
-#if (defined(TCFG_ADC_IRQ_POINT) &&  TCFG_ADC_IRQ_POINT) //根据配置设置中断点数
-        irq_point =  TCFG_ADC_IRQ_POINT;
+#if (defined(TCFG_ADC_IRQ_INTERVAL) &&  TCFG_ADC_IRQ_INTERVAL) //根据配置设置中断点数
+#if (defined(TCFG_AUDIO_ADC_SAMPLE_RATE) &&  TCFG_AUDIO_ADC_SAMPLE_RATE)
+        irq_point =  TCFG_AUDIO_ADC_SAMPLE_RATE * TCFG_ADC_IRQ_INTERVAL / 1000000;  //sr * interval(us) / 1000000
 #else
-        irq_point =  fmt.sample_rate / 1000; //默认1ms 的中断
+        irq_point =  fmt.sample_rate * TCFG_ADC_IRQ_INTERVAL / 1000000; //sr * interval(us) / 1000000
+#endif
+#else
+        irq_point =  fmt.sample_rate * 1000 / 1000000; //默认1ms 的中断,//sr * interval(us) / 1000000
 #endif
         jlstream_node_ioctl(g_mic_recorder->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, irq_point);
     } else {
@@ -843,6 +894,26 @@ int le_audio_mic_recorder_open(void *params, void *le_audio, int latency)
         goto __exit1;
     }
 
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+    char *vol_name = "Vol_WMicTX";
+    struct volume_cfg cfg = {0};
+    int ret = jlstream_get_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg));
+    if (ret > 0) {
+        g_le_audio_tx_vol.max_dvol = (cfg.cfg_level_max >= cfg.cur_vol) ? cfg.cfg_level_max : cfg.cur_vol;
+        g_le_audio_tx_vol.dvol_step = (cfg.cur_vol * g_le_audio_tx_vol.max_dvol) / cfg.cfg_level_max;
+        ret = syscfg_read(CFG_WIRELESS_MIC0_VOLUME, &g_le_audio_tx_vol.dvol, 2);
+        if (ret > 0) {
+            /* g_le_audio_tx_vol.dvol = app_var.mic_eff_volume; //先使用mic_effect的音量配置 */
+            if (g_le_audio_tx_vol.dvol != cfg.cur_vol) {
+                le_audio_wireless_mic_tx_set_dvol(g_le_audio_tx_vol.dvol, 0xff); //有记录的音量先用记录的音量
+            }
+        } else {
+            g_le_audio_tx_vol.dvol = cfg.cur_vol;
+            le_audio_wireless_mic_tx_set_dvol(g_le_audio_tx_vol.dvol, 0xff);
+        }
+        printf(" %s dvol:%d\n", __FUNCTION__, g_le_audio_tx_vol.dvol);
+    }
+#endif
     printf("le_audio mic recorder open success  \n");
     return 0;
 
@@ -869,7 +940,7 @@ void le_audio_mic_recorder_close(void)
     }
     free(mic_recorder);
     g_mic_recorder = NULL;
-#if WIRELESS_MIC_PRODUCT_MODE
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
 #else
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_le_audio");
@@ -877,3 +948,179 @@ void le_audio_mic_recorder_close(void)
 }
 #endif
 
+#ifdef CONFIG_WIRELESS_MIC_ENABLE
+
+static void le_audio_tx_volume_save_do(void *priv)
+{
+    if (++g_le_audio_tx_vol.save_vol_cnt >= 5) {
+        sys_timer_del(g_le_audio_tx_vol.save_vol_timer);
+        g_le_audio_tx_vol.save_vol_timer = 0;
+        g_le_audio_tx_vol.save_vol_cnt = 0;
+        printf("save le audio vol:%d\n", g_le_audio_tx_vol.dvol);
+        syscfg_write(CFG_WIRELESS_MIC0_VOLUME, &g_le_audio_tx_vol.dvol, 2);
+        return;
+    }
+}
+
+static void le_audio_tx_volume_change(void)
+{
+    g_le_audio_tx_vol.save_vol_cnt = 0;
+    if (g_le_audio_tx_vol.save_vol_timer == 0) {
+        g_le_audio_tx_vol.save_vol_timer = sys_timer_add(NULL, le_audio_tx_volume_save_do, 1000);//中断里不能操作vm 关中断不能操作vm
+    }
+}
+
+int le_audio_wireless_mic_tx_set_dvol(u8 vol, s16 mute_en)
+{
+    if (cpu_in_irq() || cpu_irq_disabled()) {
+        printf("[ERROR]CPU in irq or CPU irq disable, Operation not permitted");
+        return -EPERM;
+    }
+
+    if ((0xff != mute_en) && (0 != mute_en) && (1 != mute_en)) {
+        printf("[ERROR]mute_en, Invalid argument");
+        return -EINVAL;
+    }
+
+    char *vol_name = "Vol_WMicTX";
+    struct volume_cfg cfg = {0};
+    if (0xff == mute_en) {
+        cfg.bypass = VOLUME_NODE_CMD_SET_VOL;
+        cfg.cur_vol = vol;
+    } else {
+        cfg.bypass = VOLUME_NODE_CMD_SET_MUTE;
+        cfg.cur_vol = mute_en;
+    }
+    int err = jlstream_set_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg)) ;
+    if (err < 0) {
+        return -1;
+    }
+    printf("le audo tx dvol name: %s, le audo tx dvol:%d\n", vol_name, vol);
+    if (vol != g_le_audio_tx_vol.dvol) {
+        g_le_audio_tx_vol.dvol = vol;
+        le_audio_tx_volume_change();
+    }
+    return 0;
+}
+
+void le_audio_wireless_mic_tx_dvol_mute(bool mute)
+{
+    if (mute) {
+        //mute
+        g_le_audio_tx_vol.mute = 1;
+        le_audio_wireless_mic_tx_set_dvol(0, mute);
+    } else {
+        //unmute
+        le_audio_wireless_mic_tx_set_dvol(0, mute);
+        g_le_audio_tx_vol.mute = 0;
+    }
+}
+
+void le_audio_wireless_mic_tx_dvol_up(void)
+{
+    //mute时不允许调音量
+    if (g_le_audio_tx_vol.mute) {
+        return;
+    }
+
+    if (g_le_audio_tx_vol.dvol < g_le_audio_tx_vol.max_dvol) {
+        g_le_audio_tx_vol.dvol += g_le_audio_tx_vol.dvol_step;
+        le_audio_wireless_mic_tx_set_dvol(g_le_audio_tx_vol.dvol, 0xff);
+    } else {
+        printf("[WARING]le audio tx volum is max\n");
+    }
+
+}
+
+void le_audio_wireless_mic_tx_dvol_down(void)
+{
+    //mute时不允许调音量
+    if (g_le_audio_tx_vol.mute) {
+        return;
+    }
+
+    if (g_le_audio_tx_vol.dvol) {
+        g_le_audio_tx_vol.dvol -= g_le_audio_tx_vol.dvol_step;
+        le_audio_wireless_mic_tx_set_dvol(g_le_audio_tx_vol.dvol, 0xff);
+    } else {
+        printf("[WARING]le audio tx volum is min\n");
+    }
+}
+
+int le_audio_wireless_mic_tx_monitor_set_dvol(u8 vol, s16 mute_en)
+{
+    if (cpu_in_irq() || cpu_irq_disabled()) {
+        printf("[ERROR]CPU in irq or CPU irq disable, Operation not permitted");
+        return -EPERM;
+    }
+
+    if ((0xff != mute_en) && (0 != mute_en) && (1 != mute_en)) {
+        printf("[ERROR]mute_en, Invalid argument");
+        return -EINVAL;
+    }
+
+    char *vol_name = "Vol_WMonitor";
+    struct volume_cfg cfg = {0};
+    if (0xff == mute_en) {
+        cfg.bypass = VOLUME_NODE_CMD_SET_VOL;
+        cfg.cur_vol = vol;
+    } else {
+        cfg.bypass = VOLUME_NODE_CMD_SET_MUTE;
+        cfg.cur_vol = mute_en;
+    }
+    int err = jlstream_set_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg)) ;
+    if (err < 0) {
+        return -1;
+    }
+    printf("le audo tx monitor dvol name: %s, le audo tx dvol:%d\n", vol_name, vol);
+    if (vol != g_le_audio_tx_monitor_vol.dvol) {
+        g_le_audio_tx_monitor_vol.dvol = vol;
+        le_audio_tx_volume_change();
+    }
+    return 0;
+}
+
+void le_audio_wireless_mic_tx_monitor_dvol_mute(bool mute)
+{
+    if (mute) {
+        //mute
+        g_le_audio_tx_monitor_vol.mute = 1;
+        le_audio_wireless_mic_tx_monitor_set_dvol(0, mute);
+    } else {
+        //unmute
+        le_audio_wireless_mic_tx_monitor_set_dvol(0, mute);
+        g_le_audio_tx_monitor_vol.mute = 0;
+    }
+}
+
+void le_audio_wireless_mic_tx_monitor_dvol_up(void)
+{
+    //mute时不允许调音量
+    if (g_le_audio_tx_monitor_vol.mute) {
+        return;
+    }
+
+    if (g_le_audio_tx_monitor_vol.dvol < g_le_audio_tx_monitor_vol.max_dvol) {
+        g_le_audio_tx_monitor_vol.dvol += g_le_audio_tx_monitor_vol.dvol_step;
+        le_audio_wireless_mic_tx_monitor_set_dvol(g_le_audio_tx_monitor_vol.dvol, 0xff);
+    } else {
+        printf("[WARING]le audio tx volum is max\n");
+    }
+
+}
+
+void le_audio_wireless_mic_tx_monitor_dvol_down(void)
+{
+    //mute时不允许调音量
+    if (g_le_audio_tx_monitor_vol.mute) {
+        return;
+    }
+
+    if (g_le_audio_tx_monitor_vol.dvol) {
+        g_le_audio_tx_monitor_vol.dvol -= g_le_audio_tx_monitor_vol.dvol_step;
+        le_audio_wireless_mic_tx_monitor_set_dvol(g_le_audio_tx_monitor_vol.dvol, 0xff);
+    } else {
+        printf("[WARING]le audio tx volum is min\n");
+    }
+}
+#endif

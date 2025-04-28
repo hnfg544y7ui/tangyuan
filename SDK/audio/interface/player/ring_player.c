@@ -201,10 +201,11 @@ void ring_player_stop()
     }
 }
 
+#if TCFG_RING_TONE_NODE_ENABLE
 static int __ring_player_init()
 {
     os_mutex_create(&g_ring_mutex);
     return 0;
 }
 __initcall(__ring_player_init);
-
+#endif

@@ -26,6 +26,8 @@
 #include "local_tws.h"
 #include "bt_tws.h"
 #include "audio_dut_control.h"
+#include "mic_effect.h"
+#include "le_audio_mix_mic_recorder.h"
 
 #define PIPELINE_UUID_TONE_NORMAL   0x7674
 #define PIPELINE_UUID_A2DP          0xD96F
@@ -313,7 +315,7 @@ void aec_code_movable_unload(void)
 #endif
 }
 
-#if defined(TCFG_HI_RES_AUDIO_ENEBALE) || (TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE && (defined(CONFIG_CPU_BR28)))
+#if defined(TCFG_HI_RES_AUDIO_ENEBALE) || (TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE && (defined(CONFIG_CPU_BR28) || defined(CONFIG_CPU_BR27)))
 //调整解码器输出帧长
 static const int frame_unit_size[] = { 64, 128, 256, 384, 512, 1024, 2048, 4096, 8192};
 int decoder_check_frame_unit_size(int dest_len)
@@ -348,7 +350,7 @@ static int load_decoder_handler(struct stream_decoder_info *info)
         }
 #endif
 
-#if (TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE && (defined(CONFIG_CPU_BR28)))
+#if (TCFG_VIRTUAL_SURROUND_EFF_MODULE_NODE_ENABLE && (defined(CONFIG_CPU_BR28) || defined(CONFIG_CPU_BR27)))
         info->frame_time = 16;
 #endif
     }
@@ -435,6 +437,9 @@ static int tws_switch_get_status()
 #if TCFG_LOCAL_TWS_ENABLE
     struct app_mode *mode;
     mode = app_get_current_mode();
+    if (mode == NULL) { //有可能此时处于模式切换临界情况
+        return 0;
+    }
     if (mode->name == APP_MODE_BT || mode->name == APP_MODE_SINK) {
         return 0;
     } else {
@@ -464,6 +469,19 @@ static int tws_get_output_channel()
 static int get_switch_node_callback(const char *arg)
 {
     printf("get_switch_node_callback, node name:%s, need add yourself switch_node's callback!\n", arg);
+
+
+#if TCFG_MIC_EFFECT_ENABLE
+    if (!strncmp(arg, "Sw_MicEff2DAC", strlen("Sw_MicEff2DAC"))) {
+        return (int)get_micEff2DAC_switch_status;
+    }
+#if LE_AUDIO_MIX_MIC_EFFECT_EN
+    if (!strncmp(arg, "Sw_MicEff2LeAud", strlen("Sw_MicEff2LeAud"))) {
+        return (int)get_micEff2LeAudio_switch_status;
+    }
+#endif
+#endif
+
 
 #if TCFG_MIX_RECORD_ENABLE
     if (!strncmp(arg, "SW_Rec", strlen("SW_Rec"))) {

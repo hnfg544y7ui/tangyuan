@@ -3,7 +3,8 @@
 
 #include "printf.h"
 #include "cpu.h"
-#if defined CONFIG_CPU_BR50 || defined CONFIG_CPU_BR29 || defined CONFIG_CPU_BR56
+#if defined CONFIG_CPU_BR50 || defined CONFIG_CPU_BR29 || defined CONFIG_CPU_BR56 || defined CONFIG_CPU_BR52
+
 #include "iic_hw_v2.h"
 #else
 #include "iic_hw_v1.h"

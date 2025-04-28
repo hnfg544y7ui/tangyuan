@@ -93,6 +93,10 @@ static void pc_mic_recoder_callback(void *private_data, int event)
 
 int pc_mic_recoder_open(void)
 {
+    /*领夹mic 功能不需要打开recoder 的音频流,由switch节点打开*/
+#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE))
+    return -EFAULT;
+#endif
     os_mutex_pend(&mic_rec_mutex, 0);
     struct pc_mic_recoder *recoder = NULL;
     u16 source_uuid;
@@ -167,6 +171,10 @@ __exit0:
 
 void pc_mic_recoder_close(void)
 {
+    /*领夹mic 功能不需要打开recoder 的音频流,由switch节点打开*/
+#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE))
+    return;
+#endif
     os_mutex_pend(&mic_rec_mutex, 0);
     struct pc_mic_recoder *recoder = g_pc_mic_recoder;
 
@@ -244,6 +252,10 @@ int pc_mic_recoder_restart_by_taskq(void)
 
 static void pc_mic_set_volume(int mic_vol)
 {
+    /*领夹mic 功能不需要打开recoder 的音频流,由switch节点打开*/
+#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE))
+    return;
+#endif
     pcmic_volume_wait_set_flag = 0;
     if (app_get_current_mode()->name == APP_MODE_PC) {
         s16 volume = (u16)mic_vol;

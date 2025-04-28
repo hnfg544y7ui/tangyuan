@@ -8,6 +8,8 @@
 #include "audio_config.h"
 #include "app_mode_sink.h"
 #include "soundbox.h"
+#include "app_tone.h"
+#include "tws_a2dp_play.h"
 
 #if TCFG_LOCAL_TWS_ENABLE
 #define LOG_TAG             "[LOCAL_TWS]"
@@ -127,6 +129,9 @@ void local_tws_disconnect_deal(void)
     } else if (__this->role == LOCAL_TWS_ROLE_SOURCE) {
 
     }
+#if TCFG_TWS_AUTO_ROLE_SWITCH_ENABLE
+    tws_api_auto_role_switch_enable();
+#endif
     __this->role = LOCAL_TWS_ROLE_NULL;
 }
 
@@ -280,6 +285,7 @@ int local_tws_enter_mode(const char *file_name, void *priv)
                 if (!match) {
                     data = CMD_TWS_ENTER_NO_SOURCE_MODE_REPORT;
                     local_tws_cmd_send(&data, 1);
+                    return -1;
                 }
             }
         }
@@ -390,6 +396,14 @@ static int local_tws_msg_handler(int *msg)
     case CMD_TWS_PLAYER_STATUS_REPORT:
         log_info("CMD_TWS_PLAYER_STATUS_REPORT:%d\n", cmd[1]);
         __this->remote_dec_status = cmd[1];
+#if TCFG_TWS_AUTO_ROLE_SWITCH_ENABLE
+        //本地传输打开时不自动主从切换
+        if (__this->remote_dec_status) {
+            tws_api_auto_role_switch_disable();
+        } else {
+            tws_api_auto_role_switch_enable();
+        }
+#endif
         break;
 
     case CMD_TWS_CONNECT_MODE_REPORT:
@@ -421,6 +435,11 @@ static int local_tws_msg_handler(int *msg)
         break;
 
     case CMD_TWS_ENTER_NO_SOURCE_MODE_REPORT:
+        r_printf("CMD_TWS_ENTER_NO_SOURCE_MODE_REPORT  CMD_TWS_ENTER_NO_SOURCE_MODE_REPORT");
+        if (app_in_mode(APP_MODE_BT) && app_get_a2dp_play_status() && (tws_api_get_role() == TWS_ROLE_MASTER)) {
+            r_printf("SEND_USER_CTRL_AVCTP_OPID_PLAY");
+            bt_cmd_prepare(USER_CTRL_AVCTP_OPID_PLAY, 0, NULL);
+        }
         if (app_in_mode(APP_MODE_SINK)) {
             app_send_message(APP_MSG_GOTO_MODE, APP_MODE_BT);
             __this->sync_goto_bt_mode = 2;
@@ -437,7 +456,17 @@ static int local_tws_msg_handler(int *msg)
         break;
 
     case CMD_TWS_VOL_REPORT:
+        if (app_audio_get_volume(APP_AUDIO_STATE_IDLE) == cmd[1]) {
+            break;
+        }
         app_audio_set_volume(APP_AUDIO_STATE_IDLE, cmd[1], 1);
+        if (cmd[1] >= app_audio_get_max_volume()) {
+            if (tone_player_runing() == 0) {
+#if TCFG_MAX_VOL_PROMPT
+                play_tone_file(get_tone_files()->max_vol);
+#endif
+            }
+        }
         if (cmd[2]) {   //sink shound be reflash ui
             app_send_message(APP_MSG_VOL_CHANGED, app_audio_get_volume(APP_AUDIO_STATE_IDLE));
         }
@@ -502,6 +531,14 @@ static int local_tws_event_handler(int *_event)
     case TWS_EVENT_DATA_TRANS_START:
         /*Source端打开本地传输Sink端会收到该event并收到参数，在此处打开本地解码*/
         log_info("TWS_EVENT_DATA_TRANS_START");
+
+        if (app_in_mode(APP_MODE_BT)) { //蓝牙模式下不应该打开
+            ASSERT(0);
+        }
+#if TCFG_TWS_AUTO_ROLE_SWITCH_ENABLE
+        //本地传输打开时不自动主从切换
+        tws_api_auto_role_switch_disable();
+#endif
         local_tws_dec_status_report(1);
         struct local_tws_player_param tws_player_param;
         tws_player_param.tws_channel = event->args[0];
@@ -517,6 +554,9 @@ static int local_tws_event_handler(int *_event)
         log_info("TWS_EVENT_DATA_TRANS_CLOSE");
         local_tws_player_close();
         local_tws_dec_status_report(0);
+#if TCFG_TWS_AUTO_ROLE_SWITCH_ENABLE
+        tws_api_auto_role_switch_enable();
+#endif
         break;
     default:
         break;
@@ -549,6 +589,20 @@ APP_MSG_HANDLER(local_tws_app_msg) = {
     .owner      = 0xff,
     .from       = MSG_FROM_APP,
     .handler    = local_tws_app_msg_handler,
+};
+
+static u8 local_tws_idle_query(void)
+{
+    if (__this->role == LOCAL_TWS_ROLE_NULL) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+REGISTER_LP_TARGET(local_tws_target) = {
+    .name = "localtws",
+    .is_idle = local_tws_idle_query,
 };
 
 #endif

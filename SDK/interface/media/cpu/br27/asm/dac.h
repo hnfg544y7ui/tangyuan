@@ -329,6 +329,8 @@ struct audio_dac_hdl {
 
 /*******************************************/
 	struct list_head sync_list;
+	u8 (*is_aec_ref_dac_ch)(struct audio_dac_channel *dac_ch);
+	void (*irq_handler_cb)(void);
 };
 
 /*

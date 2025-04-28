@@ -39,15 +39,15 @@
 #define DAC_DSM_6MHz                       (0)
 #define DAC_DSM_12MHz                      (1)
 
-#define DAC_OUTPUT_MONO_L                  (0)   //左声道
-#define DAC_OUTPUT_MONO_R                  (1)   //右声道
-#define DAC_OUTPUT_LR                      (2)   //立体声
-#define DAC_OUTPUT_MONO_LR_DIFF            (3)   //左右差分输出
+#define DAC_OUTPUT_MONO_L                  ((1 << 4) | 0)   //左声道
+#define DAC_OUTPUT_MONO_R                  ((1 << 4) | 1)   //右声道
+#define DAC_OUTPUT_LR                      ((2 << 4) | 2)   //立体声
+#define DAC_OUTPUT_MONO_LR_DIFF            ((1 << 4) | 3)   //左右差分输出
 
-#define DAC_OUTPUT_DUAL_LR_DIFF            (6)   //双声道差分
-#define DAC_OUTPUT_FRONT_LR_REAR_L         (7)   //三声道单端输出 前L+前R+后L (不可设置vcmo公共端)
-#define DAC_OUTPUT_FRONT_LR_REAR_R         (8)   //三声道单端输出 前L+前R+后R (可设置vcmo公共端)
-#define DAC_OUTPUT_FRONT_LR_REAR_LR        (9)   //四声道单端输出
+#define DAC_OUTPUT_DUAL_LR_DIFF            ((2 << 4) | 6)   //双声道差分
+#define DAC_OUTPUT_FRONT_LR_REAR_L         ((3 << 4) | 7)   //三声道单端输出 前L+前R+后L (不可设置vcmo公共端)
+#define DAC_OUTPUT_FRONT_LR_REAR_R         ((3 << 4) | 8)   //三声道单端输出 前L+前R+后R (可设置vcmo公共端);
+#define DAC_OUTPUT_FRONT_LR_REAR_LR        ((4 << 4) | 9)   //四声道单端输出
 
 #define DAC_BIT_WIDTH_16                   (0)   //16bit 位宽
 #define DAC_BIT_WIDTH_24                   (1)   //24bit 位宽
@@ -76,6 +76,20 @@
 #define EPA_PWM_MODE0                      (0)
 #define EPA_PWM_MODE1                      (1)
 #define EPA_PWM_MODE2                      (2)
+/*
+ *******************************************************************
+ *						PDM Definitions
+ *******************************************************************
+ */
+//PDM Version definitions
+#define AUDIO_PDM_V1						(1UL << 0)
+#define AUDIO_PDM_V2						(1UL << 1)
+
+#define AUDIO_PDM_MIC_0						(1UL << 0)
+#define AUDIO_PDM_MIC_1                     (1UL << 1)
+#define AUDIO_PDM_MIC_2                     (1UL << 2)
+#define AUDIO_PDM_MIC_3                     (1UL << 3)
+
 /*
  *******************************************************************
  *						Analog Aux Definitions
@@ -170,6 +184,7 @@
 #define AUDIO_CODING_OGG          0x40000000
 #define AUDIO_CODING_LHDC         0x80000000
 #define AUDIO_CODING_LHDC_V5      0xA0000000
+#define AUDIO_CODING_MIDI_CTRL    0xB0000000
 
 //#define AUDIO_CODING_STU_PICK     0x10000000
 //#define AUDIO_CODING_STU_APP      0x20000000
@@ -244,3 +259,12 @@
 #define  LIMITER_PRECISION_MAX              EFx_PRECISION_PRO //最高
 
 #endif/*_AUDIO_DEF_H_*/
+
+/*
+ *******************************************************************
+ *						MIDI Definitions
+ *******************************************************************
+ */
+#define MIDI_CTRL_DEC_ENABLE          0
+#define MIDI_FILE_DEC_ENABLE          0
+#define CONFIG_MIDI_DEC_ADDR

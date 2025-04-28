@@ -64,7 +64,7 @@ int mic_start(void)
     __this->audio_state = APP_AUDIO_STATE_MUSIC;
     __this->volume = app_audio_get_volume(__this->audio_state);
     __this->onoff = 1;
-#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) && (LEA_BIG_FIX_ROLE==2))
+#if ((LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX))
     if (__this->mic_local_need_open_flag) {
         __this->mic_local_need_open_flag = 0;
     }
@@ -104,7 +104,7 @@ int mic_volume_pp(void)
 {
     int ret = 0;
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     //固定为接收端
     u8 mic_volume_mute_mark = app_audio_get_mute_state(APP_AUDIO_STATE_MUSIC);
     if (get_broadcast_role() == 2) {
@@ -242,7 +242,7 @@ static int get_mic_play_status(void)
     if (get_broadcast_role() == 2) {
         //如果是作为接收端
         if (__this->last_run_local_audio_close) {
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
             if ((__this->onoff_as_broadcast_receive == 1) || __this->mic_local_need_open_flag) {
 #else
             if (__this->onoff_as_broadcast_receive == 1) {
@@ -255,7 +255,7 @@ static int get_mic_play_status(void)
         }
     }
 
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     if (get_broadcast_role()) {
         if (__this->mic_local_audio_resume_onoff) {
             return LOCAL_AUDIO_PLAYER_STATUS_PLAY;
@@ -265,7 +265,7 @@ static int get_mic_play_status(void)
     }
 #endif
 
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     if (__this->onoff || __this->mic_local_need_open_flag) {
 #else
     if (__this->onoff) {
@@ -280,13 +280,13 @@ static int get_mic_play_status(void)
     if (get_connected_app_mode_exit_flag()) {
         return LOCAL_AUDIO_PLAYER_STATUS_STOP;
     }
+#endif
 
     if (__this->onoff) {
         return LOCAL_AUDIO_PLAYER_STATUS_PLAY;
     } else {
         return LOCAL_AUDIO_PLAYER_STATUS_STOP;
     }
-#endif
 }
 
 static int mic_local_audio_open(void)
@@ -317,7 +317,7 @@ static int mic_local_audio_close(void)
     }
 #endif
 
-#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN) && (LEA_BIG_FIX_ROLE == 1)
+#if (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_JL_BIS_TX_EN) && (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
     if (mic_player_runing()) {
         __this->mic_local_audio_resume_onoff = 1;
     } else {
@@ -433,7 +433,7 @@ static int le_audio_mic_volume_pp(void)
     if (__this->onoff == 0) {
         __this->onoff = 1;
         ret = app_broadcast_deal(LE_AUDIO_MUSIC_START);
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (__this->mic_local_audio_resume_onoff == 0) {
             __this->mic_local_audio_resume_onoff = 1;
         }
@@ -441,7 +441,7 @@ static int le_audio_mic_volume_pp(void)
     } else {
         __this->onoff = 0;
         ret = app_broadcast_deal(LE_AUDIO_MUSIC_STOP);
-#if (LEA_BIG_FIX_ROLE==1)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
         if (__this->mic_local_audio_resume_onoff) {
             __this->mic_local_audio_resume_onoff = 0;
         }

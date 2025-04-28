@@ -15,6 +15,7 @@
 #include "app_le_connected.h"
 #include "mic_effect.h"
 #include "app_le_auracast.h"
+#include "local_tws.h"
 
 #if TCFG_APP_MIC_EN
 
@@ -44,6 +45,9 @@ static int mic_tone_play_end_callback(void *priv, enum stream_event event)
 
 void app_mic_exit()
 {
+#if TCFG_LOCAL_TWS_ENABLE
+    local_tws_exit_mode();
+#endif
     app_set_current_mode(app_get_mode_by_name(APP_MODE_NULL));        //这里把MODE设置成NULL，防止快速切模式的时候提示音还没播完已经退出当前模式，在提示音回调里还继续开广播
 
     mic_stop();
@@ -61,6 +65,7 @@ void app_mic_exit()
 
 static int app_mic_init(void)
 {
+    int ret = -1;
     mic_idle_flag = 0;
 #if TCFG_MIC_EFFECT_ENABLE
     //如果混响 打开着，那么关闭混响, 记录下混响状态
@@ -74,10 +79,16 @@ static int app_mic_init(void)
 
     tone_player_stop();
 
-    int ret = play_tone_file_callback(get_tone_files()->mic_mode, NULL, mic_tone_play_end_callback);
-    if (ret) {
-        //提示音播放失败
-        mic_tone_play_end_callback(NULL, STREAM_EVENT_NONE);
+#if TCFG_LOCAL_TWS_ENABLE
+    ret = local_tws_enter_mode(get_tone_files()->mic_mode, NULL);
+#endif //TCFG_LOCAL_TWS_ENABLE
+
+    if (ret != 0) {
+        ret = play_tone_file_callback(get_tone_files()->mic_mode, NULL, mic_tone_play_end_callback);
+        if (ret) {
+            //提示音播放失败
+            mic_tone_play_end_callback(NULL, STREAM_EVENT_NONE);
+        }
     }
 
 #ifdef TCFG_PITCH_SPEED_NODE_ENABLE
@@ -86,7 +97,7 @@ static int app_mic_init(void)
 
 #if (LEA_BIG_CTRLER_TX_EN || LEA_BIG_CTRLER_RX_EN || LEA_CIG_CENTRAL_EN || LEA_CIG_PERIPHERAL_EN)
     btstack_init_in_other_mode();
-#if (LEA_BIG_FIX_ROLE==2)
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
     //如果固定为接收端，则会存在的问题：打开广播下从其它模式切进mic模式，关闭广播mic不会自动打开的问题
     mic_set_local_open_flag(1);
     printf(">>>>> Call Func: mic_set_local_open_flag(1), In Func:%s, %d\n", __func__, __LINE__);
@@ -137,6 +148,7 @@ static int mic_mode_try_enter(int arg)
 
 static int mic_mode_try_exit()
 {
+    int ret = 0;
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) || \
     (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_CIS_CENTRAL_EN | LE_AUDIO_JL_CIS_PERIPHERAL_EN))
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
@@ -154,7 +166,7 @@ static int mic_mode_try_exit()
 #endif
 
 #if (!TCFG_KBOX_1T3_MODE_EN)
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
 
@@ -162,10 +174,10 @@ static int mic_mode_try_exit()
     le_audio_scene_deal(LE_AUDIO_APP_MODE_EXIT);
 #if (!TCFG_BT_BACKGROUND_ENABLE)
     app_auracast_close_in_other_mode();
-    btstack_exit_in_other_mode();
+    ret = btstack_exit_in_other_mode();
 #endif
 #endif
-    return 0;
+    return ret;
 }
 
 static const struct app_mode_ops mic_mode_ops = {
@@ -190,6 +202,23 @@ REGISTER_LP_TARGET(mic_lp_target) = {
     .name = "mic",
     .is_idle = mic_idle_query,
 };
+
+void mic_local_start(void *priv)
+{
+    mic_start();
+}
+
+static bool get_mic_player_status(void)
+{
+    return mic_get_status();
+}
+
+REGISTER_LOCAL_TWS_OPS(mic) = {
+    .name 	= APP_MODE_MIC,
+    .local_audio_open = mic_local_start,
+    .get_play_status = get_mic_player_status,
+};
+
 
 
 
