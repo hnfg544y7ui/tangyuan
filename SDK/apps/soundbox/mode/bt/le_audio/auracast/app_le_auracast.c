@@ -24,8 +24,11 @@
 #include "btstack/le/ble_api.h"
 #include "bt_slience_detect.h"
 
+#if (THIRD_PARTY_PROTOCOLS_SEL)
+static int ble_connect_dev_detect_timer = 0;
 #if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
 #include "ble_rcsp_server.h"
+#endif
 #endif
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_AURACAST_SOURCE_EN))
@@ -895,7 +898,7 @@ void auracast_sink_source_info_report_event_deal(uint8_t *packet, uint16_t lengt
 static void auracast_sink_big_info_report_event_deal(uint8_t *packet, uint16_t length)
 {
     auracast_sink_source_info_t *param = (auracast_sink_source_info_t *)packet;
-    g_sink_bn = packet[9];
+    g_sink_bn = param->bn;
     printf("auracast_sink_big_info_report_event_deal\n");
     y_printf("num bis : %d, bn : %d\n", param->Num_BIS, g_sink_bn);
     if (param->Num_BIS > AURACAST_SINK_BIS_NUMS) {
@@ -1114,10 +1117,23 @@ int app_auracast_sink_big_sync_create(auracast_sink_source_info_t *param)
     return ret;
 }
 
+#if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
+#if THIRD_PARTY_PROTOCOLS_SEL
+static void app_auracast_retry_open(void *priv)
+{
+    u32 role = (u32)priv;
+
+    if (role == APP_AURACAST_AS_SOURCE) {
+        app_auracast_source_open();
+    } else if (role == APP_AURACAST_AS_SINK) {
+        app_auracast_sink_open();
+    }
+}
 
 
-
-
+}
+#endif
+#endif
 
 /* --------------------------------------------------------------------------*/
 /**
@@ -1147,8 +1163,22 @@ int app_auracast_sink_open()
     }
 
     auracast_switch_onoff = 1;
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
-    ble_module_enable(0);
+
+#if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
+#if THIRD_PARTY_PROTOCOLS_SEL
+    multi_protocol_bt_ble_enable(0);
+#if THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN
+    u8 conn_num = bt_rcsp_ble_conn_num();
+#else
+    u8 conn_num = multi_protocol_bt_ble_connect_num();
+#endif
+    if (conn_num > 0) {
+        ble_connect_dev_detect_timer = sys_timeout_add((void *)APP_AURACAST_AS_SINK,  app_auracast_retry_open, 250); //由于非标准广播使用私有hci事件回调所以需要等RCSP断连事件处理完后才能开广播
+        return -EPERM;
+    } else {
+        ble_connect_dev_detect_timer = 0;
+    }
+#endif
 #endif
     app_auracast_mutex_pend(&mutex, __LINE__);
     log_info("auracast_sink_open");
@@ -1208,6 +1238,14 @@ int app_auracast_sink_close(u8 status)
     app_auracast_mutex_pend(&mutex, __LINE__);
     log_info("auracast_sink_close");
 
+#if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
+#if THIRD_PARTY_PROTOCOLS_SEL
+    if (ble_connect_dev_detect_timer) {
+        sys_timeout_del(ble_connect_dev_detect_timer);
+    }
+#endif
+#endif
+
     auracast_sink_set_audio_state(0);
     if (app_auracast.status == APP_AURACAST_STATUS_SYNC) {
         auracast_sink_big_sync_terminate();
@@ -1229,10 +1267,13 @@ int app_auracast_sink_close(u8 status)
     app_auracast_mutex_post(&mutex, __LINE__);
 
     auracast_switch_onoff = 0;
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
+#if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
+#if THIRD_PARTY_PROTOCOLS_SEL
     if (status != APP_AURACAST_STATUS_SUSPEND) {
-        ble_module_enable(1);
+        ll_set_private_access_addr_pair_channel(0);
+        multi_protocol_bt_ble_enable(1);
     }
+#endif
 #endif
     return 0;
 }
@@ -1360,8 +1401,22 @@ int app_auracast_source_open()
     }
 
     auracast_switch_onoff = 1;
-#if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
-    ble_module_enable(0);
+
+#if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
+#if THIRD_PARTY_PROTOCOLS_SEL
+    multi_protocol_bt_ble_enable(0);
+#if THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN
+    u8 conn_num = bt_rcsp_ble_conn_num();
+#else
+    u8 conn_num = multi_protocol_bt_ble_connect_num();
+#endif
+    if (conn_num > 0) {
+        ble_connect_dev_detect_timer = sys_timeout_add((void *)APP_AURACAST_AS_SOURCE, app_auracast_retry_open, 250); //由于非标准广播使用私有hci事件回调所以需要等RCSP断连事件处理完后才能开广播
+        return -EPERM;
+    } else {
+        ble_connect_dev_detect_timer = 0;
+    }
+#endif
 #endif
     app_auracast_mutex_pend(&mutex, __LINE__);
     log_info("auracast_source_open");
@@ -1436,10 +1491,14 @@ int app_auracast_source_close(u8 status)
     app_auracast_mutex_post(&mutex, __LINE__);
 
     auracast_switch_onoff = 0;
+
+#if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
 #if (THIRD_PARTY_PROTOCOLS_SEL & RCSP_MODE_EN)
     if (status != APP_AURACAST_STATUS_SUSPEND) {
-        ble_module_enable(1);
+        ll_set_private_access_addr_pair_channel(0);
+        multi_protocol_bt_ble_enable(1);
     }
+#endif
 #endif
     return 0;
 }
