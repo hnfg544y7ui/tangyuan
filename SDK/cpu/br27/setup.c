@@ -309,6 +309,7 @@ void setup_arch()
     wdt_init(WDT_8S);
     /* wdt_close(); */
 
+    gpadc_mem_init(8);
     efuse_init();
 
     clk_voltage_init(TCFG_CLOCK_MODE, DVDD_VOL_SEL_1025V);

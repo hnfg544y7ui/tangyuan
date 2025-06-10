@@ -9,6 +9,7 @@
 #include "media/audio_cfifo.h"
 #include "system/spinlock.h"
 #include "audio_def.h"
+#include "audio_general.h"
 
 /***************************************************************************
   							Audio DAC Features
@@ -331,6 +332,7 @@ struct audio_dac_hdl {
 	struct list_head sync_list;
 	u8 (*is_aec_ref_dac_ch)(struct audio_dac_channel *dac_ch);
 	void (*irq_handler_cb)(void);
+	struct audio_dac_noisegate ng;
 };
 
 /*

@@ -19,6 +19,8 @@
 #include "uac_stream.h"
 #include "audio_cvp.h"
 #include "volume_node.h"
+#include "tone_player.h"
+#include "app_tone.h"
 
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #include "le_broadcast.h"
@@ -338,6 +340,13 @@ static void pc_spk_set_volume(void)
         if (cur_vol != ((l_vol + r_vol) / 2)) {
             app_audio_set_volume(APP_AUDIO_STATE_MUSIC, ((l_vol + r_vol) / 2), 1);
             printf(">>> pc vol: %d", app_audio_get_volume(APP_AUDIO_CURRENT_STATE));
+            if (app_audio_get_volume(APP_AUDIO_CURRENT_STATE) == app_audio_get_max_volume()) {
+                if (tone_player_runing() == 0) {
+#if TCFG_MAX_VOL_PROMPT
+                    play_tone_file(get_tone_files()->max_vol);
+#endif
+                }
+            }
             app_send_message(APP_MSG_VOL_CHANGED, app_audio_get_volume(APP_AUDIO_CURRENT_STATE));
         }
     }

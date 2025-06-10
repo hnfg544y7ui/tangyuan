@@ -23,6 +23,9 @@
 #include "btstack/le/att.h"
 #include "btstack/le/ble_api.h"
 #include "bt_slience_detect.h"
+#include "bt_event_func.h"
+#include "spdif_file.h"
+#include "le_audio_common.h"
 
 #if (THIRD_PARTY_PROTOCOLS_SEL)
 static int ble_connect_dev_detect_timer = 0;
@@ -239,6 +242,20 @@ auracast_advanced_config_t user_advanced_config = {
 static u16 auracast_sink_sync_timeout_hdl = 0;
 static auracast_sink_source_info_t *cur_listening_source_info = NULL;						// 当前正在监听广播设备播歌的信息
 
+static int auracast_event_to_user(int event, void *value, u32 len)
+{
+    int *evt = zalloc(sizeof(int) + len);
+    ASSERT(evt);
+    evt[0] = event << 16;
+    evt[0] |= len;
+    if (value) {
+        memcpy(&evt[1], value, len);
+    }
+    app_send_message_from(MSG_FROM_AURACAST, sizeof(int) + len, (int *)evt);
+    free(evt);
+    return 0;
+}
+
 /* #if TCFG_AURACAST_SINK_CONNECT_BY_APP */
 /* static u8 add_source_state = 0; */
 /* static u8 add_source_mac[6]; */
@@ -257,16 +274,6 @@ static auracast_sink_source_info_t *cur_listening_source_info = NULL;						// �
 u8 lea_cfg_support_ll_hci_cmd_in_lea_lib = 1;
 
 
-#define AURACAST_SINK_MAX_RECORD_NUM  3
-#define AURACAST_SINK_RECORDED_WIRTE_VM     0
-#define AURACAST_SINK_FILTER_TIMEOUT  0*1000L
-
-static u8 auracast_sink_start_record = 0;
-static u8 auracast_sink_curr_connect_mac_addr[6];
-static u8 auracast_sink_last_connect_mac_addr[6];
-static u8 auracast_sink_record_connect_mac_addr[AURACAST_SINK_MAX_RECORD_NUM][6];
-static u8 auarcast_sink_mac_addr_filter = 0;
-static u32 auracast_sink_connect_timeout = 0;
 static u8 auracast_switch_onoff = 0;
 
 int le_auracast_state = 0;
@@ -299,6 +306,8 @@ void app_auracast_init(void)
     if (app_auracast_init_flag) {
         return;
     }
+
+    le_audio_common_init();
 
     int os_ret = os_mutex_create(&mutex);
     if (os_ret != OS_NO_ERR) {
@@ -479,18 +488,19 @@ u8 get_auracast_app_mode_exit_flag(void)
 static bool is_auracast_as_source()
 {
     struct app_mode *cur_mode = app_get_current_mode();
+
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
+    return true;
+#elif (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
+    return false;
+#endif
+
 #if (TCFG_BT_BACKGROUND_ENABLE)
     //如果能量检测中则等待能量检测完成再触发做发送的流程，避免重复打开数据流
     u8 addr[6];
     if (cur_mode->name == APP_MODE_BT && bt_slience_get_detect_addr(addr)) {
         return false;
     }
-#endif
-
-#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_TX)
-    return true;
-#elif (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
-    return false;
 #endif
 
     //当前处于蓝牙模式并且已连接手机设备时，
@@ -509,7 +519,7 @@ static bool is_auracast_as_source()
 
 #if TCFG_APP_LINEIN_EN
     if (cur_mode->name == APP_MODE_LINEIN)  {
-        if (linein_get_status() || config_auracast_as_master) {
+        if ((linein_get_status() || config_auracast_as_master) && g_bt_hdl.background.broadcast_mode == 1) {
             return true;
         } else {
             return false;
@@ -519,7 +529,7 @@ static bool is_auracast_as_source()
 
 #if TCFG_APP_IIS_EN
     if (cur_mode->name == APP_MODE_IIS)  {
-        if (iis_get_status() || config_auracast_as_master) {
+        if ((iis_get_status() || config_auracast_as_master) && g_bt_hdl.background.broadcast_mode == 1) {
             return true;
         } else {
             return false;
@@ -529,7 +539,7 @@ static bool is_auracast_as_source()
 
 #if TCFG_APP_MIC_EN
     if (cur_mode->name == APP_MODE_MIC)  {
-        if (mic_get_status() || config_auracast_as_master) {
+        if ((mic_get_status() || config_auracast_as_master) && g_bt_hdl.background.broadcast_mode == 1) {
             return true;
         } else {
             return false;
@@ -539,7 +549,7 @@ static bool is_auracast_as_source()
 
 #if TCFG_APP_MUSIC_EN
     if (cur_mode->name == APP_MODE_MUSIC) {
-        if ((music_file_get_player_status(get_music_file_player()) == FILE_PLAYER_START) || config_auracast_as_master) {
+        if (((music_file_get_player_status(get_music_file_player()) == FILE_PLAYER_START) || config_auracast_as_master) && g_bt_hdl.background.broadcast_mode == 1) {
             return true;
         } else {
             return false;
@@ -550,7 +560,7 @@ static bool is_auracast_as_source()
 #if TCFG_APP_FM_EN
     //当处于下面几种模式时，作为广播发送设备
     if (cur_mode->name == APP_MODE_FM)  {
-        if (fm_get_fm_dev_mute() == 0 || config_auracast_as_master) {
+        if ((fm_get_fm_dev_mute() == 0 || config_auracast_as_master) && g_bt_hdl.background.broadcast_mode == 1) {
             return true;
         } else {
             return false;
@@ -563,10 +573,12 @@ static bool is_auracast_as_source()
     if (cur_mode->name == APP_MODE_SPDIF) {
         //由于spdif 是先打开数据源然后再打开数据流的顺序，具有一定的滞后性，所以不能用 函数 spdif_player_runing 函数作为判断依据
         /* if (spdif_player_runing() ||  config_auracast_as_master) { */
-        if (!get_spdif_mute_state()) {
+        if (!get_spdif_mute_state() && spdif_player_runing() && g_bt_hdl.background.broadcast_mode == 1) {
+            //spdif 模式默认会先进接收端
             y_printf("spdif_player_runing?\n");
             return true;
         } else {
+            r_printf("spdif_player_runing? no\n");
             return false;
         }
     }
@@ -576,7 +588,7 @@ static bool is_auracast_as_source()
     //当处于下面几种模式时，作为广播发送设备
     if (cur_mode->name == APP_MODE_PC) {
 #if defined(TCFG_USB_SLAVE_AUDIO_SPK_ENABLE) && TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
-        if (pc_get_status() || config_auracast_as_master) {
+        if (pc_get_status() && g_bt_hdl.background.broadcast_mode == 1) {
             return true;
         } else {
             return false;
@@ -677,7 +689,7 @@ int app_auracast_open()
         //初始化广播接收端参数
         app_auracast_sink_open();
     }
-
+    g_bt_hdl.background.broadcast_mode = 1;
     app_auracast_mutex_post(&mutex, __LINE__);
     return 0;
 }
@@ -712,9 +724,9 @@ static void auracast_sync_info_report(uint8_t *packet, uint16_t length)
     if (!app_auracast_init_flag) {
         return;
     }
-    app_auracast_mutex_pend(&mutex, __LINE__);
+    /* app_auracast_mutex_pend(&mutex, __LINE__); */
     if (app_auracast.status == APP_AURACAST_STATUS_STOP || app_auracast.status == APP_AURACAST_STATUS_SUSPEND) {
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         return ;
     }
     auracast_sink_source_info_t *config = (auracast_sink_source_info_t *)packet;
@@ -727,7 +739,7 @@ static void auracast_sync_info_report(uint8_t *packet, uint16_t length)
         //不匹配设备名，搜到直接同步，如需匹配设备名，请#if 0
         y_printf("no need match name");
         app_auracast_sink_big_sync_create(config);
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         return ;
     }
 
@@ -741,7 +753,7 @@ static void auracast_sync_info_report(uint8_t *packet, uint16_t length)
             auracast_sink_connect_timeout = sys_timeout_add(NULL, auracast_sink_connect_filter_timeout, AURACAST_SINK_FILTER_TIMEOUT);
         }
 #endif
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         //auracast_sink_rescan();
         return ;
     }
@@ -760,7 +772,7 @@ static void auracast_sync_info_report(uint8_t *packet, uint16_t length)
 #endif
             app_auracast_sink_big_sync_create(config);
         } else {
-            app_auracast_mutex_post(&mutex, __LINE__);
+            /* app_auracast_mutex_post(&mutex, __LINE__); */
             //auracast_sink_rescan();
             return ;
         }
@@ -773,13 +785,7 @@ static void auracast_sync_info_report(uint8_t *packet, uint16_t length)
 #endif
         app_auracast_sink_big_sync_create(config);
     }
-    ;
-    if (auracast_sink_start_record) {
-        auracast_sink_record_mac_addr(config->source_mac_addr);
-    }
-
-    memcpy(auracast_sink_curr_connect_mac_addr, config->source_mac_addr, 6);
-    app_auracast_mutex_post(&mutex, __LINE__);
+    /* app_auracast_mutex_post(&mutex, __LINE__); */
     return;
 
 #endif
@@ -788,11 +794,11 @@ static void auracast_sync_info_report(uint8_t *packet, uint16_t length)
     if (match_name((void *)config->broadcast_name, (void *)auracast_listen_name, strlen((void *)auracast_listen_name))) {
         g_printf("auracast name match\n");
         app_auracast_sink_big_sync_create(config);
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         return;
     } else {
         r_printf("auracast name no match\n");
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         //auracast_sink_rescan();
         return;
     }
@@ -807,9 +813,9 @@ static int auracast_sink_sync_create(uint8_t *packet, uint16_t length)
     if (!app_auracast_init_flag) {
         return -1;
     }
-    app_auracast_mutex_pend(&mutex, __LINE__);
+    /* app_auracast_mutex_pend(&mutex, __LINE__); */
     if (app_auracast.status == APP_AURACAST_STATUS_STOP || app_auracast.status == APP_AURACAST_STATUS_SUSPEND) {
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         return -1;
     }
 
@@ -849,7 +855,7 @@ static int auracast_sink_sync_create(uint8_t *packet, uint16_t length)
         y_printf("bis_hdl:0x%x", app_auracast.bis_hdl_info[i].bis_hdl);
     }
 
-    app_auracast_mutex_post(&mutex, __LINE__);
+    /* app_auracast_mutex_post(&mutex, __LINE__); */
     return 0;
 }
 
@@ -860,9 +866,9 @@ static int auracast_sink_sync_terminate(uint8_t *packet, uint16_t length)
     if (!app_auracast_init_flag) {
         return -1;
     }
-    app_auracast_mutex_pend(&mutex, __LINE__);
+    /* app_auracast_mutex_pend(&mutex, __LINE__); */
     if (app_auracast.status == APP_AURACAST_STATUS_STOP || app_auracast.status == APP_AURACAST_STATUS_SUSPEND) {
-        app_auracast_mutex_post(&mutex, __LINE__);
+        /* app_auracast_mutex_post(&mutex, __LINE__); */
         return -1;
     }
     for (i = 0; i < app_auracast.bis_num; i++) {
@@ -883,7 +889,7 @@ static int auracast_sink_sync_terminate(uint8_t *packet, uint16_t length)
 
     app_auracast_sink_scan_start();
 
-    app_auracast_mutex_post(&mutex, __LINE__);
+    /* app_auracast_mutex_post(&mutex, __LINE__); */
     return 0;
 }
 
@@ -914,6 +920,7 @@ static void auracast_sink_event_callback(uint16_t event, uint8_t *packet, uint16
     }
 
     switch (event) {
+    /*=================Sink Event===============*/
     case AURACAST_SINK_SOURCE_INFO_REPORT_EVENT:
         printf("AURACAST_SINK_SOURCE_INFO_REPORT_EVENT\n");
         auracast_sink_source_info_report_event_deal(packet, length);
@@ -922,19 +929,7 @@ static void auracast_sink_event_callback(uint16_t event, uint8_t *packet, uint16
         printf("AURACAST_SINK_BLE_CONNECT_EVENT\n");
         break;
     case AURACAST_SINK_BIG_SYNC_CREATE_EVENT:
-        printf("AURACAST_SINK_BIG_SYNC_CREATE_EVENT\n");
-
-        ASSERT(cur_listening_source_info);
-        memcpy(cur_listening_source_info, auracast_sink_listening_source_info_get(), sizeof(auracast_sink_source_info_t));
-
-        if (auracast_sink_sync_timeout_hdl != 0) {
-            sys_timeout_del(auracast_sink_sync_timeout_hdl);
-            auracast_sink_sync_timeout_hdl = 0;
-        }
-
-        auracast_sink_sync_create(packet, length);
-        //le_auracast_audio_open(packet, length);
-        //app_auracast_app_notify_listening_status(2, 0);
+        auracast_event_to_user(event, packet, length);
         break;
     case AURACAST_SINK_BIG_SYNC_TERMINATE_EVENT:
         //主动解除同步
@@ -942,17 +937,10 @@ static void auracast_sink_event_callback(uint16_t event, uint8_t *packet, uint16
         break;
     case AURACAST_SINK_BIG_SYNC_FAIL_EVENT:
     case AURACAST_SINK_BIG_SYNC_LOST_EVENT:
-        printf("big lost or fail\n");
-        auracast_sink_sync_terminate(packet, length);
-        //app_auracast_app_notify_listening_status(0, 2);
+        auracast_event_to_user(event, packet, length);
         break;
     case AURACAST_SINK_PERIODIC_ADVERTISING_SYNC_LOST_EVENT:
-        if (cur_listening_source_info) {
-            printf("AURACAST_SINK_PERIODIC_ADVERTISING_SYNC_LOST_EVENT\n");
-            auracast_sink_big_sync_create(cur_listening_source_info);
-        } else {
-            printf("AURACAST_SINK_PERIODIC_ADVERTISING_SYNC_LOST_EVENT FAIL!\n");
-        }
+        auracast_event_to_user(event, packet, length);
         break;
     case AURACAST_SINK_BIG_INFO_REPORT_EVENT:
         printf("AURACAST_SINK_BIG_INFO_REPORT_EVENT\n");
@@ -966,7 +954,12 @@ static void auracast_sink_event_callback(uint16_t event, uint8_t *packet, uint16
     case AURACAST_SINK_EXT_SCAN_COMPLETE_EVENT:
         printf("AURACAST_SINK_EXT_SCAN_COMPLETE_EVENT\n");
         break;
+    case AURACAST_SINK_PADV_REPORT_EVENT:
+        /* log_info(" AURACAST_SINK_PADV_REPORT_EVENT"); */
+        /* put_buf(packet, length); */
+        break;
     default:
+        printf("auracast sink unknow event %x\n", event);
         break;
     }
 }
@@ -974,7 +967,7 @@ static void auracast_sink_event_callback(uint16_t event, uint8_t *packet, uint16
 void app_auracast_sink_init(void)
 {
     printf("app_auracast_sink_init\n");
-    auracast_sink_init();
+    auracast_sink_init(AURACAST_SINK_API_VERSION);
     auracast_sink_event_callback_register(auracast_sink_event_callback);
 
     //le_audio_bass_event_callback_register(app_auracast_bass_server_event_callback);
@@ -1062,7 +1055,7 @@ static int __app_auracast_sink_big_sync_create(auracast_sink_source_info_t *para
     memcpy(cur_listening_source_info, param, sizeof(auracast_sink_source_info_t));
     int ret = auracast_sink_big_sync_create(cur_listening_source_info);
     if (0 == ret) {
-        auracast_sink_sync_timeout_hdl = sys_timeout_add(NULL, auracast_sink_sync_timeout_handler, 15000);
+        //auracast_sink_sync_timeout_hdl = sys_timeout_add(NULL, auracast_sink_sync_timeout_handler, 15000);
     } else {
         printf("__app_auracast_sink_big_sync_create ret:%d\n", ret);
     }
@@ -1162,6 +1155,14 @@ int app_auracast_sink_open()
         return -EPERM;
     }
 
+#if (LEA_BIG_FIX_ROLE == LEA_ROLE_AS_RX)
+    le_audio_switch_ops = get_broadcast_audio_sw_ops();
+    //关闭本地音频播放
+    if (le_audio_switch_ops && le_audio_switch_ops->local_audio_close) {
+        le_audio_switch_ops->local_audio_close();
+    }
+#endif
+
     auracast_switch_onoff = 1;
 
 #if (defined CONFIG_CPU_BR27) || (defined CONFIG_CPU_BR28)
@@ -1205,6 +1206,9 @@ int app_auracast_sink_open()
 
     app_auracast.role = APP_AURACAST_AS_SINK;
     app_auracast.status = APP_AURACAST_STATUS_SCAN;
+#if LEA_BIG_RX_CLOSE_EDR_EN
+    bt_close_discoverable_and_connectable();
+#endif
 
     app_auracast_mutex_post(&mutex, __LINE__);
     return 0;
@@ -1233,7 +1237,11 @@ int app_auracast_sink_close(u8 status)
         sys_timeout_del(auracast_sink_sync_timeout_hdl);
         auracast_sink_sync_timeout_hdl = 0;
     }
-    u8 i;
+
+    if (cur_listening_source_info) {
+        free(cur_listening_source_info);
+        cur_listening_source_info = NULL;
+    }
 
     app_auracast_mutex_pend(&mutex, __LINE__);
     log_info("auracast_sink_close");
@@ -1246,23 +1254,34 @@ int app_auracast_sink_close(u8 status)
 #endif
 #endif
 
-    auracast_sink_set_audio_state(0);
+    /* auracast_sink_set_audio_state(0); */
     if (app_auracast.status == APP_AURACAST_STATUS_SYNC) {
         auracast_sink_big_sync_terminate();
     }
     auracast_sink_scan_stop();
     os_time_dly(10);
     auracast_sink_uninit();
+    app_auracast.status = status;
     auracast_sink_media_close();
 
-    app_auracast.status = status;
+#if LEA_BIG_RX_CLOSE_EDR_EN
+    if (app_auracast.role == APP_AURACAST_AS_SINK) {
+        //恢复经典蓝牙可发现可连接
+        bt_discovery_and_connectable_using_loca_mac_addr(1, 1);
+    }
+#endif
     app_auracast.bis_num = 0;
     app_auracast.role = 0;
     app_auracast.big_hdl = 0;
 
+    u8 i;
     for (i = 0; i < MAX_BIS_NUMS; i++) {
         memset(&app_auracast.bis_hdl_info[i], 0, sizeof(struct app_auracast_info_t));
     }
+
+#if TCFG_AUTO_SHUT_DOWN_TIME
+    sys_auto_shut_down_enable();   // 恢复自动关机
+#endif
 
     app_auracast_mutex_post(&mutex, __LINE__);
 
@@ -1310,7 +1329,7 @@ int auracast_source_user_can_send_now_callback(uint8_t big_hdl)
     u16 tx_offset = 0;
     u32 timestamp;
     timestamp = (auracast_source_read_iso_tx_sync(0) \
-                 + auracast_source_get_sync_delay()) & 0xfffffff;
+                 + auracast_source_get_sync_delay() + AURACAST_ISO_BN * auracast_code_list[AURACAST_BIS_SAMPLING_RATE][AURACAST_BIS_VARIANT].frame_len) & 0xfffffff;
     if (app_auracast.recorder) {
         rlen = le_audio_stream_tx_data_handler(app_auracast.recorder, tx_temp_buf, tx_temp_buf_len, timestamp, TCFG_LE_AUDIO_PLAY_LATENCY);
         if (!rlen) {
@@ -1358,8 +1377,8 @@ static void auracast_source_app_event_callback(uint16_t event, uint8_t *packet, 
 {
     switch (event) {
     case AURACAST_SOURCE_BIG_CREATED:
-        g_printf("AURACAST_SOURCE_BIG_CREATED\n");
-        auracast_source_create(packet, length);
+        g_printf("AURACAST_SOURCE_BIG_CREATED from bt_stack");
+        auracast_event_to_user(event, packet, length);
         break;
     case AURACAST_SOURCE_BIG_TERMINATED:
         g_printf("AURACAST_SOURCE_BIG_TERMINATED\n");
@@ -1439,14 +1458,18 @@ int app_auracast_source_open()
     g_printf("tx_temp_buf_len:%d", tx_temp_buf_len);
     tx_temp_buf = zalloc(tx_temp_buf_len);
 
-    auracast_source_init();
+    auracast_source_init(AURACAST_SOURCE_API_VERSION);
     auracast_source_config(&user_config);
     auracast_source_advanced_config(&user_advanced_config);
     auracast_source_event_callback_register(auracast_source_app_event_callback);
     auracast_source_start();
 
+    /* app_auracast.role = APP_AURACAST_AS_SOURCE; */
     app_auracast.status = APP_AURACAST_STATUS_BROADCAST;
 
+#if TCFG_AUTO_SHUT_DOWN_TIME
+    sys_auto_shut_down_disable();
+#endif
     app_auracast_mutex_post(&mutex, __LINE__);
     return 0;
 }
@@ -1468,6 +1491,7 @@ int app_auracast_source_close(u8 status)
 
     app_auracast_mutex_pend(&mutex, __LINE__);
     log_info("auracast_source_close");
+    app_auracast.status = status;
 
     auracast_source_stop();
     os_time_dly(10);
@@ -1477,7 +1501,6 @@ int app_auracast_source_close(u8 status)
     app_auracast.bis_num = 0;
     app_auracast.role = 0;
     app_auracast.big_hdl = 0;
-    app_auracast.status = status;
 
     for (u8 i = 0; i < MAX_BIS_NUMS; i++) {
         memset(&app_auracast.bis_hdl_info[i], 0, sizeof(struct app_auracast_info_t));
@@ -1487,6 +1510,10 @@ int app_auracast_source_close(u8 status)
         free(tx_temp_buf);
         tx_temp_buf = 0;
     }
+
+#if TCFG_AUTO_SHUT_DOWN_TIME
+    sys_auto_shut_down_enable();   // 恢复自动关机
+#endif
 
     app_auracast_mutex_post(&mutex, __LINE__);
 
@@ -1525,6 +1552,12 @@ int app_auracast_switch(void)
         (bt_get_call_status() != BT_CALL_HANGUP)) {
         return -EPERM;
     }
+#if TCFG_APP_SPDIF_EN
+    if (mode && (mode->name == APP_MODE_SPDIF)) {
+        //开启广播时让spdif stream stop, 由spdif le_audio_tx 回调里去start
+        spdif_stream_stop();
+    }
+#endif
 
     if (!tone_player_runing()) {
         if (app_auracast.status == APP_AURACAST_STATUS_STOP || app_auracast.status == APP_AURACAST_STATUS_SUSPEND) {
@@ -1600,12 +1633,14 @@ int app_auracast_deal(int scene)
         log_info("LE_AUDIO_APP_MODE_ENTER");
         //进入当前模式
         auracast_app_mode_exit = 0;
-    case LE_AUDIO_APP_OPEN:
         config_auracast_as_master = 1;
+    case LE_AUDIO_APP_OPEN:
         mode = app_get_current_mode();
         if (mode) {
             le_audio_ops_register(mode->name);
         }
+        le_audio_switch_ops = get_broadcast_audio_sw_ops();
+
         if (is_need_resume_auracast()) {
             /* if (mode->name == APP_MODE_BT) { */
             /*     //处于其他模式时，手机后台播歌使设备跳回蓝牙模式，此时获取蓝牙底层a2dp状态为正在播放， */
@@ -1627,6 +1662,7 @@ int app_auracast_deal(int scene)
         phone_start_cnt = 0;
         app_auracast_suspend();
         le_audio_ops_unregister();
+        le_audio_switch_ops = NULL;
         break;
 
     case LE_AUDIO_MUSIC_START:
@@ -1768,6 +1804,7 @@ static int auracast_source_media_open()
 {
     g_printf("auracast_source_media_open");
 
+    app_auracast_mutex_pend(&mutex, __LINE__);
     le_audio_switch_ops = get_broadcast_audio_sw_ops();
     //关闭本地音频播放
     if (le_audio_switch_ops && le_audio_switch_ops->local_audio_close) {
@@ -1786,7 +1823,7 @@ static int auracast_source_media_open()
     params.fmt.coding_type = AUDIO_CODING_LC3;
     params.fmt.frame_dms = frame_dms;
     params.fmt.bit_rate = params.fmt.nch * auracast_code_list[AURACAST_BIS_SAMPLING_RATE][AURACAST_BIS_VARIANT].bit_rate;
-    params.fmt.sdu_period = AURACAST_ISO_BN * auracast_code_list[AURACAST_BIS_SAMPLING_RATE][AURACAST_BIS_VARIANT].frame_len;
+    params.fmt.sdu_period = auracast_code_list[AURACAST_BIS_SAMPLING_RATE][AURACAST_BIS_VARIANT].frame_len;
     params.fmt.isoIntervalUs =  AURACAST_ISO_BN * auracast_code_list[AURACAST_BIS_SAMPLING_RATE][AURACAST_BIS_VARIANT].frame_len;
     params.fmt.sample_rate = auracast_code_list[AURACAST_BIS_SAMPLING_RATE][AURACAST_BIS_VARIANT].sample_rate;
     params.fmt.dec_ch_mode = LEA_TX_DEC_OUTPUT_CHANNEL;
@@ -1795,9 +1832,11 @@ static int auracast_source_media_open()
 
     //打开广播音频播放
     if (le_audio_switch_ops && le_audio_switch_ops->tx_le_audio_open) {
-        g_printf("auracast_source_tx_le_audio_open");
         app_auracast.recorder = le_audio_switch_ops->tx_le_audio_open(&params);
+        g_printf("auracast_source_tx_le_audio_open:0x%x", (u32)app_auracast.recorder);
     }
+    app_auracast.status = APP_AURACAST_STATUS_BROADCAST;
+    app_auracast_mutex_post(&mutex, __LINE__);
     return 0;
 }
 
@@ -1807,7 +1846,9 @@ static int auracast_source_media_close()
     void *recorder = 0;
     u8 player_status = 0;
 
+    app_auracast_mutex_pend(&mutex, __LINE__);
     //获取当前播放器状态
+    r_printf("le_audio_switch_ops:%d\n", (u32)le_audio_switch_ops);
     if (le_audio_switch_ops && le_audio_switch_ops->play_status) {
         player_status = le_audio_switch_ops->play_status();
     }
@@ -1832,6 +1873,8 @@ static int auracast_source_media_close()
         }
     }
 
+    app_auracast.status = APP_AURACAST_STATUS_SUSPEND;
+    app_auracast_mutex_post(&mutex, __LINE__);
     return 0;
 }
 
@@ -1866,6 +1909,7 @@ static int auracast_sink_media_open(uint16_t bis_hdl, uint8_t *packet, uint16_t 
 
     g_printf("nch:%d, coding_type:0x%x, dec_ch_mode:%d",
              params.fmt.nch, params.fmt.coding_type, params.fmt.dec_ch_mode);
+    printf("presentation_delay_us:%d\n", config->presentation_delay_us);
 
     if (config->frame_duration == FRAME_DURATION_7_5) {
         params.fmt.frame_dms = 75;
@@ -1875,7 +1919,7 @@ static int auracast_sink_media_open(uint16_t bis_hdl, uint8_t *packet, uint16_t 
         ASSERT(0, "frame_dms err:%d", config->frame_duration);
     }
     params.fmt.sdu_period = config->sdu_period;
-    params.fmt.isoIntervalUs = config->sdu_period;
+    params.fmt.isoIntervalUs = g_sink_bn * config->sdu_period;
     params.fmt.sample_rate = config->sample_rate;
     params.fmt.bit_rate = params.fmt.nch * config->bit_rate;
     params.conn = bis_hdl;
@@ -2035,170 +2079,13 @@ static void auracast_iso_rx_callback(uint8_t *packet, uint16_t size)
 }
 
 
-int app_auracast_sink_start_record(void)
-{
-
-    if (!g_bt_hdl.init_ok || app_var.goto_poweroff_flag) {
-        return -EPERM;
-    }
-
-    if (!app_auracast_init_flag) {
-        return -EPERM;
-    }
 
 
-    if (app_auracast.role != APP_AURACAST_AS_SINK) {
-        return -EPERM;
-    }
-
-    struct app_mode *mode = app_get_current_mode();
-    if (mode && (mode->name == APP_MODE_BT) &&
-        (bt_get_call_status() != BT_CALL_HANGUP)) {
-        return -EPERM;
-    }
-
-    auracast_sink_start_record = 1;
 
 
-#if AURACAST_SINK_RECORDED_WIRTE_VM
-    for (int i = 0; i < AURACAST_SINK_MAX_RECORD_NUM; i++) {
-        syscfg_read(VM_WIRELESS_RECORDED_ADDR0 + i, auracast_sink_record_connect_mac_addr[i], 6);
-    }
-#endif
-
-    u8 temp[6] = {0};
-    if (memcmp(auracast_sink_curr_connect_mac_addr, temp, 6)) {
-        auracast_sink_record_mac_addr(auracast_sink_curr_connect_mac_addr);
-    }
-
-    return 0;
-}
-
-int app_auracast_sink_stop_record(void)
-{
-    if (!g_bt_hdl.init_ok || app_var.goto_poweroff_flag) {
-        return -EPERM;
-    }
-
-    if (!app_auracast_init_flag) {
-        return -EPERM;
-    }
 
 
-    if (app_auracast.role != APP_AURACAST_AS_SINK) {
-        return -EPERM;
-    }
 
-    struct app_mode *mode = app_get_current_mode();
-    if (mode && (mode->name == APP_MODE_BT) &&
-        (bt_get_call_status() != BT_CALL_HANGUP)) {
-        return -EPERM;
-    }
-
-    app_auracast_mutex_pend(&mutex, __LINE__);
-    if (auracast_sink_start_record) {
-        auracast_sink_start_record = 0;
-    }
-
-    if (auarcast_sink_mac_addr_filter) {
-        auarcast_sink_mac_addr_filter = 0;
-    }
-
-    memset(auracast_sink_last_connect_mac_addr, 0, 6);
-
-    app_auracast_mutex_post(&mutex, __LINE__);
-
-    return 0;
-
-}
-
-
-static int auracast_sink_get_mac_addr_is_recorded(u8 *mac_addr)
-{
-
-    int ret = 0;
-    app_auracast_mutex_pend(&mutex, __LINE__);
-    for (int i = 0; i < AURACAST_SINK_MAX_RECORD_NUM; i++) {
-        if (!(memcmp(auracast_sink_record_connect_mac_addr[i], mac_addr, 6))) {
-            ret = 1;
-        }
-    }
-
-    app_auracast_mutex_post(&mutex, __LINE__);
-    return ret;
-
-}
-
-static int auracast_sink_get_recorded_addr_num(void)
-{
-
-    int num = 0;
-    u8 temp[6] = {0};
-
-    app_auracast_mutex_pend(&mutex, __LINE__);
-
-    for (int i = 0; i < AURACAST_SINK_MAX_RECORD_NUM; i++) {
-        if ((memcmp(auracast_sink_record_connect_mac_addr[i], temp, 6))) {
-            num++;
-        }
-    }
-    app_auracast_mutex_post(&mutex, __LINE__);
-
-    return num;
-}
-
-
-int app_auracast_sink_switch_source_device(u8 switch_mode) //0:切换设备后不过滤设备；1：切换设备后过滤处理只连接记录的设备
-{
-    if (!g_bt_hdl.init_ok || app_var.goto_poweroff_flag) {
-        return -EPERM;
-    }
-
-    if (!app_auracast_init_flag) {
-        return -EPERM;
-    }
-
-    if (app_auracast.role != APP_AURACAST_AS_SINK) {
-        return -EPERM;
-    }
-
-    struct app_mode *mode = app_get_current_mode();
-    if (mode && (mode->name == APP_MODE_BT) &&
-        (bt_get_call_status() != BT_CALL_HANGUP)) {
-        return -EPERM;
-    }
-
-    u8 temp[6] = {0};
-    u8 recorded_num = 0;
-
-    if (!auracast_sink_start_record) {
-        app_auracast_sink_start_record();
-    }
-
-    recorded_num = auracast_sink_get_recorded_addr_num();
-    if (!recorded_num) {
-        return -EPERM;
-    }
-
-    app_auracast_mutex_pend(&mutex, __LINE__);
-    if (recorded_num >= 2 && switch_mode) {
-        auarcast_sink_mac_addr_filter = switch_mode;
-    } else if (switch_mode) {
-        printf("[error]The current number of records is insufficient");
-        auarcast_sink_mac_addr_filter = 0;
-    } else {
-        auarcast_sink_mac_addr_filter = 0;
-    }
-
-    memcpy(auracast_sink_last_connect_mac_addr, auracast_sink_curr_connect_mac_addr, 6);
-
-    app_auracast_mutex_post(&mutex, __LINE__);
-
-    app_auracast_sink_close(APP_AURACAST_STATUS_STOP);
-    app_auracast_sink_open();
-
-    return 0;
-}
 u8 check_local_not_accept_sniff_by_remote()
 {
     /* printf("le_auracast_state=%d\n",le_auracast_state ); */
@@ -2210,80 +2097,6 @@ u8 check_local_not_accept_sniff_by_remote()
 }
 
 
-static int auracast_sink_record_mac_addr(u8 *mac_addr)
-{
-
-    int ret = 0;
-    u8 temp[6] = {0};
-    static u8 discard_cnt = 0;
-    int i = 0;
-    if (!mac_addr) {
-        return -EPERM;
-    }
-
-    if (!memcmp(mac_addr, temp, 6)) {
-        return -EPERM;
-    }
-
-    app_auracast_mutex_pend(&mutex, __LINE__);
-
-    for (i = 0; i < AURACAST_SINK_MAX_RECORD_NUM; i++) {
-        if (!memcmp(mac_addr, auracast_sink_record_connect_mac_addr[i], 6)) {
-            ret = 1;
-            break;
-        }
-        if ((memcmp(auracast_sink_record_connect_mac_addr[i], temp, 6))) {
-            memcpy(auracast_sink_record_connect_mac_addr[i], mac_addr, 6);
-            ret = 2;
-            break;
-        }
-
-    }
-
-    if (i == AURACAST_SINK_MAX_RECORD_NUM) {
-        printf("reached maxixmum number of records, discard [%d] addr:", discard_cnt);
-        put_buf(auracast_sink_record_connect_mac_addr[discard_cnt], 6);
-        memcpy(auracast_sink_record_connect_mac_addr[discard_cnt], mac_addr, 6);
-        i =  discard_cnt;
-        discard_cnt++;
-        discard_cnt = (discard_cnt >= 3) ? 0 : discard_cnt;
-    }
-#if AURACAST_SINK_RECORDED_WIRTE_VM
-    syscfg_write(VM_WIRELESS_RECORDED_ADDR0 + i, auracast_sink_record_connect_mac_addr[i], 6);
-#endif
-
-    app_auracast_mutex_post(&mutex, __LINE__);
-
-    return ret;
-}
-
-void app_auracast_sink_discard_record(void)
-{
-
-    app_auracast_mutex_pend(&mutex, __LINE__);
-
-    for (int i = 0; i < AURACAST_SINK_MAX_RECORD_NUM; i++) {
-        memset(auracast_sink_record_connect_mac_addr[i], 0, 6);
-#if AURACAST_SINK_RECORDED_WIRTE_VM
-        syscfg_write(VM_WIRELESS_RECORDED_ADDR0 + i, auracast_sink_record_connect_mac_addr[i], 6);
-#endif
-    }
-
-    auarcast_sink_mac_addr_filter = 0;
-
-    memset(auracast_sink_last_connect_mac_addr, 0, 6);
-
-    app_auracast_mutex_post(&mutex, __LINE__);
-
-}
-
-
-static void auracast_sink_connect_filter_timeout(void *priv)
-{
-    memset(auracast_sink_last_connect_mac_addr, 0, 6);
-
-    auarcast_sink_mac_addr_filter = 0;
-}
 
 
 u8 get_auracast_switch_onoff(void)
@@ -2291,5 +2104,77 @@ u8 get_auracast_switch_onoff(void)
     return auracast_switch_onoff;
 }
 
+static int app_aruacast_conn_status_event_handler(int *msg)
+{
+    uint16_t event = msg[0] >> 16;
+    uint16_t length = msg[0] & 0xffff;
+    uint8_t *packet = (uint8_t *)(msg + 1);
+    switch (event) {
+    /*=================Sink Event===============*/
+    case AURACAST_SINK_BIG_SYNC_CREATE_EVENT:
+        printf("AURACAST_SINK_BIG_SYNC_CREATE_EVENT\n");
+
+        if (cur_listening_source_info == NULL) {
+            break;
+        }
+        memcpy(cur_listening_source_info, auracast_sink_listening_source_info_get(), sizeof(auracast_sink_source_info_t));
+        /* ASSERT(cur_listening_source_info); */
+        if (auracast_sink_sync_timeout_hdl != 0) {
+            sys_timeout_del(auracast_sink_sync_timeout_hdl);
+            auracast_sink_sync_timeout_hdl = 0;
+        }
+
+#if TCFG_AUTO_SHUT_DOWN_TIME
+        sys_auto_shut_down_disable();   // 恢复自动关机
 #endif
+        auracast_sink_sync_create(packet, length);
+        break;
+    case AURACAST_SINK_BIG_SYNC_FAIL_EVENT:
+    case AURACAST_SINK_BIG_SYNC_LOST_EVENT:
+        printf("big lost or fail\n");
+        if (auracast_sink_sync_timeout_hdl != 0) {
+            sys_timeout_del(auracast_sink_sync_timeout_hdl);
+            auracast_sink_sync_timeout_hdl = 0;
+        }
+
+        auracast_sink_sync_terminate(packet, length);
+#if TCFG_AUTO_SHUT_DOWN_TIME
+        sys_auto_shut_down_enable();   // 恢复自动关机
+#endif
+        break;
+    case AURACAST_SINK_PERIODIC_ADVERTISING_SYNC_LOST_EVENT:
+        if (cur_listening_source_info) {
+            printf("AURACAST_SINK_PERIODIC_ADVERTISING_SYNC_LOST_EVENT\n");
+            auracast_sink_big_sync_create(cur_listening_source_info);
+        } else {
+            printf("AURACAST_SINK_PERIODIC_ADVERTISING_SYNC_LOST_EVENT FAIL!\n");
+        }
+        break;
+
+    /*=================Source Event===============*/
+    case AURACAST_SOURCE_BIG_CREATED:
+        g_printf("AURACAST_SOURCE_BIG_CREATED\n");
+        if (app_auracast.role != APP_AURACAST_AS_SOURCE) {
+            auracast_source_create(packet, length);
+        } else {
+            printf("AURACAST ROLE ERR!\n");
+        }
+        break;
+
+    default:
+        printf("auracast unknow event %x\n", event);
+        break;
+    }
+    return 0;
+}
+
+APP_MSG_PROB_HANDLER(app_le_auracast_msg_entry) = {
+    .owner = 0xff,
+    .from = MSG_FROM_AURACAST,
+    .handler = app_aruacast_conn_status_event_handler,
+};
+
+#endif
+
+
 

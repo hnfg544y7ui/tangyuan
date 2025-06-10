@@ -15,6 +15,7 @@ enum {
     WIRELESS_DEV_OP_EXIT_PAIR,
     WIRELESS_DEV_OP_GET_PAIR_CODE,
     WIRELESS_DEV_OP_SET_PAIR_CODE,
+    WIRELESS_DEV_OP_GET_RSSI,
 };
 
 typedef struct {
@@ -214,6 +215,18 @@ int wireless_trans_get_pair_code(const char *name, u8 *pair_code, u8 privacy);
  */
 /* ----------------------------------------------------------------------------*/
 int wireless_trans_set_pair_code(const char *name, u8 *pair_code);
+
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 获取当前连接设备的信号强度
+ *
+ * @param name:dev name for fine dev
+ * @param bis_hdl:链路句柄
+ *
+ * @return 0:err, other:信号强度
+ */
+/* ----------------------------------------------------------------------------*/
+int wireless_trans_get_rssi(const char *name, u16 bis_hdl);
 
 #endif //_WIRELESS_TRANS_MANAGER_H
 

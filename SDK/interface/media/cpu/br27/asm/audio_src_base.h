@@ -71,6 +71,8 @@ int audio_src_base_push_data_out(void *resample);
 
 int audio_src_base_frame_resample(void *resample, struct resample_frame *in_frame, struct resample_frame *out_frame);
 
+int audio_src_base_get_phase(void *resample);
+
 u8 audio_src_base_get_hw_core_id(void *resample);
 
 int audio_src_base_filter_frames(void *resample);
@@ -142,6 +144,7 @@ struct audio_src_driver {
 #define AUDIO_SRC_IOCTL_GET_HW_CORE_ID      _IOR('S', 14, sizeof(int))
 #define AUDIO_SRC_IOCTL_FRAME_RESAMPLE      _IOW('S', 15, sizeof(int))
 #define AUDIO_SRC_IOCTL_GET_FILTER_FRAMES   _IOW('S', 16, sizeof(int))
+#define AUDIO_SRC_IOCTL_GET_PHASE           _IOR('S', 17, sizeof(int))
 
 #define RESAMPLE_STATE_IDLE                 0
 #define RESAMPLE_STATE_PEND_IRQ             1

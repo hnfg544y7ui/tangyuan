@@ -130,7 +130,11 @@ const int config_le_gatt_server_num = 1;
 #else
 const int config_le_gatt_server_num = 0;
 #endif
+#if (THIRD_PARTY_PROTOCOLS_SEL & MULTI_CLIENT_EN)
+const int config_le_gatt_client_num = 2;
+#else
 const int config_le_gatt_client_num = 0;
+#endif
 #else
 const int config_le_gatt_server_num = 0;
 const int config_le_gatt_client_num = 0;

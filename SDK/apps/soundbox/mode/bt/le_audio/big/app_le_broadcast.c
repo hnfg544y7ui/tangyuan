@@ -1172,8 +1172,8 @@ int app_broadcast_deal(int scene)
         log_info("LE_AUDIO_APP_MODE_ENTER");
         //进入当前模式
         broadcast_app_mode_exit = 0;
-    case LE_AUDIO_APP_OPEN:
         config_broadcast_as_master = 1;
+    case LE_AUDIO_APP_OPEN:
         mode = app_get_current_mode();
         if (mode) {
             le_audio_ops_register(mode->name);

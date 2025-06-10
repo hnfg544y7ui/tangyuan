@@ -13,6 +13,7 @@
 #include "bt_event_func.h"
 #include "le_broadcast.h"
 #include "le_connected.h"
+#include "app_le_auracast.h"
 
 #if(TCFG_USER_TWS_ENABLE == 0)
 
@@ -39,11 +40,17 @@ struct dual_conn_handle {
     u8 page_head_inited;
     u8 page_scan_auto_disable;
     u8 inquiry_scan_disable;
+    u8 need_keep_scan;
     struct list_head page_head;
 };
 
 static struct dual_conn_handle g_dual_conn;
 static u8 page_mode_active = 0;
+
+void bt_set_need_keep_scan(u8 en)
+{
+    g_dual_conn.need_keep_scan = en;
+}
 
 void clr_page_mode_active(void)
 {
@@ -79,6 +86,12 @@ static void write_scan_conn_enable(bool scan_enable, bool conn_enable)
 
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
+        return;
+    }
+#endif
+
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
+    if (get_auracast_role() == APP_AURACAST_AS_SINK) {
         return;
     }
 #endif
@@ -248,7 +261,9 @@ void dual_conn_state_handler()
         write_scan_conn_enable(1, 1);
     } else if (connect_device == 1) {
 #if TCFG_BT_DUAL_CONN_ENABLE
-        if (g_dual_conn.device_num_recorded > 1) {
+        if (g_dual_conn.need_keep_scan) {
+            write_scan_conn_enable(0, 1);
+        } else if (g_dual_conn.device_num_recorded > 1) {
             if (have_page_device) {
                 r_printf("have_page_device\n");
                 dual_conn_page_device();
@@ -270,6 +285,12 @@ static void dual_conn_page_device_timeout(void *p)
 
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
+        return;
+    }
+#endif
+
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
+    if (get_auracast_role() == APP_AURACAST_AS_SINK) {
         return;
     }
 #endif

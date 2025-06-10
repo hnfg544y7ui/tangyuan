@@ -20,6 +20,12 @@
 
 #include "typedef.h"
 
+#if (defined CONFIG_CPU_BD45) || (defined CONFIG_CPU_BR56)
+#define BLE_CODE_AT_RAM     AT(.le_ll_ram_code)
+#else
+#define BLE_CODE_AT_RAM
+#endif
+
 #if 0
 // LE CONTROLLER COMMANDS
 #define HCI_LE_CREATE_CONNECTION_CANCEL 				    0x0e

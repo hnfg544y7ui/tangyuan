@@ -380,3 +380,31 @@ int wireless_trans_set_pair_code(const char *name, u8 *pair_code)
     return ret;
 }
 
+/* --------------------------------------------------------------------------*/
+/**
+ * @brief 获取当前连接设备的信号强度，只支持RX获取TX的rssi
+ *
+ * @param name:dev name for fine dev
+ * @param bis_hdl:链路句柄
+ *
+ * @return 0:err, other:信号强度
+ */
+/* ----------------------------------------------------------------------------*/
+int wireless_trans_get_rssi(const char *name, u16 bis_hdl)
+{
+    int rssi = 0;
+    const wireless_trans_ops *wireless_trans;
+    WIRELESS_DEV_ENTER_CRITICAL();
+    list_for_each_wireless_trans(wireless_trans) {
+        if (!strcmp(name, wireless_trans->name)) {
+            if (wireless_trans->ioctrl) {
+                rssi = wireless_trans->ioctrl(WIRELESS_DEV_OP_GET_RSSI, bis_hdl);
+            }
+            WIRELESS_DEV_EXIT_CRITICAL();
+            return rssi;
+        }
+    }
+    WIRELESS_DEV_EXIT_CRITICAL();
+    return rssi;
+}
+

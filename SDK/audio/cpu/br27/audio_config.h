@@ -37,6 +37,8 @@ static const char *audio_vol_str[] = {
     "Vol_SysTone",
     "Vol_SysKTone",
     "VolLRMedia",
+    "Vol_SPK_MIC",
+    "Vol_SPK_IIS",
     "NULL",
 };
 
@@ -56,6 +58,8 @@ typedef enum {
     SysVol_TONE,
     SysVol_KEY_TONE,
     Vol_VIRTUAL_SURROUND,	//环绕声
+    AppVol_LOUDSPEAKER_IIS,
+    AppVol_LOUDSPEAKER_MIC,
     Vol_NULL,
 
 } audio_vol_index_t;

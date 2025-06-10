@@ -308,7 +308,9 @@ void uac_mute_volume(u32 type, u32 l_vol, u32 r_vol)
             return;
         }
         last_mic_vol = l_vol;
+#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
         pc_mic_set_volume_by_taskq(l_vol);
+#endif
         break;
     case SPK_FEATURE_UNIT_ID: //SPK
         /* if (speaker_stream_is_open == 0) { */

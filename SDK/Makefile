@@ -186,6 +186,7 @@ INCLUDES := \
 	-Iinterface/utils/fs \
 	-Iinterface/utils/generic \
 	-Iinterface/utils/math/cpu/br27 \
+	-Iinterface/net/mbedtls_3_4_0 \
 	-Iinterface/btstack/third_party/rcsp \
 	-Iinterface/media/media_new \
 	-Iinterface/media/media_new/media \
@@ -221,6 +222,10 @@ INCLUDES := \
 	-Iaudio/cpu/br27/audio_dec \
 	-Iaudio/common \
 	-Iaudio/effect \
+	-Iinterface/net/lwip_2_2_0/lwip/port \
+	-Iinterface/net/lwip_2_2_0/lwip/src \
+	-Iinterface/net/lwip_2_2_0/lwip/src/include \
+	-Iapps/common/netapps/iflytek \
 	-Iapps/common/third_party_profile/jieli/rcsp \
 	-Iapps/common/third_party_profile/jieli/rcsp/adv \
 	-Iapps/common/third_party_profile/jieli/rcsp/rcsp_functions \
@@ -243,6 +248,7 @@ INCLUDES := \
 	-Iapps/common/third_party_profile/swift_pair \
 	-Iapps/common/third_party_profile/gfps_protocol \
 	-Iapps/common/third_party_profile/custom_protocol_demo \
+	-Iapps/common/third_party_profile/multi_ble_clinet \
 	-Iinterface/utils/apple_dock \
 	-Iapps/common/cJSON \
 	-Iinterface/btstack \
@@ -284,9 +290,13 @@ INCLUDES := \
 	-Iaudio/cpu/br27/audio_common \
 	-Iinterface/media/framework/include \
 	-Iinterface/media/cvp \
+	-Ilib/net/lwip_2_1_3/apps/ntp \
+	-Iapps/common/netapps \
+	-Ilib/net/web_socket \
+	-Iinterface/net/web_socket \
+	-Iinterface/net/lwip_2_2_0 \
+	-Iapps/common/netapps/my_cjson \
 	-Iinterface/net \
-	-Iinterface/net/lwip_2_2_0/lwip/src/include \
-	-Iinterface/net/lwip_2_2_0/lwip/port \
 	-Iinterface/net/lwip_2_2_0/lwip/src/include/netif \
 	-Iinterface/net/lwip_2_2_0/lwip/port/arch \
 	-Iinterface/net/lwip_2_2_0/lwip/app/ctp \
@@ -308,6 +318,7 @@ c_SRC_FILES := \
 	apps/common/app_mode_manager/app_mode_manager.c \
 	apps/common/bt_common/bt_fre_offset_storage.c \
 	apps/common/bt_common/bt_test_api.c \
+	apps/common/cJSON/cJSON.c \
 	apps/common/clock_manager/clock_manager.c \
 	apps/common/config/app_config.c \
 	apps/common/config/bt_name_parse.c \
@@ -398,6 +409,14 @@ c_SRC_FILES := \
 	apps/common/net/lwip_2_2_0/port/bt_ethernetif.c \
 	apps/common/net/lwip_2_2_0/port/fixme.c \
 	apps/common/net/lwip_2_2_0/port/sys_arch.c \
+	apps/common/netapps/iflytek/ifly_api.c \
+	apps/common/netapps/iflytek/ifly_auth.c \
+	apps/common/netapps/iflytek/ifly_socket.c \
+	apps/common/netapps/iflytek/ifly_sparkdesk.c \
+	apps/common/netapps/iflytek/ifly_tts.c \
+	apps/common/netapps/iflytek/ifly_vad.c \
+	apps/common/netapps/iflytek/ifly_vad_demo.c \
+	apps/common/netapps/my_cjson/my_cjson.c \
 	apps/common/temp_trim/dtemp_pll_trim.c \
 	apps/common/test/fs_test.c \
 	apps/common/third_party_profile/common/3th_profile_api.c \
@@ -521,6 +540,7 @@ c_SRC_FILES := \
 	apps/common/third_party_profile/jieli/rcsp/server/rcsp_data_respone.c \
 	apps/common/third_party_profile/jieli/trans_data_demo/le_trans_data.c \
 	apps/common/third_party_profile/jieli/trans_data_demo/spp_trans_data.c \
+	apps/common/third_party_profile/multi_ble_client/ble_multi_client.c \
 	apps/common/third_party_profile/multi_protocol_common.c \
 	apps/common/third_party_profile/multi_protocol_event.c \
 	apps/common/third_party_profile/multi_protocol_main.c \
@@ -565,6 +585,7 @@ c_SRC_FILES := \
 	apps/soundbox/log_config/lib_btstack_config.c \
 	apps/soundbox/log_config/lib_driver_config.c \
 	apps/soundbox/log_config/lib_media_config.c \
+	apps/soundbox/log_config/lib_net_config.c \
 	apps/soundbox/log_config/lib_system_config.c \
 	apps/soundbox/log_config/lib_update_config.c \
 	apps/soundbox/message/adapter/app_msg.c \
@@ -630,6 +651,11 @@ c_SRC_FILES := \
 	apps/soundbox/mode/local_tws/local_tws.c \
 	apps/soundbox/mode/local_tws/sink.c \
 	apps/soundbox/mode/local_tws/sink_key_msg_table.c \
+	apps/soundbox/mode/loudspeaker/loudspeaker.c \
+	apps/soundbox/mode/loudspeaker/loudspeaker_api.c \
+	apps/soundbox/mode/loudspeaker/loudspeaker_app_msg_handler.c \
+	apps/soundbox/mode/loudspeaker/loudspeaker_key_msg_table.c \
+	apps/soundbox/mode/loudspeaker/ui_loudspeaker.c \
 	apps/soundbox/mode/mic/mic.c \
 	apps/soundbox/mode/mic/mic_api.c \
 	apps/soundbox/mode/mic/mic_app_msg_handler.c \
@@ -737,6 +763,7 @@ c_SRC_FILES := \
 	audio/common/demo/codec_demo/audio_enc_file_demo.c \
 	audio/common/demo/codec_demo/audio_file_dec_demo.c \
 	audio/common/demo/codec_demo/audio_frame_codec_demo.c \
+	audio/common/demo/hw_math_v2_demo.c \
 	audio/common/frame_length_adaptive.c \
 	audio/common/online_debug/aud_data_export.c \
 	audio/common/online_debug/aud_mic_dut.c \
@@ -774,6 +801,7 @@ c_SRC_FILES := \
 	audio/effect/demo/frequency_shift_howling_demo.c \
 	audio/effect/demo/gain_demo.c \
 	audio/effect/demo/harmonic_exciter_demo.c \
+	audio/effect/demo/lhdc_x_demo.c \
 	audio/effect/demo/noisegate_demo.c \
 	audio/effect/demo/notch_howling_demo.c \
 	audio/effect/demo/pitch_speed_demo.c \
@@ -809,6 +837,7 @@ c_SRC_FILES := \
 	audio/framework/nodes/esco_tx_node.c \
 	audio/framework/nodes/iis_node.c \
 	audio/framework/nodes/le_audio_source.c \
+	audio/framework/nodes/lhdc_x_node.c \
 	audio/framework/nodes/local_tws_source_node.c \
 	audio/framework/nodes/multi_ch_iis_node.c \
 	audio/framework/nodes/ns_node.c \
@@ -854,6 +883,8 @@ c_SRC_FILES := \
 	audio/interface/player/le_audio_player.c \
 	audio/interface/player/linein_player.c \
 	audio/interface/player/local_tws_player.c \
+	audio/interface/player/loudspeaker_iis_player.c \
+	audio/interface/player/loudspeaker_mic_player.c \
 	audio/interface/player/mic_player.c \
 	audio/interface/player/pc_spk_player.c \
 	audio/interface/player/reference_time.c \
@@ -913,9 +944,6 @@ c_SRC_FILES := \
 	cpu/br27/ui_driver/lcd_drive/lcd_spi/lcd_spi_gc9b71_320x386.c \
 	cpu/br27/ui_driver/lcd_drive/lcd_spi/lcd_spi_sh8601a_454x454.c \
 	cpu/br27/ui_driver/lcd_drive/lcd_spi/lcd_spi_st7789v_240x240.c \
-	cpu/br27/ui_driver/led7/led7_driver.c \
-	cpu/br27/ui_driver/ui_common.c \
-	cpu/components/gpadc_battery.c \
 	cpu/components/iic_api.c \
 	cpu/components/iic_soft.c \
 	cpu/components/ir_decoder.c \
@@ -923,6 +951,8 @@ c_SRC_FILES := \
 	cpu/components/led_api.c \
 	cpu/components/rdec_soft.c \
 	cpu/components/two_io_led.c \
+	cpu/components/ui_driver/led7/led7_driver.c \
+	cpu/components/ui_driver/ui_common.c \
 	cpu/config/gpio_file_parse.c \
 	cpu/config/lib_power_config.c \
 	cpu/periph_demo/gptimer_demo.c \
@@ -1061,6 +1091,7 @@ LFLAGS := \
 	cpu/br27/liba/lib_Chorus.a \
 	cpu/br27/liba/VirtualBass.a \
 	cpu/br27/liba/lib_virtual_bass_classic.a \
+	cpu/br27/liba/lib_virtual_bass_pro.a \
 	cpu/br27/liba/lib_plateReverb_adv.a \
 	cpu/br27/liba/lib_Reverb.a \
 	cpu/br27/liba/drc.a \
@@ -1094,6 +1125,7 @@ LFLAGS := \
 	cpu/br27/liba/libStereoSpatialWider_pi32v2_OnChip.a \
 	cpu/br27/liba/libdistortion.a \
 	cpu/br27/liba/lib_frequency_compressor.a \
+	cpu/br27/liba/lib_jlsp_ahs.a \
 	cpu/br27/liba/libFFT_pi32v2_OnChip.a \
 	cpu/br27/liba/lib_wtg_dec.a \
 	cpu/br27/liba/bfilterfun_lib.a \
@@ -1107,7 +1139,6 @@ LFLAGS := \
 	cpu/br27/liba/ui_draw_new.a \
 	cpu/br27/liba/font_new.a \
 	cpu/br27/liba/ui_new.a \
-	cpu/br27/liba/lwip_2_2_0.a \
 	cpu/br27/liba/cbuf.a \
 	cpu/br27/liba/lbuf.a \
 	cpu/br27/liba/printf.a \

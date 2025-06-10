@@ -55,26 +55,78 @@ const int config_audio_dac_dma_buf_realloc_enable = 1;
 #ifdef TCFG_DAC_POWER_MODE
 const int config_audio_dac_power_mode = TCFG_DAC_POWER_MODE;
 #endif
+const int config_audio_dac_underrun_time_lea = 100; //le_audio 音频流欠载检测时间(us); 低延时模式建议不要超过100us
 
 const int config_audio_gain_enable = TCFG_GAIN_NODE_ENABLE;
 const int config_audio_split_gain_enable = TCFG_SPLIT_GAIN_NODE_ENABLE;
 const int config_audio_stereomix_enable = TCFG_STEROMIX_NODE_ENABLE;
 
+//ADC Enable Config
 const int config_audio_adc0_enable = TCFG_ADC0_ENABLE;
+#ifdef TCFG_ADC1_ENABLE
 const int config_audio_adc1_enable = TCFG_ADC1_ENABLE;
+#else
+const int config_audio_adc1_enable = 0;
+#endif
+#ifdef TCFG_ADC2_ENABLE
+const int config_audio_adc2_enable = TCFG_ADC2_ENABLE;
+#else
 const int config_audio_adc2_enable = 0;
+#endif
+#ifdef TCFG_ADC3_ENABLE
+const int config_audio_adc3_enable = TCFG_ADC3_ENABLE;
+#else
 const int config_audio_adc3_enable = 0;
+#endif
+#ifdef TCFG_ADC4_ENABLE
+const int config_audio_adc4_enable = TCFG_ADC4_ENABLE;
+#else
 const int config_audio_adc4_enable = 0;
+#endif
+#ifdef TCFG_ADC5_ENABLE
+const int config_audio_adc5_enable = TCFG_ADC5_ENABLE;
+#else
 const int config_audio_adc5_enable = 0;
+#endif
+#ifdef TCFG_ADC6_ENABLE
+const int config_audio_adc6_enable = TCFG_ADC6_ENABLE;
+#else
 const int config_audio_adc6_enable = 0;
+#endif
 const int config_audio_adc7_enable = 0;
+
+//ADC input Mode:Single-Ended/Differential/Single-Ended Capless
 const int config_audio_adc0_input_mode = TCFG_ADC0_MODE;
+#ifdef TCFG_ADC1_MODE
 const int config_audio_adc1_input_mode = TCFG_ADC1_MODE;
+#else
+const int config_audio_adc1_input_mode = 0;
+#endif
+#ifdef TCFG_ADC2_MODE
+const int config_audio_adc2_input_mode = TCFG_ADC2_MODE;
+#else
 const int config_audio_adc2_input_mode = 0;
+#endif
+#ifdef TCFG_ADC3_MODE
+const int config_audio_adc3_input_mode = TCFG_ADC3_MODE;
+#else
 const int config_audio_adc3_input_mode = 0;
+#endif
+#ifdef TCFG_ADC4_MODE
+const int config_audio_adc4_input_mode = TCFG_ADC4_MODE;
+#else
 const int config_audio_adc4_input_mode = 0;
+#endif
+#ifdef TCFG_ADC5_MODE
+const int config_audio_adc5_input_mode = TCFG_ADC5_MODE;
+#else
 const int config_audio_adc5_input_mode = 0;
+#endif
+#ifdef TCFG_ADC6_MODE
+const int config_audio_adc6_input_mode = TCFG_ADC6_MODE;
+#else
 const int config_audio_adc6_input_mode = 0;
+#endif
 const int config_audio_adc7_input_mode = 0;
 
 /*
@@ -83,8 +135,9 @@ const int config_audio_adc7_input_mode = 0;
  *******************************************************************
  */
 const int config_audio_cvp_ref_source = 1;/*0:DAC Internal 1:External*/
-#ifdef TCFG_AUDIO_SIDETONE_ENABLE
-const int config_audio_cvp_ref_ch_recognize_enable = TCFG_AUDIO_SIDETONE_ENABLE;
+#if ((defined(TCFG_AUDIO_SIDETONE_ENABLE) && TCFG_AUDIO_SIDETONE_ENABLE) || \
+    (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE))
+const int config_audio_cvp_ref_ch_recognize_enable = 1;
 #else
 const int config_audio_cvp_ref_ch_recognize_enable = 0;
 #endif
@@ -134,6 +187,12 @@ const int butterworth_iir_filter_coeff_type_select = 0;//虚拟低音根据此�
 #else
 const int butterworth_iir_filter_coeff_type_select = 1;//虚拟低音根据此变量使用相应的滤波器设计函数 0:float  1:int
 #endif
+
+const int virtual_bass_pro_soft_crossover = 0;//控制虚拟低音pro 中的分频器是用软件运行或者硬件运行  1 软件EQ  0 硬件EQ 默认硬件EQ
+const int virtual_bass_pro_soft_eq = 1;       //控制虚拟低音pro 中的EQ是用软件运行或者硬件运行 1软件 0硬件 默认1
+
+
+
 
 const int limiter_run_mode = EFx_PRECISION_PRO
 #if defined(TCFG_AUDIO_EFX_4E5B_RUN_MODE)
@@ -212,11 +271,17 @@ const  int virtual_bass_run_mode         = TCFG_AUDIO_EFX_B0D5_RUN_MODE;
 const  int virtual_bass_run_mode         = EFx_BW_16t16 | EFx_BW_16t32 | EFx_BW_32t32;
 #endif
 
-#ifdef TCFG_AUDIO_EFX_55C9_RUN_MODE
-const  int virtual_bass_classic_run_mode = TCFG_AUDIO_EFX_55C9_RUN_MODE;
-#else
-const  int virtual_bass_classic_run_mode = EFx_BW_16t16 | EFx_BW_32t32;
+const  int virtual_bass_classic_run_mode = 0
+#if defined(TCFG_AUDIO_EFX_55C9_RUN_MODE)
+        | TCFG_AUDIO_EFX_55C9_RUN_MODE
 #endif
+#if defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
+        | TCFG_AUDIO_EFX_02E6_RUN_MODE
+#endif
+#if defined(TCFG_AUDIO_EFX_55C9_RUN_MODE) || defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
+        | EFx_BW_16t16 | EFx_BW_32t32
+#endif
+        ;
 
 const  int drc_advance_run_mode          = EFx_PRECISION_NOR
 #if defined(TCFG_AUDIO_EFX_4250_RUN_MODE)
@@ -225,7 +290,10 @@ const  int drc_advance_run_mode          = EFx_PRECISION_NOR
 #if defined(TCFG_AUDIO_EFX_74CB_RUN_MODE)
         | TCFG_AUDIO_EFX_74CB_RUN_MODE
 #endif
-#if !defined(TCFG_AUDIO_EFX_4250_RUN_MODE) && !defined(TCFG_AUDIO_EFX_74CB_RUN_MODE)
+#if defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
+        | TCFG_AUDIO_EFX_02E6_RUN_MODE
+#endif
+#if !defined(TCFG_AUDIO_EFX_4250_RUN_MODE) && !defined(TCFG_AUDIO_EFX_74CB_RUN_MODE) && !defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
         | EFx_BW_16t16 | EFx_BW_32t16 | EFx_BW_32t32
 #endif
         ;
@@ -308,7 +376,10 @@ const int iir_filter_run_mode = 0  //不支持32进16出
 #if defined(TCFG_AUDIO_EFX_6700_RUN_MODE)
                                 | TCFG_AUDIO_EFX_6700_RUN_MODE
 #endif
-#if !defined(TCFG_AUDIO_EFX_3845_RUN_MODE) && !defined(TCFG_AUDIO_EFX_6700_RUN_MODE)
+#if defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
+                                | TCFG_AUDIO_EFX_02E6_RUN_MODE
+#endif
+#if !defined(TCFG_AUDIO_EFX_3845_RUN_MODE) && !defined(TCFG_AUDIO_EFX_6700_RUN_MODE) && !defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
                                 | EFx_BW_16t16 | EFx_BW_16t32 | EFx_BW_32t32  //不支持32进16出
 #endif
                                 ;
@@ -334,6 +405,15 @@ const int voicechanger_effect_v_config = (0
 
 /*mb drc/limiter 3带使能(1.2k) */
 const int audio_crossover_3band_enable       = 1;
+
+//howling_ahs配置
+const int const_audio_howling_ahs_ref_src_type = 1; //0:不使能参考数据变采样，1:软件src，2:硬件src
+const int const_audio_howling_ahs_data_export = 0;  //数据写卡导出，需要使能AUDIO_DATA_EXPORT_VIA_UART，串口写卡工具配置3通道，每通道512byte
+/*
+ * ahs算法所处的数据流输入为iis，输出为dac时需要使能。
+ * 由于src输入输出buffer复用问题，建议采样率配置:iis(16k)->dac(32k/48k)。
+ */
+const int const_audio_howling_ahs_iis_in_dac_out = 0;
 
 /*
  * 某些算法参数更新需要重新申请buffer，

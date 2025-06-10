@@ -150,6 +150,7 @@
 #define TCFG_WDRC_NODE_ENABLE 1 // DRC
 #define TCFG_WRITE_FILE_NODE_ENABLE 1 // 写文件
 #define TCFG_ZERO_ACTIVE_NODE_ENABLE 0 // Zero Active
+#define TCFG_HOWLING_AHS_NODE_ENABLE 0
 #define EQ_SECTION_MAX 0xc // EQ_SECTION_MAX
 // ------------流程图宏定义------------
 

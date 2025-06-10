@@ -15,6 +15,7 @@
 #include "le_broadcast.h"
 #include "le_connected.h"
 #include "dual_conn.h"
+#include "app_le_auracast.h"
 
 #if(TCFG_USER_TWS_ENABLE && TCFG_APP_BT_EN)
 
@@ -38,12 +39,18 @@ struct dual_conn_handle {
     u8 page_head_inited;
     u8 page_scan_auto_disable;
     u8 inquiry_scan_disable;
+    u8 need_keep_scan;
     struct list_head page_head;
 };
 
 static struct dual_conn_handle g_dual_conn;
 static u8 page_mode_active = 0;
 static u8 page_timeout = 0;         //用来两边同时按下才发起配对的情况下，TWS未配对发起回连的超时之后插入可发现可连接
+
+void bt_set_need_keep_scan(u8 en)
+{
+    g_dual_conn.need_keep_scan = en;
+}
 
 void clr_page_mode_active(void)
 {
@@ -104,6 +111,12 @@ static void write_scan_conn_enable(bool scan_enable, bool conn_enable)
 
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
+        return;
+    }
+#endif
+
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
+    if (get_auracast_role() == APP_AURACAST_AS_SINK) {
         return;
     }
 #endif
@@ -175,7 +188,7 @@ static int dual_conn_try_open_inquiry_scan()
     if (connect_device == 0) {
         write_scan_conn_enable(1, 1);
     } else if (connect_device == 1) {
-        if (g_dual_conn.device_num_recorded > 1) {
+        if (g_dual_conn.device_num_recorded > 1 || g_dual_conn.need_keep_scan) {
 #if TCFG_BT_DUAL_CONN_ENABLE
             write_scan_conn_enable(0, 1);
 #endif
@@ -393,7 +406,10 @@ void tws_dual_conn_state_handler()
                 write_scan_conn_enable(0, 1);
 #endif
             }
+        } else if (g_dual_conn.need_keep_scan) {
+            write_scan_conn_enable(0, 1);
         }
+
         if (have_page_device) {
             g_dual_conn.timer = sys_timeout_add(NULL, tws_wait_conn_timeout, 6000);
             tws_api_auto_role_switch_disable();
@@ -414,7 +430,7 @@ void tws_dual_conn_state_handler()
             if (tws_active) {
                 tws_api_wait_connection(0);
             }
-            if (g_dual_conn.device_num_recorded > 1) {
+            if (g_dual_conn.device_num_recorded > 1 || g_dual_conn.need_keep_scan) {
 #if TCFG_BT_DUAL_CONN_ENABLE
                 write_scan_conn_enable(0, 1);
 #endif
@@ -519,7 +535,7 @@ void tws_dual_conn_state_handler()
                 write_scan_conn_enable(1, 1);
             }
         } else if (connect_device == 1) {
-            if (g_dual_conn.device_num_recorded > 1) {
+            if (edr_background_active && (g_dual_conn.device_num_recorded > 1 || g_dual_conn.need_keep_scan)) {
                 write_scan_conn_enable(0, 1);
             }
 #if TCFG_TWS_PAIR_ALWAYS                     //打开TWS_PAIR_ALWAYS,在手机连接之后仍然可以进行配对
@@ -547,6 +563,12 @@ static void dual_conn_page_device_timeout(void *p)
 
 #if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
     if (get_broadcast_role() == BROADCAST_ROLE_RECEIVER) {
+        return;
+    }
+#endif
+
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SOURCE_EN | LE_AUDIO_AURACAST_SINK_EN)) && LEA_BIG_RX_CLOSE_EDR_EN)
+    if (get_auracast_role() == APP_AURACAST_AS_SINK) {
         return;
     }
 #endif
@@ -661,7 +683,9 @@ static void dual_conn_page_devices_init()
         dual_conn_page_device();
     }
 #else
-    dual_conn_page_device();
+    if (g_bt_hdl.work_mode == BT_MODE_SIGLE_BOX) {
+        dual_conn_page_device();
+    }
 #endif
 }
 
