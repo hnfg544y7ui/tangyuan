@@ -73,6 +73,7 @@ const u8 gpadc_ch_power_div = 4; //分压系数,需和gpadc_ch_power匹配
 const u8 gpadc_power_supply_mode = 2; //映射供电方式
 const u16 gpadc_battery_trim_vddiom_voltage = 2800; //电池trim 使用的vddio电压
 const u16 gpadc_battery_trim_voltage = 3700; //电池trim 使用的vbat电压
+const u16 gpadc_extern_voltage_trim = 0; //使用外部输入方式校准的电压
 
 
 /* 是否开启把vm配置项暂存到ram的功能 */

@@ -140,7 +140,7 @@ const struct task_info task_info_table[] = {
     {"audio_enc",           6,     0,   768,   128 },
     {"aec",					2,	   1,   768,   128 },
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    {"ahs",					2,	   1,   768,   0 },
+    {"ahs",					6,	   1,   768,   0 }, //与mic_effect线程同优先级
 #endif
 
     {"aec_dbg",				3,	   0,   512,   128 },

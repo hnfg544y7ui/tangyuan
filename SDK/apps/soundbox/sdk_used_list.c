@@ -689,6 +689,7 @@ aac_enc_plug
 #endif
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
 ahs_node_adapter
+ahs_post_node_adapter
 #endif
 
 #if TCFG_DEC_ENGINE_SOUND_ENABLE

@@ -200,8 +200,4 @@ void alink_set_da2sync_ch(void *hw_alink);
 void audio_alink_lock(u8 module_idx);
 void audio_alink_unlock(u8 module_idx);
 
-#define IIS_CH_NUM  2
-#define ALINK_SR_NUM 13
-extern u32 alink_sr_tab[ALINK_SR_NUM];
-
 #endif/*_AUDIO_LINK_H_*/

@@ -106,7 +106,7 @@ void power_early_flowing()
     /* gpio_longpress_pin0_reset_config(IO_PORTB_01, 0, 0, 1, 1, 0); */
     // 不开充电功能，将长按复位关闭
 #if (!TCFG_CHARGE_ENABLE)
-    gpio_longpress_pin1_reset_config(IO_LDOIN_DET, 0, 0);
+    gpio_longpress_pin1_reset_config(IO_LDOIN_DET, 0, 0, 0);
 #endif
 
     power_early_init(0);
