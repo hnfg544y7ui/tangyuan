@@ -41,9 +41,6 @@ int pc_app_msg_handler(int *msg)
 #endif
         (msg_type == APP_MSG_MUSIC_PP
          || msg_type == APP_MSG_MUSIC_NEXT || msg_type == APP_MSG_MUSIC_PREV
-#if LEA_BIG_VOL_SYNC_EN
-         || msg_type == APP_MSG_VOL_UP || msg_type == APP_MSG_VOL_DOWN
-#endif
          || msg_type == APP_MSG_PC_START
         )) {
 

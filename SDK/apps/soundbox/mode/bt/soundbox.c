@@ -344,6 +344,10 @@ void bt_function_select_init()
     printf_buf((void *)tmp_ble_addr, 6);
 #endif
 
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_UNICAST_SINK_EN | LE_AUDIO_JL_UNICAST_SINK_EN | LE_AUDIO_JL_AURACAST_SINK_EN)))
+    bt_change_hci_class_type(BD_CLASS_WEARABLE_HEADSET | LE_AUDIO_CLASS);   //经典蓝牙地址跟le audio地址一样要置上BIT(14)
+#endif
+
 #if (CONFIG_BT_MODE != BT_NORMAL)
     set_bt_enhanced_power_control(1);
 #endif
@@ -376,6 +380,10 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #if (THIRD_PARTY_PROTOCOLS_SEL & (RCSP_MODE_EN | GFPS_EN | MMA_EN | FMNA_EN | REALME_EN | SWIFT_PAIR_EN | DMA_EN | ONLINE_DEBUG_EN | CUSTOM_DEMO_EN | MULTI_CLIENT_EN))||(TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_AURACAST_SINK_EN)
         multi_protocol_bt_init();
 #endif
+        //蓝牙初始化完可能有trim值, 把trim值写到flash减少ram占用
+        if (get_vm_ram_storage_enable()) {
+            vm_flush2flash(0);
+        }
         break;
 
     case BT_STATUS_SECOND_CONNECTED:
@@ -399,6 +407,9 @@ static int bt_connction_status_event_handler(struct bt_event *bt)
 #if TCFG_BT_SUPPORT_MAP
         bt_cmd_prepare(USER_CTRL_MAP_READ_TIME, 0, NULL);
 #endif
+        if (get_vm_ram_storage_enable()) {
+            vm_flush2flash(0);
+        }
         break;
     case BT_STATUS_FIRST_DISCONNECT:
     case BT_STATUS_SECOND_DISCONNECT:
@@ -729,7 +740,7 @@ static void bt_no_background_exit_check(void *priv)
     }
 #endif
 
-#if (THIRD_PARTY_PROTOCOLS_SEL & (RCSP_MODE_EN | GFPS_EN | MMA_EN | FMNA_EN | REALME_EN | SWIFT_PAIR_EN | DMA_EN | ONLINE_DEBUG_EN | CUSTOM_DEMO_EN | MULTI_CLIENT_EN))
+#if (THIRD_PARTY_PROTOCOLS_SEL & (RCSP_MODE_EN | GFPS_EN | MMA_EN | FMNA_EN | REALME_EN | SWIFT_PAIR_EN | DMA_EN | ONLINE_DEBUG_EN | CUSTOM_DEMO_EN | MULTI_CLIENT_EN))||(TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_AURACAST_SINK_EN)
     multi_protocol_bt_exit();
 #endif
 

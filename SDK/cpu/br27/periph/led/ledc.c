@@ -4,8 +4,10 @@
 #pragma const_seg(".ledc.text.const")
 #pragma code_seg(".ledc.text")
 #endif
-#include "asm/includes.h"
-
+#include "system/includes.h"
+#include "debug.h"
+#include "gpio.h"
+#include "asm/ledc.h"
 
 
 #define     MAX_HW_LEDC 3

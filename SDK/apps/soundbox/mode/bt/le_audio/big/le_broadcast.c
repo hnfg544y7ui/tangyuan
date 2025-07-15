@@ -418,6 +418,12 @@ static int broadcast_tx_align_data_handler(u8 big_hdl)
     }
 #endif
 
+    if (get_vm_ram_storage_enable()) {
+        if (get_vm_ram_data_used_size()) {
+            app_send_message(APP_MSG_VM_FLUSH_FLASH, 0);
+        }
+    }
+
     return 0;
 }
 

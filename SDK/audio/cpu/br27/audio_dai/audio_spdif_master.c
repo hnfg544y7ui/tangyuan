@@ -5,7 +5,7 @@
 #pragma code_seg(".audio_spdif_master.text")
 #endif
 #include "includes.h"
-#include "asm/includes.h"
+#include "cpu/includes.h"
 #include "media/includes.h"
 #include "system/includes.h"
 /* #include "asm/clock.h" */

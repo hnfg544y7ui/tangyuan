@@ -22,11 +22,14 @@ const int config_media_tws_en = 1;
 const int config_media_tws_en = 0;
 #endif
 
+const int config_audio_dac_ng_debug = 0;
+
 /* 16bit数据流中也存在32bit位宽数据的处理 */
 const int config_ch_adapter_32bit_enable = 1;
 const int config_mixer_32bit_enable = 1;
 const int config_jlstream_fade_32bit_enable = 1;
 const int config_audio_eq_xfade_enable = 1;
+const int config_peak_rms_32bit_enable = 1;
 const int config_audio_vocal_track_synthesis_32bit_enable = 1;
 
 #if (TCFG_AUDIO_DAC_CONNECT_MODE == DAC_OUTPUT_MONO_L)
@@ -199,7 +202,8 @@ const int limiter_run_mode = EFx_PRECISION_PRO
                              | TCFG_AUDIO_EFX_4E5B_RUN_MODE
 #endif
 #if defined(TCFG_AUDIO_EFX_F58A_RUN_MODE)
-                             | TCFG_AUDIO_EFX_F58A_RUN_MODE
+                             | ((TCFG_AUDIO_EFX_F58A_RUN_MODE & (EFx_BW_32t16 | EFx_BW_32t32)) ? EFx_BW_32t32 : 0)
+                             | ((TCFG_AUDIO_EFX_F58A_RUN_MODE &EFx_BW_16t16) ? EFx_BW_16t16 : 0)
 #endif
 #if !defined(TCFG_AUDIO_EFX_4E5B_RUN_MODE) && !defined(TCFG_AUDIO_EFX_F58A_RUN_MODE)
                              | 0xFFFF
@@ -288,7 +292,8 @@ const  int drc_advance_run_mode          = EFx_PRECISION_NOR
         | TCFG_AUDIO_EFX_4250_RUN_MODE
 #endif
 #if defined(TCFG_AUDIO_EFX_74CB_RUN_MODE)
-        | TCFG_AUDIO_EFX_74CB_RUN_MODE
+        | ((TCFG_AUDIO_EFX_74CB_RUN_MODE & (EFx_BW_32t16 | EFx_BW_32t32)) ? EFx_BW_32t32 : 0)
+        | ((TCFG_AUDIO_EFX_74CB_RUN_MODE &EFx_BW_16t16) ? EFx_BW_16t16 : 0)
 #endif
 #if defined(TCFG_AUDIO_EFX_02E6_RUN_MODE)
         | TCFG_AUDIO_EFX_02E6_RUN_MODE

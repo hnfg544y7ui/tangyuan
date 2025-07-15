@@ -375,7 +375,7 @@ static void music_player_play_success(void *priv, int parm)
     if (music_file_name) {
         free(music_file_name);
     }
-    music_save_breakpoint(0);
+    music_save_breakpoint(1);
     app_send_message2(APP_MSG_MUSIC_FILE_NUM_CHANGED, __this->player_hd->fsn->file_counter, __this->player_hd->fsn->file_number);
     app_send_message(APP_MSG_MUSIC_PLAY_SUCCESS, 0);
 
@@ -751,6 +751,9 @@ void music_task_dev_online_start(char *in_logo)
     if (false == app_in_mode(APP_MODE_MUSIC)) {
         log_e("not music mode \n");
         return ;
+    }
+    if (!(__this->player_hd && __this->player_hd->dev)) {
+        return; //处理进入音乐还在播提示音的时候设备插入导致异常
     }
     __this->music_busy  = 1;
     u8 save = 0;

@@ -197,7 +197,6 @@ SECTIONS
 	.data_code ALIGN(32):SUBALIGN(4)
 	{
 		data_code_pc_limit_begin = .;
-		#include "media/media_lib_data_text.ld"
 		*(.flushinv_icache)
         *(.cache)
         *(.os_critical_code)
@@ -240,6 +239,8 @@ SECTIONS
         *(.movable.stub.5)
 
 
+		. = ALIGN(4);
+		#include "media/media_lib_data_text.ld"
 		. = ALIGN(4);
 
 #if  (TCFG_LED7_RUN_RAM)

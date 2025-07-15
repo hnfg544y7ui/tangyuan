@@ -21,6 +21,11 @@
 #endif
 #define LE_AUDIO_TX_TEST        0
 
+//le_audio tx/rx buf size 配置, 配置可以容纳的编码帧的个数,通过isoIntervalUs_len转换成具体的size
+#define LE_AUDIO_TX_BUF_CONTAIN_FREAM_NUMBER       6
+#define LE_AUDIO_RX_BUF_CONTAIN_FREAM_NUMBER       10
+#define LE_AUDIO_RX_BUF_CONTAIN_FREAM_NUMBER_PCM   3   //本地使用pcm格式同步播放，申请的buf配置.
+
 struct le_audio_stream_buf {
     void *addr;
     int size;
@@ -309,7 +314,7 @@ void *le_audio_dual_stream_tx_open(void *le_audio, int coding_type, int frame_si
 
 
     int isoIntervalUs_len = (ctx->fmt.isoIntervalUs / 100 / ctx->fmt.frame_dms) * frame_size;
-    tx_stream->buf.size = isoIntervalUs_len * 8;
+    tx_stream->buf.size = isoIntervalUs_len * LE_AUDIO_TX_BUF_CONTAIN_FREAM_NUMBER;
     tx_stream->buf.addr = malloc(tx_stream->buf.size);
     ASSERT(tx_stream->buf.addr != NULL, "please check audio param");
     printf("tx stream buffer : 0x%x, %d\n", (u32)tx_stream->buf.addr, tx_stream->buf.size);
@@ -354,12 +359,14 @@ void *le_audio_stream_tx_open(void *le_audio, int coding_type, void *priv, int (
     } else if (ctx->fmt.coding_type == AUDIO_CODING_JLA_LL) {
         frame_size = jla_ll_enc_frame_len();
 #endif
+    } else if (coding_type == AUDIO_CODING_JLA_LW) {
+        frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000;
     } else {
         //TODO : 其他格式的buffer设置
     }
 
     int isoIntervalUs_len = (ctx->fmt.isoIntervalUs / 100 / ctx->fmt.frame_dms) * frame_size;
-    tx_stream->buf.size = isoIntervalUs_len * 8;
+    tx_stream->buf.size = isoIntervalUs_len * LE_AUDIO_TX_BUF_CONTAIN_FREAM_NUMBER;
     tx_stream->buf.addr = malloc(tx_stream->buf.size);
     ASSERT(tx_stream->buf.addr != NULL, "please check audio param");
     printf("tx stream buffer : 0x%x, %d\n", (u32)tx_stream->buf.addr, tx_stream->buf.size);
@@ -452,7 +459,7 @@ void *le_audio_stream_rx_open(void *le_audio, int coding_type)
     if (!rx_stream) {
         return NULL;
     }
-    int scale = 1;
+    int buf_frame_number = LE_AUDIO_RX_BUF_CONTAIN_FREAM_NUMBER;
     INIT_LIST_HEAD(&rx_stream->frames);
     if (coding_type == AUDIO_CODING_LC3) {
         frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000 ;
@@ -464,14 +471,17 @@ void *le_audio_stream_rx_open(void *le_audio, int coding_type)
     } else if (coding_type == AUDIO_CODING_JLA_LL) {
         frame_size = jla_ll_enc_frame_len();;
 #endif
+    } else if (ctx->fmt.coding_type == AUDIO_CODING_JLA_LW) {
+        frame_size = ctx->fmt.frame_dms * ctx->fmt.bit_rate / 8 / 10000;
     } else if (coding_type == AUDIO_CODING_PCM) {
+        buf_frame_number = LE_AUDIO_RX_BUF_CONTAIN_FREAM_NUMBER_PCM;
         frame_size = ctx->fmt.frame_dms * ctx->fmt.sample_rate * ctx->fmt.nch * (ctx->fmt.bit_width ? 4 : 2) / 10000;
-        scale = 2; //为了节省ram ,pcm数据的时候少申请一些buf,
     }
 
     int iso_interval_len = (ctx->fmt.isoIntervalUs / 100 / ctx->fmt.frame_dms) * frame_size;
     /*如果存在flush timeout，那么缓冲需要大于flush timeout的数量*/
-    rx_stream->frames_max_size = iso_interval_len * (ctx->fmt.flush_timeout ? (ctx->fmt.flush_timeout + 5) : (10 / scale));
+    rx_stream->frames_max_size = iso_interval_len * (ctx->fmt.flush_timeout ? (ctx->fmt.flush_timeout + 5) : buf_frame_number);
+    printf("rx_stream->frames_max_size: %d, iso_interval_len : %d, frame_size : %d, \n", rx_stream->frames_max_size, iso_interval_len, frame_size);
     rx_stream->buf.size = rx_stream->frames_max_size;
     rx_stream->buf.addr = malloc(rx_stream->frames_max_size);
     rx_stream->isoIntervalUs_len = iso_interval_len;

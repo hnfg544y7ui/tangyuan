@@ -132,6 +132,7 @@ int get_spdif_driver_state(void);
 
 extern int spdif_open_le_audio_by_taskq(void);
 extern int spdif_le_audio_music_stop_by_taskq(void);
+extern int spdif_first_in_flag;
 
 void spdif_stream_start(void);
 void spdif_stream_stop(void);

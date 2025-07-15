@@ -259,10 +259,10 @@ int spdif_app_msg_handler(int *msg)
             spdif_open_le_audio();
 #endif
             spdif_open_player();
+        }
 #else
         spdif_open_player();
 #endif
-        }
         break;
     default:
         app_common_key_msg_handler(msg);
@@ -285,6 +285,7 @@ static int app_spdif_init()
 {
     int ret = -1;
     puts("\nspdif start\n");
+    spdif_first_in_flag = 1;
     app_spdif_hd.mute_mark = 0;
     spdif_set_data_clean(app_spdif_hd.mute_mark);	//默认每次进spdif都是非mute状态(自身mute)
     spdif_idle_flag = 0;

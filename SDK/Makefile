@@ -599,6 +599,7 @@ c_SRC_FILES := \
 	apps/soundbox/mode/bt/bt_app_msg_handler.c \
 	apps/soundbox/mode/bt/bt_background.c \
 	apps/soundbox/mode/bt/bt_call_kws_handler.c \
+	apps/soundbox/mode/bt/bt_emitter.c \
 	apps/soundbox/mode/bt/bt_event_func.c \
 	apps/soundbox/mode/bt/bt_key_func.c \
 	apps/soundbox/mode/bt/bt_key_msg_table.c \
@@ -609,6 +610,9 @@ c_SRC_FILES := \
 	apps/soundbox/mode/bt/dual_conn.c \
 	apps/soundbox/mode/bt/kws_voice_event_deal.c \
 	apps/soundbox/mode/bt/le_audio/auracast/app_le_auracast.c \
+	apps/soundbox/mode/bt/le_audio/auracast/le_auracast_config.c \
+	apps/soundbox/mode/bt/le_audio/auracast/le_auracast_pawr.c \
+	apps/soundbox/mode/bt/le_audio/auracast/le_auracast_pawr_slave.c \
 	apps/soundbox/mode/bt/le_audio/big/app_le_broadcast.c \
 	apps/soundbox/mode/bt/le_audio/big/le_broadcast.c \
 	apps/soundbox/mode/bt/le_audio/big/le_broadcast_config.c \
@@ -757,6 +761,7 @@ c_SRC_FILES := \
 	audio/common/audio_utils.c \
 	audio/common/audio_volume_mixer.c \
 	audio/common/bt_audio_energy_detection.c \
+	audio/common/codec/jla_lw_config.c \
 	audio/common/debug/audio_debug.c \
 	audio/common/demo/audio_alink_demo.c \
 	audio/common/demo/audio_eq_demo.c \
@@ -931,7 +936,6 @@ c_SRC_FILES := \
 	cpu/br27/periph/nfc/lp_nfc_tag.c \
 	cpu/br27/periph/rdec.c \
 	cpu/br27/periph/touch/lp_touch_key.c \
-	cpu/br27/periph/touch/lp_touch_key_tool.c \
 	cpu/br27/periph/touch/plcnt.c \
 	cpu/br27/power/iovdd_adaptive.c \
 	cpu/br27/power/key_wakeup.c \

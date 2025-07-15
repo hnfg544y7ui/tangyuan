@@ -14,6 +14,7 @@
 #include "system/timer.h"
 #include "app_config.h"
 #include "effects/effects_adj.h"
+#include "sync/audio_syncts.h"
 
 struct le_audio_file_handle {
     u8 start;
@@ -185,6 +186,14 @@ static int le_audio_file_start(struct le_audio_file_handle *hdl)
 
 static int le_audio_file_stop(struct le_audio_file_handle *hdl)
 {
+    if (hdl->reference) {
+        audio_reference_clock_exit(hdl->reference);
+    }
+    if (hdl->ble_to_local_time) {
+        le_audio_ble_to_local_time_close(hdl->ble_to_local_id);
+    }
+    hdl->reference = 0;
+
     if (hdl->start) {
         le_audio_stream_set_rx_tick_handler(hdl->file, NULL, NULL);
 
@@ -206,6 +215,7 @@ static int le_audio_file_ioctl(void *file, int cmd, int arg)
         break;
     case NODE_IOC_GET_FMT:
         le_audio_file_get_fmt(hdl, (struct stream_fmt *)arg);
+        stream_node_ioctl(hdl->node, NODE_UUID_BT_AUDIO_SYNC, NODE_IOC_SET_SYNC_NETWORK, hdl->ble_to_local_time ? AUDIO_NETWORK_LOCAL : AUDIO_NETWORK_BLE);
         break;
     case NODE_IOC_START:
         le_audio_file_start(hdl);
@@ -216,13 +226,6 @@ static int le_audio_file_ioctl(void *file, int cmd, int arg)
         le_audio_file_start_abandon_data(hdl);
         break;
     case NODE_IOC_STOP:
-        if (hdl->reference) {
-            audio_reference_clock_exit(hdl->reference);
-        }
-        if (hdl->ble_to_local_time) {
-            le_audio_ble_to_local_time_close(hdl->ble_to_local_id);
-        }
-        hdl->reference = 0;
         le_audio_file_stop(hdl);
         break;
     }

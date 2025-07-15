@@ -974,6 +974,7 @@
 <Unit filename="apps/soundbox/mode/bt/bt_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/bt_background.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/bt_call_kws_handler.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/bt/bt_emitter.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/bt_event_func.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/bt_key_func.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/bt_key_msg_table.c"><Option compilerVer="CC"/></Unit>
@@ -984,6 +985,12 @@
 <Unit filename="apps/soundbox/mode/bt/dual_conn.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/kws_voice_event_deal.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/le_audio/auracast/app_le_auracast.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/bt/le_audio/auracast/le_auracast_config.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/bt/le_audio/auracast/le_auracast_config.h" />
+<Unit filename="apps/soundbox/mode/bt/le_audio/auracast/le_auracast_pawr.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/bt/le_audio/auracast/le_auracast_pawr.h" />
+<Unit filename="apps/soundbox/mode/bt/le_audio/auracast/le_auracast_pawr_slave.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/bt/le_audio/auracast/le_auracast_pawr_slave_profile.h" />
 <Unit filename="apps/soundbox/mode/bt/le_audio/big/app_le_broadcast.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/le_audio/big/le_broadcast.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/bt/le_audio/big/le_broadcast_config.c"><Option compilerVer="CC"/></Unit>
@@ -1148,6 +1155,7 @@
 <Unit filename="audio/common/audio_volume_mixer.h" />
 <Unit filename="audio/common/bt_audio_energy_detection.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/bt_audio_energy_detection.h" />
+<Unit filename="audio/common/codec/jla_lw_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/debug/audio_debug.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/common/debug/audio_debug.h" />
 <Unit filename="audio/common/demo/audio_alink_demo.c"><Option compilerVer="CC"/></Unit>
@@ -1400,7 +1408,6 @@
 <Unit filename="cpu/br27/periph/nfc/lp_nfc_tag.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br27/periph/rdec.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br27/periph/touch/lp_touch_key.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="cpu/br27/periph/touch/lp_touch_key_tool.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br27/periph/touch/plcnt.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br27/power/iovdd_adaptive.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="cpu/br27/power/key_wakeup.c"><Option compilerVer="CC"/></Unit>
@@ -1493,7 +1500,6 @@
 <Unit filename="interface/driver/cpu/br27/asm/gpio_hw.h" />
 <Unit filename="interface/driver/cpu/br27/asm/gptimer_hw.h" />
 <Unit filename="interface/driver/cpu/br27/asm/hwi.h" />
-<Unit filename="interface/driver/cpu/br27/asm/includes.h" />
 <Unit filename="interface/driver/cpu/br27/asm/io_imap.h" />
 <Unit filename="interface/driver/cpu/br27/asm/io_omap.h" />
 <Unit filename="interface/driver/cpu/br27/asm/irq.h" />
@@ -1603,6 +1609,7 @@
 <Unit filename="interface/media/codec/audio_decode_common_api.h" />
 <Unit filename="interface/media/codec/audio_encode_common_api.h" />
 <Unit filename="interface/media/codec/if_decoder_ctrl.h" />
+<Unit filename="interface/media/codec/jla_lw_codec_api.h" />
 <Unit filename="interface/media/codec/lc3_codec_api.h" />
 <Unit filename="interface/media/codec/sbc_codec.h" />
 <Unit filename="interface/media/codec/sbc_enc.h" />

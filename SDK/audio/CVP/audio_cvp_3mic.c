@@ -255,6 +255,12 @@ static int audio_aec_probe(short *talk_mic, short *talk_ref_mic, short *talk_fb_
 #if CVP_LOUDNESS_TRACE_ENABLE
     loudness_meter_short(&mic_loudness, talk_mic, len >> 1);
 #endif/*CVP_LOUDNESS_TRACE_ENABLE*/
+    if (aec_hdl->inbuf_clear_cnt) {
+        aec_hdl->inbuf_clear_cnt--;
+        memset(talk_mic, 0, len);
+        memset(talk_ref_mic, 0, len);
+        memset(talk_fb_mic, 0, len);
+    }
     return 0;
 }
 
@@ -902,10 +908,6 @@ void audio_aec_inbuf(s16 *buf, u16 len)
             memset(buf, 0, len);
         }
 #if CVP_TOGGLE
-        if (aec_hdl->inbuf_clear_cnt) {
-            aec_hdl->inbuf_clear_cnt--;
-            memset(buf, 0, len);
-        }
         int ret = aec_in_data(buf, len);
         if (ret == -1) {
         } else if (ret == -2) {

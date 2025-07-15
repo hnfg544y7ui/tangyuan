@@ -26,6 +26,8 @@
 #include "app_le_auracast.h"
 #include "le_broadcast.h"
 
+int spdif_first_in_flag = 0;
+
 
 
 #if TCFG_SPDIF_ENABLE
@@ -816,10 +818,6 @@ static void spdif_data_isr_cb(void *buf, u32 len)
         }
     }
 
-    if (hdl->spdif_ctl_stream_run == 0) {
-        putchar('c');
-        return;
-    }
 
 
     /* 特殊情况处理 */
@@ -827,6 +825,15 @@ static void spdif_data_isr_cb(void *buf, u32 len)
 
     if (spdif_format.get_fmt_complete == 0) {
         return;
+    }
+
+    if (hdl->spdif_ctl_stream_run == 0) {
+        if (spdif_first_in_flag == 1) {
+            spdif_first_in_flag = 0;
+        } else {
+            putchar('c');
+            return;
+        }
     }
 
     //hdl->spdif_stream_run 置1标示接收到数据, 此时打开数据流
@@ -837,6 +844,7 @@ static void spdif_data_isr_cb(void *buf, u32 len)
 #endif
 
     if (hdl->spdif_stream_run == 0 && spdif_format.get_fmt_complete == 1) {
+        y_printf(">>>>>>>>>>>>>>>> APP_MSG_SPDIF_STREAM_RUN\n");
         app_send_message(APP_MSG_SPDIF_STREAM_RUN, 0);
         return;
     }

@@ -82,6 +82,10 @@
 #endif
 #endif
 
+#ifndef TCFG_USER_EMITTER_ENABLE
+#define TCFG_USER_EMITTER_ENABLE				DISABLE_THIS_MOUDLE
+#endif
+
 //*********************************************************************************//
 //                                  AI配置                                       //
 //*********************************************************************************//
@@ -896,6 +900,12 @@
 #if TCFG_BLE_BRIDGE_EDR_ENALBE   //一键连接必须同地址
 #undef  TCFG_BT_BLE_BREDR_SAME_ADDR
 #define  TCFG_BT_BLE_BREDR_SAME_ADDR 0x1
+#endif
+
+#define TCFG_BT_SUPPORT_BIP         0X0
+#if TCFG_BT_SUPPORT_BIP
+#undef TCFG_BT_MUSIC_INFO_ENABLE
+#define TCFG_BT_MUSIC_INFO_ENABLE 1 // 歌曲信息显示
 #endif
 
 //检查IAP与MSD

@@ -362,7 +362,7 @@ static struct app_mode *app_task_init()
     app_var_init();
     app_version_check();
 
-#ifndef CONFIG_CPU_BR56
+#if !(defined(CONFIG_CPU_BR56) || defined(CONFIG_CPU_BR50))
     sdfile_init();
     syscfg_tools_init();
 #endif

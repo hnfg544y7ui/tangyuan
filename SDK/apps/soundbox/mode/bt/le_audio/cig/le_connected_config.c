@@ -141,7 +141,7 @@ u32 get_cig_dec_input_buf_len(void)
     return dec_input_buf_len;
 }
 
-u32 get_cig_iso_period_us(void)
+u32 get_cig_sdu_period_us(void)
 {
     return platform_data.args[platform_data_index].iso_interval / platform_data.frame_len / 100;
 }

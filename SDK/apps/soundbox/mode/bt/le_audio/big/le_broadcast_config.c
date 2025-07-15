@@ -118,7 +118,9 @@ const static u8 platform_data_mapping[] = {
     APP_MODE_SPDIF,
 #endif
     APP_MODE_FM,
+#ifndef CONFIG_CPU_BR29
     APP_MODE_SURROUND_SOUND,
+#endif
     LE_AUDIO_1T3_MODE,
 };
 

@@ -13,6 +13,7 @@ extern const int config_mixer_32bit_enable;
 extern const int config_jlstream_fade_32bit_enable;
 extern const int config_audio_eq_xfade_enable;
 extern const int config_audio_vocal_track_synthesis_32bit_enable;
+extern const int config_peak_rms_32bit_enable;
 
 extern const int CONFIG_MAX_ENC_DATA_CACHE_SIZE;
 extern const int CONFIG_LOG_OUTPUT_ENABLE;
@@ -40,6 +41,7 @@ extern const int config_audio_dac_mute_timeout;
 extern const int config_audio_dac_pa_mode;
 extern const int config_audio_dac_power_mode;
 extern const int config_audio_dac_underrun_time_lea;
+extern const int config_audio_dac_ng_debug;
 
 /*
  *******************************************************************
