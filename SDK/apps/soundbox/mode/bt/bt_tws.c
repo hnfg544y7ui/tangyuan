@@ -409,6 +409,8 @@ int bt_tws_poweron()
     }
 #endif
 
+    tws_profile_init();
+
 #if TCFG_TEST_BOX_ENABLE
     if (testbox_get_ex_enter_dut_flag()) {
         log_info("tws poweron enter dut case\n");

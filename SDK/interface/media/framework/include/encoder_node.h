@@ -17,6 +17,7 @@ struct encoder_fmt {
     u8 complexity;
     u8 sw_hw_option;
     u8 ch_num;
+    u8 format;
     u8 bit_width;
     u16 frame_dms;
     u32 bit_rate;
@@ -43,6 +44,9 @@ struct seamless_recording {
      */
     int (*change_file)(void *priv, enum change_file_step step);
 };
+
+extern const struct encoder_plug_ops encoder_plug_begin[];
+extern const struct encoder_plug_ops encoder_plug_end[];
 
 #define REGISTER_ENCODER_PLUG(plug) \
     const struct encoder_plug_ops plug sec(.encoder_plug)

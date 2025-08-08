@@ -5,7 +5,7 @@
 #pragma code_seg(".linein_file.text")
 #endif
 #include "source_node.h"
-#include "asm/audio_adc.h"
+#include "audio_adc.h"
 #include "media/audio_splicing.h"
 #include "linein_file.h"
 #include "effects/effects_adj.h"
@@ -173,6 +173,7 @@ static void *linein_init(void *source_node, struct stream_node *node)
             hdl->ch_num++;
         }
     }
+    adc_hdl.bit_width = audio_general_in_dev_bit_width();
 
     adc_file_log("adc ch_num %d\n", hdl->ch_num);
     return hdl;

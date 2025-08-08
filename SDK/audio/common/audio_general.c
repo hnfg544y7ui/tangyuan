@@ -23,12 +23,12 @@ const int config_media_tws_en = 0;
 #endif
 
 const int config_audio_dac_ng_debug = 0;
+const int config_audio_dac_enable = TCFG_DAC_NODE_ENABLE;
 
 /* 16bit数据流中也存在32bit位宽数据的处理 */
 const int config_ch_adapter_32bit_enable = 1;
 const int config_mixer_32bit_enable = 1;
 const int config_jlstream_fade_32bit_enable = 1;
-const int config_audio_eq_xfade_enable = 1;
 const int config_peak_rms_32bit_enable = 1;
 const int config_audio_vocal_track_synthesis_32bit_enable = 1;
 
@@ -47,6 +47,8 @@ const int config_audio_dac_power_on_mode = TCFG_AUDIO_DAC_POWER_ON_MODE;
 #endif
 #ifdef TCFG_AUDIO_DAC_LIGHT_CLOSE_ENABLE
 const int config_audio_dac_power_off_lite = TCFG_AUDIO_DAC_LIGHT_CLOSE_ENABLE;
+#else
+const int config_audio_dac_power_off_lite = 0;
 #endif
 #if TCFG_CFG_TOOL_ENABLE
 const int config_audio_cfg_online_enable = 1;
@@ -193,8 +195,10 @@ const int butterworth_iir_filter_coeff_type_select = 1;//虚拟低音根据此�
 
 const int virtual_bass_pro_soft_crossover = 0;//控制虚拟低音pro 中的分频器是用软件运行或者硬件运行  1 软件EQ  0 硬件EQ 默认硬件EQ
 const int virtual_bass_pro_soft_eq = 1;       //控制虚拟低音pro 中的EQ是用软件运行或者硬件运行 1软件 0硬件 默认1
+const int virtual_bass_eq_hard_select = 0; //虚拟低音使用的eq类型 0:使用软件eq  1:使用硬件eq
 
-
+const int config_audio_eq_xfade_enable = 1;
+const float config_audio_eq_xfade_time = 0;//0.4f;//0：一帧fade完成 非0：连续多帧fade，过度更加平滑，fade过程算力会相应增加(fade时间 范围(0~1)单位:秒)
 
 
 const int limiter_run_mode = EFx_PRECISION_PRO
@@ -421,6 +425,13 @@ const int const_audio_howling_ahs_data_export = 0;  //数据写卡导出，需�
 const int const_audio_howling_ahs_iis_in_dac_out = 0;
 
 /*
+ * ahs-nn 算法是否使用双核
+ * 1:双核-啸叫抑制效果更优，延时略大，资源消耗多。流程需要串AHS-NN + AHS-NN-POST。
+ * 0:单核-延时低，资源消耗少。流程仅需要串AHS-NN。
+ */
+const int const_audio_howling_ahs_dual_core = 1;
+
+/*
  * 某些算法参数更新需要重新申请buffer，
  * 为防止重新申请时内存不足导致异常，
  * 此处设置需要保留的内存大小，
@@ -456,6 +467,13 @@ const char log_tag_const_c_ALINK  = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_i_ALINK  = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_d_ALINK  = CONFIG_DEBUG_LIB(0);
 const char log_tag_const_e_ALINK  = CONFIG_DEBUG_LIB(TRUE);
+
+/*vbass noisegate 参数配置*/
+const int virtualbass_noisegate_attack_time = 50;
+const int virtualbass_noisegate_release_time = 30;
+const int virtualbass_noisegate_hold_time = 15;
+const float virtualbass_noisegate_threshold = -85.0f;
+
 
 __attribute__((weak))
 int get_system_stream_bit_width(void *par)

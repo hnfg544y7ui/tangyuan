@@ -5,7 +5,7 @@
 #pragma code_seg(".fm_file.text")
 #endif
 #include "source_node.h"
-#include "asm/audio_adc.h"
+#include "audio_adc.h"
 #include "media/audio_splicing.h"
 #include "fm_file.h"
 #include "fm_manage.h"

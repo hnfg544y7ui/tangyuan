@@ -513,15 +513,19 @@ int music_app_msg_handler(int *msg)
 #endif
         log_i("APP_MSG_MUSIC_PLAY_START %s\n", logo);
 
-        if (le_audio_scene_deal(LE_AUDIO_APP_MODE_ENTER) > 0) {
+        int rett = le_audio_scene_deal(LE_AUDIO_APP_MODE_ENTER);
+        if (rett > 0) {
             break;
         }
-
-        if (!get_le_audio_curr_role() || dev_manager_get_total(1)) {
-            if (true == breakpoint_vm_read(music_hdl.breakpoint, logo)) {
-                err = music_player_play_by_breakpoint(music_hdl.player_hd, logo, music_hdl.breakpoint);
-            } else {
-                err = music_player_play_first_file(music_hdl.player_hd, logo);
+        //程序跑到这里rett的值只能是<=0
+        //如果返回值为0的话说明打开了广播，那么音乐的播放控制权交给广播的逻辑, 不在这里做控制
+        if (rett != 0) {
+            if (!get_le_audio_curr_role() || dev_manager_get_total(1)) {
+                if (true == breakpoint_vm_read(music_hdl.breakpoint, logo)) {
+                    err = music_player_play_by_breakpoint(music_hdl.player_hd, logo, music_hdl.breakpoint);
+                } else {
+                    err = music_player_play_first_file(music_hdl.player_hd, logo);
+                }
             }
         }
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==0)

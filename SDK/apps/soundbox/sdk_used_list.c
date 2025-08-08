@@ -3,6 +3,9 @@
 
 source_node_adapter
 
+
+
+
 #if TCFG_MIXER_NODE_ENABLE
 mixer_node_adapter
 #endif
@@ -279,6 +282,7 @@ dts_dec_plug
 
 #if TCFG_DEC_MP3_ENABLE || TCFG_TONE_MP3_ENABLE
 mp3_dec_plug
+mp3_stream_dec_plug
 #endif
 
 #if TCFG_DEC_F2A_ENABLE || TCFG_TONE_F2A_ENABLE
@@ -363,7 +367,7 @@ jla_ll_dec_plug
 le_audio_file_plug
 #endif
 
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_AURACAST_SOURCE_EN))
+#if ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_AURACAST_SINK_EN | LE_AUDIO_AURACAST_SOURCE_EN)) || ((TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LE_AUDIO_CODEC_TYPE == AUDIO_CODING_LC3)))
 lc3_dec_plug
 lc3_encoder_plug
 #endif
@@ -701,4 +705,9 @@ engine_dec_plug
 #if TCFG_MUTE_NODE_ENABLE
 mute_node_adapter
 #endif
+
+#if (defined(TCFG_NF_SUPPRESSOR_NODE_ENABLE) && TCFG_NF_SUPPRESSOR_NODE_ENABLE)
+noisefloor_node_adapter
+#endif
+
 

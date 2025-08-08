@@ -4,7 +4,7 @@
 #include "generic/typedef.h"
 #include "audio_dvol.h"
 #include "audio_config_def.h"
-#include "asm/audio_adc.h"
+#include "audio_adc.h"
 #include "mic_power_manager.h"
 
 extern struct audio_dac_hdl dac_hdl;
@@ -39,6 +39,8 @@ static const char *audio_vol_str[] = {
     "VolLRMedia",
     "Vol_SPK_MIC",
     "Vol_SPK_IIS",
+    "Vol_DSP_MIC",
+    "Vol_DSP_IIS",
     "NULL",
 };
 
@@ -60,6 +62,8 @@ typedef enum {
     Vol_VIRTUAL_SURROUND,	//环绕声
     AppVol_LOUDSPEAKER_IIS,
     AppVol_LOUDSPEAKER_MIC,
+    AppVol_DSP_IIS,
+    AppVol_DSP_MIC,
     Vol_NULL,
 
 } audio_vol_index_t;

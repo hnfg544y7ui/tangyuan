@@ -17,7 +17,7 @@
 #include "spdif_file.h"
 #include "fm_file.h"
 #include "media/sync/audio_syncts.h"
-#include "asm/dac.h"
+#include "audio_dac.h"
 #include "audio_cvp.h"
 #include "app_main.h"
 #include "volume_node.h"

@@ -42,6 +42,7 @@
 #include "trim.h"
 #include "iis.h"
 #include "mic.h"
+#include "dsp_mode.h"
 #include "loudspeaker.h"
 #include "dev_manager.h"
 #include "app_mode_update.h"
@@ -419,7 +420,12 @@ static struct app_mode *app_task_init()
         msg[2] = APP_MODE_IDLE;
         msg[3] = IDLE_MODE_CHARGE;
     } else {
+#if TCFG_APP_DSP_EN
+        msg[2] = APP_MODE_DSP;
+#else
         msg[2] = APP_MODE_POWERON;
+
+#endif
         check_power_on_voltage();
         app_poweron_check(update);
         app_send_message(APP_MSG_POWER_ON, 0);
@@ -650,8 +656,9 @@ static void app_task_loop(void *p)
     while (1) {
         app_set_current_mode(mode);
         /*需要每个模式单独音量可以打开该接口，注意:应用流程不完善，需要完善流程每个模式单独记录音量，不然会导致音量混乱*/
-        /* audio_digital_vol_default_init(); */
-
+#if TCFG_APP_DSP_EN
+        audio_digital_vol_default_init();
+#endif
 //需要根据具体开发需求选择是否开启切mode也需要缓存flash
 //1.需要注意的缓存到flash需要较长一段时间（1~3s），特别是从蓝牙后台模式切换到蓝牙前台模式，会出现用户明显感知卡顿现象，因此需要具体需求选择性开启。
 #if 0
@@ -763,6 +770,12 @@ static void app_task_loop(void *p)
 #if TCFG_APP_LOUDSPEAKER_EN
         case APP_MODE_LOUDSPEAKER:
             mode = app_enter_loudspeaker_mode(g_mode_switch_arg);
+            break;
+
+#endif
+#if TCFG_APP_DSP_EN
+        case APP_MODE_DSP:
+            mode = app_enter_dsp_mode(g_mode_switch_arg);
             break;
 
 #endif

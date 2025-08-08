@@ -5,9 +5,7 @@
 //
 //////////////////////////////////////////////////////////////
 #include "audio_config.h"
-#include "encoder_node.h"
 #include "audio_base.h"
-#include "media/audio_encoder.h"
 #include "codec/audio_encode_common_api.h"
 #include "system/timer.h"
 #include "clock.h"

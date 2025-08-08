@@ -95,7 +95,6 @@ u8  a2dp_player_update_steromix_param(struct a2dp_player *player, int channel)
 }
 #endif
 
-extern void dac_try_power_on_task_delete();
 static struct a2dp_player *g_a2dp_player = NULL;
 extern const int CONFIG_BTCTLER_TWS_ENABLE;
 
@@ -241,9 +240,6 @@ static void retry_start_a2dp_player(void *p)
     if (g_a2dp_player && g_a2dp_player->stream) {
         int err = jlstream_start(g_a2dp_player->stream);
         if (err == 0) {
-#if TCFG_DAC_NODE_ENABLE
-            dac_try_power_on_task_delete();
-#endif
             sys_timer_del(g_a2dp_player->retry_timer);
             g_a2dp_player->retry_timer = 0;
         }
@@ -289,6 +285,13 @@ int a2dp_player_open(u8 *btaddr)
     err = jlstream_node_ioctl(player->stream, NODE_UUID_SOURCE,
                               NODE_IOC_SET_BTADDR, (int)player->bt_addr);
 
+#if TCFG_AI_TX_NODE_ENABLE
+    struct stream_fmt ai_tx_fmt = {0};
+    ai_tx_fmt.sample_rate = 16000;
+    ai_tx_fmt.coding_type = AUDIO_CODING_OPUS;
+    jlstream_node_ioctl(player->stream, NODE_UUID_AI_TX, NODE_IOC_SET_FMT, (int)&ai_tx_fmt);
+#endif
+
 #if ((defined TCFG_AUDIO_SPATIAL_EFFECT_ENABLE) && TCFG_AUDIO_SPATIAL_EFFECT_ENABLE)
     a2dp_player_breaker_mode(get_a2dp_spatial_audio_mode(),
                              BREAKER_SOURCE_NODE_UUID, BREAKER_SOURCE_NODE_NEME,
@@ -311,10 +314,6 @@ int a2dp_player_open(u8 *btaddr)
         if (err) {
             g_a2dp_player->retry_timer = sys_timer_add(NULL, retry_start_a2dp_player, 200);
             return 0;
-        } else {
-#if TCFG_DAC_NODE_ENABLE
-            dac_try_power_on_task_delete();
-#endif
         }
     }
     if (err) {
@@ -381,6 +380,15 @@ int a2dp_player_start_slience_detect(u8 *btaddr, void (*handler)(u8 *, bool), in
         return -EINVAL;
     }
     return 0;
+}
+
+void a2dp_player_set_ai_tx_node_func(int (*func)(u8 *, u32))
+{
+    struct a2dp_player *player = g_a2dp_player;
+
+    if (player && player->stream) {
+        jlstream_node_ioctl(player->stream, NODE_UUID_AI_TX, NODE_IOC_SET_PRIV_FMT, (int)func);
+    }
 }
 
 void a2dp_player_close(u8 *btaddr)

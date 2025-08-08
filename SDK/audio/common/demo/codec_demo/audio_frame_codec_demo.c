@@ -13,8 +13,8 @@
 #include "app_main.h"
 #include "audio_config.h"
 #include "audio_base.h"
-#include "asm/audio_adc.h"
-#include "asm/dac.h"
+#include "audio_adc.h"
+#include "audio_dac.h"
 #include "codec/lc3_codec_api.h"
 #include "codec/audio_decode_common_api.h"
 

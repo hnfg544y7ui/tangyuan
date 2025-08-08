@@ -7,7 +7,7 @@
 #include "audio_pdm.h"
 #include "includes.h"
 #include "cpu/includes.h"
-#include "asm/dac.h"
+#include "audio_dac.h"
 #include "media/includes.h"
 
 /* #define PLNK_DEBUG_ENABLE */

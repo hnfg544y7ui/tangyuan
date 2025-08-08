@@ -225,7 +225,6 @@ INCLUDES := \
 	-Iinterface/net/lwip_2_2_0/lwip/port \
 	-Iinterface/net/lwip_2_2_0/lwip/src \
 	-Iinterface/net/lwip_2_2_0/lwip/src/include \
-	-Iapps/common/netapps/iflytek \
 	-Iapps/common/third_party_profile/jieli/rcsp \
 	-Iapps/common/third_party_profile/jieli/rcsp/adv \
 	-Iapps/common/third_party_profile/jieli/rcsp/rcsp_functions \
@@ -243,6 +242,8 @@ INCLUDES := \
 	-Iapps/common/third_party_profile/jieli/rcsp/server/functions/sensors/sport_data_info_opt \
 	-Iapps/common/third_party_profile/jieli/rcsp/server/functions/browser \
 	-Iapps/common/third_party_profile/jieli/rcsp/client/rcsp_m_update \
+	-Iapps/common/third_party_profile/bt_fmy \
+	-Iinterface/btstack \
 	-Iapps/common/third_party_profile/dma_protocol \
 	-Iapps/common/third_party_profile/dma_protocol/dma_use_lib \
 	-Iapps/common/third_party_profile/swift_pair \
@@ -251,7 +252,6 @@ INCLUDES := \
 	-Iapps/common/third_party_profile/multi_ble_clinet \
 	-Iinterface/utils/apple_dock \
 	-Iapps/common/cJSON \
-	-Iinterface/btstack \
 	-Iinterface/media/cpu/br27 \
 	-Iinterface/driver/cpu/br27/asm \
 	-Iinterface/utils/flash_translation_layer \
@@ -290,12 +290,16 @@ INCLUDES := \
 	-Iaudio/cpu/br27/audio_common \
 	-Iinterface/media/framework/include \
 	-Iinterface/media/cvp \
-	-Ilib/net/lwip_2_1_3/apps/ntp \
-	-Iapps/common/netapps \
-	-Ilib/net/web_socket \
+	-Iapps/common/netapps/my_platform \
+	-Iinterface/net/network_download \
+	-Iaudio/cpu/br28 \
+	-Iapps/common/netapps/intelligent_duer \
 	-Iinterface/net/web_socket \
-	-Iinterface/net/lwip_2_2_0 \
-	-Iapps/common/netapps/my_cjson \
+	-Iapps/common/netapps/intelligent_iflytek/SparkDesk \
+	-Iapps/common/netapps/intelligent_iflytek/tts \
+	-Iapps/common/netapps/intelligent_iflytek/vad \
+	-Iapps/common/netapps/intelligent_iflytek \
+	-Iapps/common/netapps/intelligent_rtc \
 	-Iinterface/net \
 	-Iinterface/net/lwip_2_2_0/lwip/src/include/netif \
 	-Iinterface/net/lwip_2_2_0/lwip/port/arch \
@@ -409,16 +413,40 @@ c_SRC_FILES := \
 	apps/common/net/lwip_2_2_0/port/bt_ethernetif.c \
 	apps/common/net/lwip_2_2_0/port/fixme.c \
 	apps/common/net/lwip_2_2_0/port/sys_arch.c \
-	apps/common/netapps/iflytek/ifly_api.c \
-	apps/common/netapps/iflytek/ifly_auth.c \
-	apps/common/netapps/iflytek/ifly_socket.c \
-	apps/common/netapps/iflytek/ifly_sparkdesk.c \
-	apps/common/netapps/iflytek/ifly_tts.c \
-	apps/common/netapps/iflytek/ifly_vad.c \
-	apps/common/netapps/iflytek/ifly_vad_demo.c \
-	apps/common/netapps/my_cjson/my_cjson.c \
+	apps/common/netapps/intelligent_duer/duer_auth_algorithm.c \
+	apps/common/netapps/intelligent_duer/duer_http_req.c \
+	apps/common/netapps/intelligent_duer/duer_json_parse.c \
+	apps/common/netapps/intelligent_duer/duer_json_request.c \
+	apps/common/netapps/intelligent_duer/duer_record.c \
+	apps/common/netapps/intelligent_duer/duer_socket.c \
+	apps/common/netapps/intelligent_iflytek/SparkDesk/sparkdesk_main.c \
+	apps/common/netapps/intelligent_iflytek/authentication.c \
+	apps/common/netapps/intelligent_iflytek/demo.c \
+	apps/common/netapps/intelligent_iflytek/ifly_common.c \
+	apps/common/netapps/intelligent_iflytek/ifly_socket.c \
+	apps/common/netapps/intelligent_iflytek/tts/tts_main.c \
+	apps/common/netapps/intelligent_iflytek/vad/vad_main.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_api.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_canonical_headers.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_exceptslash.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_hmac_sig.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_uriencode.c \
+	apps/common/netapps/intelligent_rtc/rtc_record.c \
+	apps/common/netapps/intelligent_rtc/rtc_socket.c \
+	apps/common/netapps/my_platform/my_platform_cjson.c \
+	apps/common/netapps/my_platform/my_platform_http.c \
+	apps/common/netapps/my_platform/my_platform_http_api.c \
+	apps/common/netapps/my_platform/my_platform_list_download.c \
+	apps/common/netapps/my_platform/my_platform_mem.c \
+	apps/common/netapps/my_platform/my_platform_record.c \
+	apps/common/netapps/my_platform/my_platform_time.c \
+	apps/common/netapps/my_platform/my_platform_url_list.c \
 	apps/common/temp_trim/dtemp_pll_trim.c \
 	apps/common/test/fs_test.c \
+	apps/common/third_party_profile/bt_fmy/ble_fmy.c \
+	apps/common/third_party_profile/bt_fmy/ble_fmy_fmna.c \
+	apps/common/third_party_profile/bt_fmy/ble_fmy_modet.c \
+	apps/common/third_party_profile/bt_fmy/ble_fmy_ota.c \
 	apps/common/third_party_profile/common/3th_profile_api.c \
 	apps/common/third_party_profile/common/custom_cfg.c \
 	apps/common/third_party_profile/common/mic_rec.c \
@@ -634,6 +662,9 @@ c_SRC_FILES := \
 	apps/soundbox/mode/common/app_default_msg_handler.c \
 	apps/soundbox/mode/common/dev_multiplex_api.c \
 	apps/soundbox/mode/common/dev_status.c \
+	apps/soundbox/mode/dsp/dsp.c \
+	apps/soundbox/mode/dsp/dsp_api.c \
+	apps/soundbox/mode/dsp/dsp_app_msg_handler.c \
 	apps/soundbox/mode/fm/fm.c \
 	apps/soundbox/mode/fm/fm_api.c \
 	apps/soundbox/mode/fm/fm_app_msg_handler.c \
@@ -748,7 +779,6 @@ c_SRC_FILES := \
 	audio/CVP/audio_cvp_sync.c \
 	audio/common/amplitude_statistic.c \
 	audio/common/audio_build_needed.c \
-	audio/common/audio_dac_digital_volume.c \
 	audio/common/audio_dvol.c \
 	audio/common/audio_event_handler.c \
 	audio/common/audio_export_demo.c \
@@ -777,10 +807,10 @@ c_SRC_FILES := \
 	audio/common/pcm_data/sine_pcm.c \
 	audio/common/power/mic_power_manager.c \
 	audio/common/uartPcmSender.c \
-	audio/common/wm8978/iic.c \
 	audio/common/wm8978/wm8978.c \
 	audio/cpu/br27/audio_accelerator/hw_fft.c \
 	audio/cpu/br27/audio_config.c \
+	audio/cpu/br27/audio_configs_dump.c \
 	audio/cpu/br27/audio_dai/audio_pdm.c \
 	audio/cpu/br27/audio_dai/audio_spdif_master.c \
 	audio/cpu/br27/audio_dai/audio_spdif_slave.c \
@@ -790,6 +820,7 @@ c_SRC_FILES := \
 	audio/cpu/br27/audio_demo/audio_fft_demo.c \
 	audio/cpu/br27/audio_setup.c \
 	audio/cpu/br27/media_memory_manager.c \
+	audio/cpu/common.c \
 	audio/effect/audio_dc_offset_remove.c \
 	audio/effect/audio_pitch_speed_api.c \
 	audio/effect/audio_voice_changer_api.c \
@@ -861,6 +892,7 @@ c_SRC_FILES := \
 	audio/framework/plugs/source/a2dp_file.c \
 	audio/framework/plugs/source/a2dp_streamctrl.c \
 	audio/framework/plugs/source/adc_file.c \
+	audio/framework/plugs/source/ai_rx_file.c \
 	audio/framework/plugs/source/esco_file.c \
 	audio/framework/plugs/source/fm_file.c \
 	audio/framework/plugs/source/iis_file.c \
@@ -879,6 +911,7 @@ c_SRC_FILES := \
 	audio/framework/plugs/source/tdm_file.c \
 	audio/interface/player/a2dp_player.c \
 	audio/interface/player/adda_loop_player.c \
+	audio/interface/player/ai_rx_player.c \
 	audio/interface/player/dev_flow_player.c \
 	audio/interface/player/esco_player.c \
 	audio/interface/player/file_player.c \
@@ -931,7 +964,6 @@ c_SRC_FILES := \
 	cpu/br27/lua_port_api.c \
 	cpu/br27/overlay_code.c \
 	cpu/br27/periph/led/ledc.c \
-	cpu/br27/periph/led/pwm_led.c \
 	cpu/br27/periph/mcpwm.c \
 	cpu/br27/periph/nfc/lp_nfc_tag.c \
 	cpu/br27/periph/rdec.c \
@@ -953,6 +985,7 @@ c_SRC_FILES := \
 	cpu/components/ir_decoder.c \
 	cpu/components/ir_encoder.c \
 	cpu/components/led_api.c \
+	cpu/components/pwm_led_v1.c \
 	cpu/components/rdec_soft.c \
 	cpu/components/two_io_led.c \
 	cpu/components/ui_driver/led7/led7_driver.c \
@@ -1033,6 +1066,8 @@ LFLAGS := \
 	cpu/br27/liba/btctrler.a \
 	cpu/br27/liba/aec.a \
 	cpu/br27/liba/media.a \
+	cpu/br27/liba/fmna_stack.a \
+	cpu/br27/liba/lib_fmy_auth_br27.a \
 	cpu/br27/liba/libdma-protocol.a \
 	cpu/br27/liba/libdma-device-ota.a \
 	cpu/br27/liba/libepmotion.a \
@@ -1066,9 +1101,10 @@ LFLAGS := \
 	cpu/br27/liba/lib_lc3_codec.a \
 	cpu/br27/liba/lib_jla_codec.a \
 	cpu/br27/liba/lib_jla_v2_codec.a \
+	cpu/br27/liba/opus_enc_lib.a \
+	cpu/br27/liba/lib_opus_stenc.a \
 	cpu/br27/liba/lib_ogg_opus_dec.a \
 	cpu/br27/liba/lib_ogg_vorbis_dec.a \
-	cpu/br27/liba/opus_enc_lib.a \
 	cpu/br27/liba/msbc_codec_lib.a \
 	cpu/br27/liba/lib_midi_dec.a \
 	cpu/br27/liba/lib_advaudio_plc.a \
@@ -1120,6 +1156,7 @@ LFLAGS := \
 	cpu/br27/liba/lib_noisegate_pro.a \
 	cpu/br27/liba/lib_iir_filter.a \
 	cpu/br27/liba/le_audio_profile.a \
+	cpu/br27/liba/lib_eq_design_coeff.a \
 	cpu/br27/liba/lib_limiter.a \
 	cpu/br27/liba/libSAS_pi32v2_OnChip.a \
 	cpu/br27/liba/lib_phaser.a \

@@ -19,7 +19,7 @@
 #include "app_config.h"
 #include "audio_config.h"
 #include "sdk_config.h"
-#include "asm/audio_adc.h"
+#include "audio_adc.h"
 #include "asm/audio_common.h"
 #include "media/audio_energy_detect.h"
 #include "adc_file.h"
@@ -32,6 +32,8 @@
 #include "gpio_config.h"
 #include "media/audio_general.h"
 #include "audio_spdif_master.h"
+#include "media_config.h"
+#include "effects/audio_eq.h"
 
 #if (SYS_VOL_TYPE == VOL_TYPE_DIGITAL)
 #include "audio_dvol.h"
@@ -77,10 +79,7 @@ static void audio_irq_handler()
 }
 
 struct dac_platform_data dac_data = {
-    .output             = TCFG_AUDIO_DAC_CONNECT_MODE,                //DAC输出配置，和具体硬件连接有关，需根据硬件来设置
-    .output_mode        = TCFG_AUDIO_DAC_MODE,
     .performance_mode   = TCFG_DAC_PERFORMANCE_MODE,
-    .light_close        = TCFG_AUDIO_DAC_LIGHT_CLOSE_ENABLE,
     .dma_buf_time_ms    = TCFG_AUDIO_DAC_BUFFER_TIME_MS,
     .dcc_level          = 14,
     .l_ana_gain        = TCFG_AUDIO_FL_CHANNEL_GAIN,
@@ -149,7 +148,7 @@ int get_dac_channel_num(void)
 
 //当两个值都设为0，将跳过trim值检测流程。
 const int trim_value_lr_err_max = 600;   // 距离参考值的差值限制 (不建议修改)
-const int trim_value_lr_diff_err_max = 100;   // 左右声道的差值限制 (不建议修改)
+const int trim_value_lr_diff_err_max = 300;   // 左右声道的差值限制 (不建议修改)
 
 static void audio_common_initcall()
 {
@@ -176,13 +175,13 @@ static void audio_common_initcall()
     }
     audio_common_init(&common_param);
     dac_data.power_level = common_param.power_level;
+    audio_common_clock_open();
 }
 
 void audio_dac_initcall(void)
 {
     printf("audio_dac_initcall\n");
 
-    audio_common_initcall();
     dac_data.max_sample_rate    = AUDIO_DAC_MAX_SAMPLE_RATE;
     dac_data.bit_width = audio_general_out_dev_bit_width();
     audio_dac_init(&dac_hdl, &dac_data);
@@ -198,11 +197,19 @@ void audio_dac_initcall(void)
     audio_dac_set_analog_vol(&dac_hdl, 0);
 
     request_irq(IRQ_AUDIO_IDX, 2, audio_irq_handler, 0);
-    struct audio_dac_trim *dac_trim = &(dac_hdl.trim);
-    int len = syscfg_read(CFG_DAC_TRIM_INFO, (void *)dac_trim, sizeof(struct audio_dac_trim));
-    if ((len != sizeof(struct audio_dac_trim)) || (audio_dac_trim_value_check(dac_trim))) {
-        audio_dac_do_trim(&dac_hdl, dac_trim, 0);
+
+    struct audio_dac_trim dac_trim;
+    int len = syscfg_read(CFG_DAC_TRIM_INFO, &dac_trim, sizeof(struct audio_dac_trim));
+    if ((len != sizeof(struct audio_dac_trim)) || (audio_dac_trim_value_check(&dac_trim))) {
+        struct trim_init_param_t trim_init = {0};
+        int err = audio_dac_do_trim(&dac_hdl, &dac_trim, &trim_init);
+        if (err == 0) {
+            syscfg_write(CFG_DAC_TRIM_INFO, &dac_trim, sizeof(struct audio_dac_trim));
+        }
+        printf("dac_trim: err = %d\n", err);
     }
+    audio_dac_set_trim_value(&dac_hdl, &dac_trim);
+
     audio_dac_set_fade_handler(&dac_hdl, NULL, audio_fade_in_fade_out);
 
     /*硬件SRC模块滤波器buffer设置，可根据最大使用数量设置整体buffer*/
@@ -212,7 +219,6 @@ void audio_dac_initcall(void)
 #if defined(TCFG_AUDIO_DAC_IO_ENABLE) && TCFG_AUDIO_DAC_IO_ENABLE
 static void audio_dac_io_initcall()
 {
-    audio_common_initcall();
     struct audio_dac_io_param param = {0};
     param.state[0] = 1;                 //FL声道初始电平状态
     param.state[1] = 1;                 //FR声道初始电平状态
@@ -258,14 +264,6 @@ static void wl_audio_clk_on(void)
 {
     JL_WL_AUD->CON0 = 1;
     JL_ASS->CLK_CON |= BIT(0);//audio时钟
-}
-
-
-void audio_fast_mode_test()
-{
-    audio_dac_set_volume(&dac_hdl, app_audio_get_volume(APP_AUDIO_CURRENT_STATE));
-    audio_dac_start(&dac_hdl);
-    audio_adc_mic_demo_open(AUDIO_ADC_MIC_CH, 10, 16000, 1);
 }
 
 #ifdef BT_DUT_DAC_INTERFERE
@@ -315,14 +313,15 @@ static int audio_init()
     audio_digital_vol_init(NULL, 0);
 #endif
 
+#if (TCFG_DAC_NODE_ENABLE || TCFG_AUDIO_DAC_IO_ENABLE || TCFG_AUDIO_ADC_ENABLE)
+    audio_common_initcall();
+#endif
+
 #if TCFG_DAC_NODE_ENABLE
     audio_dac_initcall();
 #elif (defined(TCFG_AUDIO_DAC_IO_ENABLE) && TCFG_AUDIO_DAC_IO_ENABLE)
     audio_dac_io_initcall();
 #elif (defined(TCFG_AUDIO_ADC_ENABLE) && TCFG_AUDIO_ADC_ENABLE)
-    extern void audio_dac_io_clock_init();
-    audio_common_initcall();
-    audio_dac_io_clock_init();
     request_irq(IRQ_AUDIO_IDX, 2, audio_irq_handler, 0);
 #endif
 #if TCFG_SPDIF_MASTER_NODE_ENABLE
@@ -334,6 +333,10 @@ static int audio_init()
 #if TCFG_AUDIO_DUT_ENABLE
     audio_dut_init();
 #endif /*TCFG_AUDIO_DUT_ENABLE*/
+
+#if TCFG_EQ_ENABLE
+    audio_eq_lib_init();
+#endif
 
     audio_interfere_bt_dut();
 
@@ -350,7 +353,9 @@ platform_initcall(audio_init);
 
 static void audio_uninit()
 {
-    dac_power_off();
+#if TCFG_DAC_NODE_ENABLE
+    audio_dac_close(&dac_hdl);
+#endif
 }
 platform_uninitcall(audio_uninit);
 
@@ -368,38 +373,15 @@ void audio_disable_all(void)
     JL_FFT->CON = BIT(1);//置1强制关闭模块，不管是否已经运算完成
     //ANC:anc_en anc_start
     //JL_ANC->CON0 &= ~(BIT(1) | BIT(29));
-    dac_power_off();
+#if TCFG_DAC_NODE_ENABLE
+    audio_dac_close(&dac_hdl);
+#endif
 }
 
 REGISTER_UPDATE_TARGET(audio_update_target) = {
     .name = "audio",
     .driver_close = audio_disable_all,
 };
-
-void dac_power_on(void)
-{
-    /* printf(">>>dac_power_on:%d", __this->ref.counter); */
-    if (atomic_inc_return(&__this->ref) == 1) {
-        audio_dac_open(&dac_hdl);
-    }
-}
-
-void dac_power_off(void)
-{
-    /*log_info(">>>dac_power_off:%d", __this->ref.counter);*/
-    if (atomic_read(&__this->ref) != 0 && atomic_dec_return(&__this->ref)) {
-        return;
-    }
-#if 0
-    app_audio_mute(AUDIO_MUTE_DEFAULT);
-    if (dac_hdl.vol_l || dac_hdl.vol_r) {
-        u8 fade_time = dac_hdl.vol_l * 2 / 10 + 1;
-        os_time_dly(fade_time); //br30进入低功耗无法使用os_time_dly
-        printf("fade_time:%d ms", fade_time);
-    }
-#endif
-    audio_dac_close(&dac_hdl);
-}
 
 /*
  *自定义dac上电延时时间，具体延时多久应通过示波器测量
@@ -429,59 +411,4 @@ int read_mic_type_config(void)
     return -1;
 }
 
-/*音频模块寄存器跟踪*/
-void audio_adda_dump(void) //打印所有的dac,adc寄存器
-{
-    printf("JL_WL_AUD CON0:%x", JL_WL_AUD->CON0);
-    printf("AUD_CON:%x", JL_AUDIO->AUD_CON);
-    printf("DAC_CON:%x", JL_AUDIO->DAC_CON);
-    printf("ADC_CON:%x", JL_AUDIO->ADC_CON);
-    printf("ADC_CON1:%x", JL_AUDIO->ADC_CON1);
-    printf("DAC_TM0:%x", JL_AUDIO->DAC_TM0);
-    //printf("DAC_DTB:%x", JL_AUDIO->DAC_DTB);
-    printf("DAA_CON 0:%x 	1:%x,	2:%x,	3:%x    4:%x,7:%x\n", JL_ADDA->DAA_CON0, JL_ADDA->DAA_CON1, JL_ADDA->DAA_CON2, JL_ADDA->DAA_CON3, JL_ADDA->DAA_CON4, JL_ADDA->DAA_CON7);
-    printf("ADA_CON 0:%x	1:%x	2:%x	3:%x	4:%x	5:%x  6:%x 7:%x 8:%x\n", JL_ADDA->ADA_CON0, JL_ADDA->ADA_CON1, JL_ADDA->ADA_CON2, JL_ADDA->ADA_CON3, JL_ADDA->ADA_CON4, JL_ADDA->ADA_CON5, JL_ADDA->ADA_CON6, JL_ADDA->ADA_CON7, JL_ADDA->ADA_CON8);
-    printf("ADDA_CON 0:%x	1:%x\n", JL_ADDA->ADDA_CON0, JL_ADDA->ADDA_CON1);
-}
-
-/*音频模块配置跟踪*/
-void audio_config_dump()
-{
-    u8 dac_bit_width = ((JL_AUDIO->DAC_CON & BIT(20)) ? 24 : 16);
-    u8 adc_bit_width = ((JL_AUDIO->ADC_CON & BIT(20)) ? 24 : 16);
-    int dac_dgain_max = 8192;
-    int dac_again_max = 7;
-    int mic_gain_max = 14;
-    u8 dac_dcc = (JL_AUDIO->DAC_CON2 >> 12) & 0xF;
-    u8 mic0_dcc = JL_AUDIO->ADC_CON1 & 0xF;
-    u8 mic1_dcc = (JL_AUDIO->ADC_CON1 >> 4) & 0xF;
-    u8 mic2_dcc = (JL_AUDIO->ADC_CON1 >> 8) & 0xF;
-    u8 mic3_dcc = (JL_AUDIO->ADC_CON1 >> 12) & 0xF;
-    u8 dac_again_fl = JL_ADDA->DAA_CON1 & 0xF;
-    u8 dac_again_fr = (JL_ADDA->DAA_CON1 >> 4) & 0xF;
-    u8 dac_again_rl = (JL_ADDA->DAA_CON1 >> 8) & 0xF;
-    u8 dac_again_rr = (JL_ADDA->DAA_CON1 >> 12) & 0xF;
-    u32 dac_dgain_fl = JL_AUDIO->DAC_VL0 & 0xFFFF;
-    u32 dac_dgain_fr = (JL_AUDIO->DAC_VL0 >> 16) & 0xFFFF;
-    u32 dac_dgain_rl = JL_AUDIO->DAC_VL1 & 0xFFFF;
-    u32 dac_dgain_rr = (JL_AUDIO->DAC_VL1 >> 16) & 0xFFFF;
-    u8 mic0_0_6 = (JL_ADDA->ADA_CON0 >> 26) & 0x1;
-    u8 mic1_0_6 = (JL_ADDA->ADA_CON1 >> 26) & 0x1;
-    u8 mic2_0_6 = (JL_ADDA->ADA_CON2 >> 26) & 0x1;
-    u8 mic3_0_6 = (JL_ADDA->ADA_CON3 >> 26) & 0x1;
-    u8 mic0_gain = (JL_ADDA->ADA_CON0 >> 21) & 0x1F;
-    u8 mic1_gain = (JL_ADDA->ADA_CON1 >> 21) & 0x1F;
-    u8 mic2_gain = (JL_ADDA->ADA_CON2 >> 21) & 0x1F;
-    u8 mic3_gain = (JL_ADDA->ADA_CON3 >> 21) & 0x1F;
-
-    printf("[ADC]BitWidth:%d,DCC:%d,%d,%d,%d\n", adc_bit_width, mic0_dcc, mic1_dcc, mic2_dcc, mic3_dcc);
-    printf("[ADC]Gain(Max:%d):%d,%d,%d,%d,6dB_Boost:%d,%d,%d,%d,\n", mic_gain_max, mic0_gain, mic1_gain, mic2_gain, mic3_gain, \
-           mic0_0_6, mic1_0_6, mic2_0_6, mic3_0_6);
-
-    printf("[DAC]BitWidth:%d,DCC:%d\n", dac_bit_width, dac_dcc);
-    printf("[DAC]AGain(Max:%d):%d,%d,%d,%d,DGain(Max:%d):%d,%d,%d,%d\n", dac_again_max, dac_again_fl, dac_again_fr,  \
-           dac_again_rl, dac_again_rr,  \
-           dac_dgain_max, dac_dgain_fl, dac_dgain_fr,  \
-           dac_dgain_rl, dac_dgain_rr);
-}
 

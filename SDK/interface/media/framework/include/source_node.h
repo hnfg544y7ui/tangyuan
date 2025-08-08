@@ -28,6 +28,8 @@ struct source_node_plug {
 };
 
 
+extern const struct source_node_plug source_node_plug_begin[];
+extern const struct source_node_plug source_node_plug_end[];
 
 #define REGISTER_SOURCE_NODE_PLUG(plug) \
     const struct source_node_plug plug sec(.source_node_plug)
@@ -42,5 +44,7 @@ u16 get_source_node_plug_uuid(void *source_node);
 
 struct stream_frame *source_plug_get_output_frame_by_id(void *_hdl, int id, int len);
 void source_plug_put_output_frame_by_id(void *_hdl, int id, struct stream_frame *frame);
+
+void source_node_push_data(struct stream_snode *snode, struct stream_note *note);
 
 #endif

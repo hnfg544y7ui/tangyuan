@@ -20,7 +20,6 @@
 #include "app_config.h"
 #include "system/includes.h"
 #include "media/includes.h"
-#include "asm/audio_adc.h"
 #include "audio_config.h"
 #include "media/audio_def.h"
 
@@ -34,13 +33,27 @@
 #if OS_CPU_CORE > 1
 const int CONFIG_JLSTREAM_MULTI_THREAD_ENABLE = 1; //音频流多线程使能
 const int CONFIG_MULTI_THREAD_SELF_ADAPTION_ENABLE = 1;
+const int CONFIG_DECODE_NODE_TASK_ENABLE = 1;
 #else
 const int CONFIG_JLSTREAM_MULTI_THREAD_ENABLE = 0;
 const int CONFIG_MULTI_THREAD_SELF_ADAPTION_ENABLE = 0;
+#if TCFG_APP_MUSIC_EN
+const int CONFIG_DECODE_NODE_TASK_ENABLE = 1;
+#else
+const int CONFIG_DECODE_NODE_TASK_ENABLE = 0;
+#endif
 #endif
 const int CONFIG_DAC_CACHE_MSEC = TCFG_AUDIO_DAC_BUFFER_TIME_MS - 5;
 //数据流frame申请跟踪Debug
 const int CONFIG_STREAM_FRAME_DEBUG = 0;
+const int CONFIG_JLSTREAM_BIND_BT_NAME_ENABLE = 1;
+#if TCFG_STREAM_BIN_ENC_ENABLE
+const int CONFIG_STREAM_BIN_ENC_ENABLE = 1;
+#else
+const int CONFIG_STREAM_BIN_ENC_ENABLE = 0;
+#endif
+
+const int config_jlstream_node_report_enable = TCFG_CFG_TOOL_ENABLE;
 
 //音频流位宽配置
 #ifndef MEDIA_24BIT_ENABLE
@@ -48,7 +61,11 @@ const int CONFIG_STREAM_FRAME_DEBUG = 0;
 #endif
 const int config_media_24bit_enable = MEDIA_24BIT_ENABLE;
 
+#if TCFG_APP_RECORD_EN
 const int CONFIG_SEAMLESS_RECORDER_ENABLE = 1;
+#else
+const int CONFIG_SEAMLESS_RECORDER_ENABLE = 0;
+#endif
 
 #if TCFG_JLSTREAM_TURBO_ENABLE
 const int CONFIG_JLSTREAM_TURBO_ENABLE = 1;
@@ -466,6 +483,8 @@ const int JLA_V2_PLC_EN = 2;     //pcl类型配置：0_fade,1_时域plc,2_频域
 const int JLA_V2_PLC_FADE_OUT_START_POINT = 480;   //plc维持音量的点数.
 const int JLA_V2_PLC_FADE_OUT_POINTS = 120 * 5;    //plc维持指定点数后,淡出的速度,音量从满幅到0需要的点数.
 const int JLA_V2_PLC_FADE_IN_POINTS = 120 * 5;     //plc后收到正确包淡入,淡入的速度,音量从0到满幅需要的点数.
+
+const int JLA_V2_CODEC_WITH_FRAME_HEADER = 0;//jla_v2编解码是否带2个byte的头信息，注意这2个byte 的头信息没有算到编解码的码率里面
 
 //***********************
 //* 	JLA_LL Codec      *

@@ -24,7 +24,7 @@
 #include "app_main.h"
 #include "audio_config.h"
 #include "audio_demo.h"
-#include "asm/audio_adc.h"
+#include "audio_adc.h"
 #include "asm/audio_ad2da.h"
 
 #if 1

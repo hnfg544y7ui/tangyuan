@@ -33,8 +33,10 @@
 #endif
 #if TCFG_BT_DUAL_CONN_ENABLE
 const int CONFIG_LMP_CONNECTION_NUM = 2;
+const int CONFIG_LMP_CONNECTION_LIMIT_NUM = 2;
 #else
 const int CONFIG_LMP_CONNECTION_NUM = 1;
+const int CONFIG_LMP_CONNECTION_LIMIT_NUM = 1;
 #endif
 
 const int CONFIG_BTCTLER_JL_DONGLE_SOURCE_ENABLE=0;
@@ -208,7 +210,8 @@ u8 auto_check_a2dp_play_control_qos(u16 cur_delay_timer,u16 delay_set_timer,u16 
 
 }
 #endif
-const int CONFIG_TWS_SUPER_TIMEOUT          = 2000;
+const int CONFIG_TWS_SUPER_TIMEOUT          = 4000;
+const int CONFIG_TWS_SAVE_POWER_ENABLE      = 0;     //tws省功耗配置，默认不开，客户需要再开
 const int CONFIG_BTCTLER_QOS_ENABLE         = 0;
 const int CONFIG_A2DP_DATA_CACHE_LOW_AAC    = 100;
 const int CONFIG_A2DP_DATA_CACHE_HI_AAC     = 250;
@@ -285,6 +288,29 @@ const int CONFIG_LMP_MASTER_ESCO_ENABLE  =  0;
 	const int CONFIG_AES_CCM_FOR_EDR_ENABLE     = 0;
 #endif
 
+#if TCFG_BT_HFP_ONLY_DISPLAY_BAT_ENABLE
+#if TCFG_BT_SNIFF_ENABLE
+const int CONFIG_BTCTLER_FUN = EDR_LMP_SUPPORT_SNIFF;
+#else
+const int CONFIG_BTCTLER_FUN = 0;
+#endif
+#else
+#if TCFG_BT_SNIFF_ENABLE && TCFG_BT_SUPPORT_HFP
+const int CONFIG_BTCTLER_FUN = EDR_LMP_SUPPORT_ESCO | EDR_LMP_SUPPORT_SNIFF;
+#elif TCFG_BT_SUPPORT_HFP
+const int CONFIG_BTCTLER_FUN = EDR_LMP_SUPPORT_ESCO;
+#elif TCFG_BT_SNIFF_ENABLE
+const int CONFIG_BTCTLER_FUN = EDR_LMP_SUPPORT_SNIFF;
+#else
+const int CONFIG_BTCTLER_FUN = 0;
+#endif
+#endif
+    const int CONFIG_MPR_CLOSE_WHEN_ESCO = 0;
+#ifdef CONFIG_BT_CTRLER_USE_SDK
+		const int CONFIG_BT_CTRLER_USE_SDK_ENABLE = 1;//br56不用maskrom的lmp，外面重写流程过滤掉
+#else
+		const int CONFIG_BT_CTRLER_USE_SDK_ENABLE = 0;
+#endif
 #ifdef CONFIG_SUPPORT_WIFI_DETECT
 	#if TCFG_USER_TWS_ENABLE
 		const int CONFIG_WIFI_DETECT_ENABLE = 1;

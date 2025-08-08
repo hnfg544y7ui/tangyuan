@@ -37,6 +37,16 @@
 #define  DATA_BIT_WIDE_32BIT_FLOAT  	3
 
 /*
+ *audio state define
+ */
+#define APP_AUDIO_STATE_IDLE        0
+#define APP_AUDIO_STATE_MUSIC       1
+#define APP_AUDIO_STATE_CALL        2
+#define APP_AUDIO_STATE_WTONE       3
+#define APP_AUDIO_STATE_KTONE       4
+#define APP_AUDIO_STATE_RING       	5
+#define APP_AUDIO_CURRENT_STATE     6
+/*
  *******************************************************************
  *						DAC Definitions
  *******************************************************************
@@ -68,6 +78,16 @@
 #define DAC_NG_THRESHOLD_CLEAR		  	   (1)	//BIT(0)：信号小于等于噪声门阈值，清0
 #define DAC_NG_THRESHOLD_MUTE			   (5) 	//BIT(0)|BIT(2)：信号小于等于噪声门阈值，清0并mute
 #define DAC_NG_SILENCE_MUTE				   (2)	//BIT(1)：信号静音(全0)时候mute
+#define DAC_NG_POST_ENABLE				   (1UL << 15)	//BIT(15)：NoiseGate后处理使能
+
+//DAC输出模式定义
+#define DAC_MODE_SINGLE                    (0)	//单端
+#define DAC_MODE_DIFF                      (1)	//差分
+#define DAC_MODE_VCMO                      (2)	//共模VCOMO
+
+//DAC性能模式定义
+#define	DAC_MODE_HIGH_PERFORMANCE          (0)
+#define	DAC_MODE_LOW_POWER		           (1)
 /*
  *******************************************************************
  *						Class-D Driver Definitions
@@ -117,18 +137,32 @@
  *						ADC Definitions
  *******************************************************************
  */
-#define ADC_BIT_WIDTH_16                   (0)   //16bit 位宽
-#define ADC_BIT_WIDTH_24                   (1)   //24bit 位宽
+#define ADC_BIT_WIDTH_16                    (0)   //16bit 位宽
+#define ADC_BIT_WIDTH_24                    (1)   //24bit 位宽
 
-#define ADC_AIN_PORT0                      (1UL << 0)
-#define ADC_AIN_PORT1                      (1UL << 1)
-#define ADC_AIN_PORT2                      (1UL << 2)
-#define ADC_AIN_PORT3                      (1UL << 3)
-#define ADC_AIN_PORT4                      (1UL << 4)
+#define ADC_AIN_PORT0                       (1UL << 0)
+#define ADC_AIN_PORT1                       (1UL << 1)
+#define ADC_AIN_PORT2                       (1UL << 2)
+#define ADC_AIN_PORT3                       (1UL << 3)
+#define ADC_AIN_PORT4                       (1UL << 4)
 
-#define MIC_LDO_STA_CLOSE                  (0)   //MICLDO电源关闭
-#define MIC_LDO_STA_OPEN                   (1)   //MICLDO电源开启
+#define MIC_LDO_STA_CLOSE                   (0)   //MICLDO电源关闭
+#define MIC_LDO_STA_OPEN                    (1)   //MICLDO电源开启
 
+/*省电容MIC版本定义*/
+#define MIC_CAPLESS_VER0					(0)	//693N 695N 696N
+#define MIC_CAPLESS_VER1					(1)	//697N 897N 698N
+#define MIC_CAPLESS_VER2					(2)	//700N 701N
+#define MIC_CAPLESS_VER3					(3)	//703N 706N AW32N
+
+/*ADC性能模式*/
+#define	ADC_MODE_HIGH_PERFORMANCE           (0) //高性能模式
+#define	ADC_MODE_LOW_POWER		            (1)	//低功耗模式
+
+/*MIC输入工作模式定义*/
+#define AUDIO_MIC_CAP_MODE                  0   //单端隔直电容模式
+#define AUDIO_MIC_CAP_DIFF_MODE             1   //差分隔直电容模式
+#define AUDIO_MIC_CAPLESS_MODE              2   //单端省电容模式
 /*
  *******************************************************************
  *						FFT Definitions
@@ -195,6 +229,8 @@
 #define AUDIO_CODING_LHDC_V5      0xA0000000
 #define AUDIO_CODING_MIDI_CTRL    0xB0000000
 #define AUDIO_CODING_ENGINE    	  0xC0000000
+#define AUDIO_CODING_STENC_OPUS   0xD0000000
+#define AUDIO_CODING_STREAM_MP3   0xE0000000
 
 //#define AUDIO_CODING_STU_PICK     0x10000000
 //#define AUDIO_CODING_STU_APP      0x20000000

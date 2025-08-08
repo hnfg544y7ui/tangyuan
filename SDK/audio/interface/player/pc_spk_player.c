@@ -56,7 +56,6 @@ struct pc_spk_player {
 };
 static struct pc_spk_player *g_pc_spk_player = NULL;
 
-extern void dac_try_power_on_task_delete();
 
 static u8 pc_player_status = 0;
 
@@ -175,9 +174,7 @@ int pc_spk_player_open(void)
 #endif
     if (err) {
         goto __exit1;
-    } else {
 #if TCFG_DAC_NODE_ENABLE
-        dac_try_power_on_task_delete();
 #endif
     }
 

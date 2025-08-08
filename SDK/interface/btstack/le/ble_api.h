@@ -53,6 +53,8 @@ typedef enum {
     BLE_CMD_LATENCY_HOLD_CNT,
     BLE_CMD_LATENCY_OPEN,
     BLE_CMD_LATENCY_CLOSE,
+    BLE_CMD_SET_LEAGCY_INIT_PRIORITY,
+    BLE_CMD_SET_LEAGCY_SCAN_PRIORITY,
     BLE_CMD_SET_DATA_LENGTH,
     BLE_CMD_SET_HCI_CFG,
     BLE_CMD_SCAN_ENABLE2,
@@ -1182,7 +1184,6 @@ void lib_make_ble_address(u8 *ble_address, u8 *edr_address);
 	ble_user_cmd_prepare(BLE_CMD_LATENCY_CLOSE, 1, con_handle)
 
 
-
 /*************************************************************************************************/
 /*!
  *  \brief      ble master&slave 配置配对表(可以不设置,使用sdk默认值).
@@ -1398,8 +1399,14 @@ int att_server_change_profile(u8 const *profile_data);
 /* ***************************************************************************/
 void ble_vendor_set_tx_power(u8 level);
 
+void update_list_local_addr(u8 *old_local_addr, u8 *new_local_addr);
+
+#define ble_op_set_leagcy_init_priority(param)     \
+	ble_user_cmd_prepare(BLE_CMD_SET_LEAGCY_INIT_PRIORITY, 1, param)
 
 
+#define ble_op_set_leagcy_scan_priority(param)     \
+	ble_user_cmd_prepare(BLE_CMD_SET_LEAGCY_SCAN_PRIORITY, 1, param)
 
 
 
