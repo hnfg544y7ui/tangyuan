@@ -232,17 +232,49 @@ const  int echo_run_mode                 = TCFG_AUDIO_EFX_98A4_RUN_MODE;
 const  int echo_run_mode                 = EFx_BW_16t16 | EFx_BW_32t32;//只有 16进16出， 或者 32进32出
 #endif
 
-#ifdef TCFG_AUDIO_EFX_7293_RUN_MODE
-const  int voicechanger_run_mode         = TCFG_AUDIO_EFX_7293_RUN_MODE;
+const  int voicechanger_run_mode         = 0
+#if defined(TCFG_AUDIO_EFX_7293_RUN_MODE)
+        | TCFG_AUDIO_EFX_7293_RUN_MODE
+#endif
+#if defined(TCFG_AUDIO_EFX_AE43_RUN_MODE)//harmony
+        | TCFG_AUDIO_EFX_AE43_RUN_MODE
+#endif
+#if !defined(TCFG_AUDIO_EFX_7293_RUN_MODE) && !defined(TCFG_AUDIO_EFX_AE43_RUN_MODE)
+        | EFx_BW_16t16 | EFx_BW_32t32//变声位宽控制
+#endif
+        ;
+#if TCFG_HARMONY_NODE_ENABLE
+const int pitchshift_have_modeHarmony = 1;//1:harmony节点spectrum的模式支持度的配置，不过会增加它做为变声模式的一些运算, 0:反之
 #else
-const  int voicechanger_run_mode         = EFx_BW_16t16 | EFx_BW_32t32;//变声位宽控制
+const int pitchshift_have_modeHarmony = 0;
 #endif
 
-#ifdef TCFG_AUDIO_EFX_C07A_RUN_MODE
-const  int autotune_run_mode             = TCFG_AUDIO_EFX_C07A_RUN_MODE;
+
+#ifdef TCFG_AUDIO_EFX_40DC_RUN_MODE
+const int  vibrato_run_mode = TCFG_AUDIO_EFX_40DC_RUN_MODE;
 #else
-const  int autotune_run_mode             = EFx_BW_16t16 | EFx_BW_32t32;//autoTune位宽控制
+const int  vibrato_run_mode = EFx_BW_32t32 | EFx_BW_16t16;
 #endif
+
+const  int autotune_run_mode             = 0
+#if defined(TCFG_AUDIO_EFX_C07A_RUN_MODE)
+        | TCFG_AUDIO_EFX_C07A_RUN_MODE
+#endif
+#if defined(TCFG_AUDIO_EFX_AE43_RUN_MODE)//harmony
+        | TCFG_AUDIO_EFX_AE43_RUN_MODE
+#endif
+#if !defined(TCFG_AUDIO_EFX_7293_RUN_MODE) && !defined(TCFG_AUDIO_EFX_AE43_RUN_MODE)
+        | EFx_BW_16t16 | EFx_BW_32t32//autoTune位宽控制
+#endif
+        ;
+
+#if TCFG_AUDIO_EFX_FB27_RUN_MODE
+const int treomolo_run_mode = TCFG_AUDIO_EFX_FB27_RUN_MODE;
+#else
+const int treomolo_run_mode =  EFx_BW_16t16 | EFx_BW_32t32;
+#endif
+
+
 
 #ifdef TCFG_AUDIO_EFX_24AB_RUN_MODE
 const  int reverb_run_mode               = TCFG_AUDIO_EFX_24AB_RUN_MODE;
@@ -440,6 +472,8 @@ const int const_audio_howling_ahs_dual_core = 1;
  * 可视化工具界面显示"流程打开buf失败"
  */
 const int audio_effect_realloc_reserve_mem = (13 * 1024);
+
+const int howling_freqshift_lowdelay = 0;//0:fir分支，跟以前效果一致, 1:使用iir分支来节省延时
 
 /*
  *******************************************************************

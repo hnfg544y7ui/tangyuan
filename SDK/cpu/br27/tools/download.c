@@ -116,11 +116,8 @@ copy /b text.bin + data.bin + data_code.bin + aec.bin + aac.bin + ps_ram_data_co
 
 del text.bin data.bin data_code.bin aec.bin aac.bin ps_ram_data_code.bin d_ram_data.bin i0_ram_data_code.bin i1_ram_data_code.bin
 
-#if TCFG_TONE_NODE_ENABLE
+
 isd_download.exe -tonorflash -dev br27 -boot 0x120000 -div8 -wait 300 -uboot uboot.boot -app app.bin -tone %TONE_FILES% -res cfg_tool.bin p11_code.bin stream.bin %LCD_SOURCE_FILES% %KEY_FILE% %FORMAT%
-#else
-isd_download.exe -tonorflash -dev br27 -boot 0x120000 -div8 -wait 300 -uboot uboot.boot -app app.bin -res cfg_tool.bin p11_code.bin stream.bin %LCD_SOURCE_FILES% %KEY_FILE% %FORMAT%
-#endif
 ::-uboot_compress
 ::-format all
 

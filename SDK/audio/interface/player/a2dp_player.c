@@ -13,6 +13,7 @@
 #include "effects/audio_pitchspeed.h"
 #include "sdk_config.h"
 #include "effects/audio_vbass.h"
+#include "audio_effect_demo.h"
 #include "audio_config_def.h"
 #include "scene_switch.h"
 
@@ -136,13 +137,16 @@ static void a2dp_player_callback(void *private_data, int event)
 #if AUDIO_VBASS_LINK_VOLUME
         vbass_link_volume();
 #endif
+#if AUDIO_AUTODUCK_LINK_VOLUME
+        autoduck_link_volume();
+#endif
 #if AUDIO_EQ_LINK_VOLUME
         eq_link_volume();
 #endif
 #if TCFG_TWS_DUAL_CHANNEL
         a2dp_player_update_steromix_param(player, player->channel);
 #endif
-        musci_vocal_remover_update_parm();
+        music_vocal_remover_update_parm();
         break;
     case STREAM_EVENT_PREEMPTED:
 #if ANC_EAR_ADAPTIVE_EN

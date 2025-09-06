@@ -683,7 +683,7 @@ static void dual_conn_page_devices_init()
         dual_conn_page_device();
     }
 #else
-    if (g_bt_hdl.work_mode == BT_MODE_SIGLE_BOX) {
+    if (g_bt_hdl.work_mode != BT_MODE_TWS) {
         dual_conn_page_device();
     }
 #endif
@@ -812,6 +812,12 @@ static int dual_conn_hci_event_handler(int *_event)
 
 #if TCFG_BACKGROUND_WITHOUT_EDR_CONNECT     //后台不支持edr连接，不处理直接返回
     if (g_bt_hdl.wait_exit) {
+        return 0;
+    }
+#endif
+
+#if (TCFG_BT_BACKGROUND_ENABLE == 0 && TCFG_KBOX_1T3_MODE_EN)
+    if (!app_in_mode(APP_MODE_BT)) {
         return 0;
     }
 #endif

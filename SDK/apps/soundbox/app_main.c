@@ -70,7 +70,7 @@
 
 /*任务列表 */
 const struct task_info task_info_table[] = {
-#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
+#if LE_AUDIO_MIX_MIC_EFFECT_EN
     {"app_core",            1,     0,   1024 * 2,   768 },
 #else
     {"app_core",            1,     0,   1024,   768 },
@@ -228,12 +228,16 @@ int eSystemConfirmStopStatus(void)
 #if TCFG_CHARGE_POWERON_ENABLE
     return 0;
 #else
+
+#if TCFG_CHARGE_ENABLE
     if (get_charge_full_flag()) {
 #if (!TCFG_RECHARGE_ENABLE)
         power_set_soft_poweroff();
 #endif
         return 1;
-    } else {
+    } else
+#endif
+    {
         return 0;
     }
 #endif
@@ -405,7 +409,7 @@ static struct app_mode *app_task_init()
         update = update_result_deal();
     }
 
-#if TCFG_MC_BIAS_AUTO_ADJUST
+#if (TCFG_MC_BIAS_AUTO_ADJUST && TCFG_AUDIO_ADC_ENABLE)
     mic_capless_trim_init(update);
 #endif
 
@@ -426,7 +430,9 @@ static struct app_mode *app_task_init()
         msg[2] = APP_MODE_POWERON;
 
 #endif
+#if(TCFG_SYS_LVD_EN == 1)
         check_power_on_voltage();
+#endif
         app_poweron_check(update);
         app_send_message(APP_MSG_POWER_ON, 0);
     }

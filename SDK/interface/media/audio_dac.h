@@ -4,6 +4,8 @@
 #include "audio_cfifo.h"
 #include "asm/dac.h"
 
+#define DAC_NOISEGATE_OFF()     audio_dac_noisefloor_optimize_onoff(0);
+#define DAC_NOISEGATE_ON()      audio_dac_noisefloor_optimize_onoff(1);
 
 struct audio_dac_channel_attr {
     u8  write_mode;         /*DAC写入模式*/
@@ -30,48 +32,14 @@ struct audio_dac_sync_node {
     void *ch;
 };
 
-
-// DAC IO
-struct audio_dac_io_param {
-    /*
-     *       state 通道初始状态
-     * 使能单左/单右声道，初始状态为高电平：state[0] = 1
-     * 使能双声道，左声道初始状态为高，右声道初始状态为低：state[0] = 1，state[1] = 0。
-     */
-    u8 state[4];
-    /*
-     *       irq_points 中断点数
-     * 申请buf的大小为 buf_len = irq_points * channel_num * 4
-     */
-    u16 irq_points;
-    /*
-     *       channel 打开的通道
-     * 可配 “BIT(0)、BIT(1)、BIT(2)、BIT(3)” 对应 “FL FR RL RR”
-     * 打开多通道时使用或配置：channel = BIT(0) | BIT(1) | BIT(2) | BIT(3);
-     *
-     * 注意，不支持以下配置类型：
-     * channel = BIT(1)                             "MONO FR"
-     * channel = DAC_CH(0) | DAC_CH(1) | DAC_CH(3)  "FL FR RR"
-     */
-    u8 channel;
-    /*
-     *       digital_gain 增益
-     * 影响输出电平幅值，-8192~8192可配
-     */
-    u16 digital_gain;
-
-    /*
-     *       ldo_volt 电压
-     * 影响输出电平幅值，0~3可配
-     */
-    u8 ldo_volt;
-    /*
-     *       clk_sel 时钟源选择
-     * 差分晶振时钟/单端数字时钟
-     */
-    u8 clk_sel;
+#define DAC_READ_MAGIC		0xAA55
+struct dac_read_handle {
+    u16 read_pos;
+    u16 cur_dac_hrp;
+    u16 last_dac_hrp;
+    int dac_hrp_diff;
+    struct list_head entry;
 };
-
 
 extern struct audio_dac_hdl dac_hdl;
 
@@ -365,11 +333,37 @@ u8 audio_dac_is_working(struct audio_dac_hdl *dac);
 
 u8 audio_dac_is_idle();
 
-/*AEC参考数据软回采接口*/
+/*初始化dac read的资源*/
+int audio_dac_read_base_init(struct dac_read_handle *hdl);
+/*释放dac read的资源*/
+int audio_dac_read_base_exit(struct dac_read_handle *hdl);
+/*重置当前dac read读取的参数*/
+int audio_dac_read_base_reset(struct dac_read_handle *hdl);
+/* 读取dac播放完的数据，回音消除参考数据使用
+ * hdl :            参数句柄
+ * points_offset :  起始读取位置偏移
+ * data :           读取数据buf
+ * len :            读取数据单声道的长度，单位byte
+ * read_channel :   读取声道, 1:读单声道/左声道数据，2:读立体声数据
+ * autocorrection : 用于设置是否判断dac读取节奏是否正确或者dac数据数据量是否满足读取需求
+ * */
+int audio_dac_read_base(struct dac_read_handle *hdl, s16 points_offset, void *data, int len, u8 read_channel, u8 autocorrection);
+/*重置所有dac read的读取参数*/
+int audio_dac_read_reset_all();
+
+/*初始化dac read的资源*/
+int audio_dac_read_init(void);
+/*释放dac read的资源*/
+int audio_dac_read_exit(void);
+/*重置当前dac read读取的参数*/
 int audio_dac_read_reset(void);
+/* 读取dac播放完的数据，回音消除参考数据使用
+ * points_offset :  起始读取位置偏移
+ * data :           读取数据buf
+ * len :            读取数据单声道的长度，单位byte
+ * read_channel :   读取声道, 1:读单声道/左声道数据，2:读立体声数据
+ * */
 int audio_dac_read(s16 points_offset, void *data, int len, u8 read_channel);
-
-
 
 int audio_dac_set_protect_time(struct audio_dac_hdl *dac, int time);
 
@@ -426,22 +420,31 @@ int dac_analog_light_open_cb(struct audio_dac_hdl *);
 int dac_analog_light_close_cb(struct audio_dac_hdl *);
 
 
-
+#if AUDIO_DAC_IO_ENABLE
 void audio_dac_io_init(struct audio_dac_io_param *param);
 void audio_dac_io_uninit(struct audio_dac_io_param *param);
 
 /*
  * ch：通道
- *    可配 “BIT(0)、BIT(1)、BIT(2)、BIT(3)” 对应 “FL FR RL RR”
- *    多通道时使用或配置：channel = BIT(0) | BIT(1) | BIT(2) | BIT(3);
+ *  - 四声道系列芯片(JL703N):
+ *      可配 “BIT(0)、BIT(1)、BIT(2)、BIT(3)” 对应 “FL FR RL RR”
+ *      多通道时使用或配置：channel = BIT(0) | BIT(1) | BIT(2) | BIT(3);
+ *  - 双声道系列芯片(JL701N/JL709N...):
+ *      初始化时使能单左/单右声道："ch = BIT(0)"
+ *      初始化时使能立体声：
+ *          左声道"ch = BIT(0)"
+ *          右声道"ch = BIT(1)"
+ *          左右声道"ch = BIT(0) | BIT(1)"
  * val：电平
  *    高电平 val = 1
  *    低电平 val = 0
  */
 void audio_dac_io_set(u8 ch, u8 val);
+#endif
 
 /*MIC Capless API*/
 void audio_dac_set_capless_DTB(struct audio_dac_hdl *dac, u32 dacr32);
+int wait_for_dac_stop(struct audio_dac_hdl *dac);
 
 #endif
 

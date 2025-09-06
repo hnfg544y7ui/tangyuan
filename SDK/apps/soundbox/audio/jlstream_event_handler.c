@@ -540,9 +540,6 @@ static int get_switch_node_callback(const char *arg)
 
 
 #if TCFG_MIC_EFFECT_ENABLE
-    if (!strncmp(arg, "Sw_MicEff2DAC", strlen("Sw_MicEff2DAC"))) {
-        return (int)get_micEff2DAC_switch_status;
-    }
 #if LE_AUDIO_MIX_MIC_EFFECT_EN
     if (!strncmp(arg, "Sw_MicEff2LeAud", strlen("Sw_MicEff2LeAud"))) {
         return (int)get_micEff2LeAudio_switch_status;
@@ -643,9 +640,11 @@ int jlstream_event_notify(enum stream_event event, int arg)
         ret = get_switch_node_callback((const char *)arg);
         break;
 #endif
+#if TCFG_CHANNEL_MERGE_NODE_ENABLE
     case STREAM_EVENT_GET_MERGER_CALLBACK:
         ret = get_merge_node_callback((const char *)arg);
         break;
+#endif
     default:
         break;
     }

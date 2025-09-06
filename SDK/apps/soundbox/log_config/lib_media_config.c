@@ -291,6 +291,12 @@ const int CONFIG_DEC_SUPPORT_SAMPLERATE = AUDIO_DEC_MAX_SAMPERATE; //  支持的
 
 const int CONFIG_DEC_SUPPORT_DAB_AAC = 0; //AAC 文件的dab+ 类 解码支持，每帧读960进行解码,使用m4a的解码库;
 
+const char config_bt_aac_dec_pcm24_enable = MEDIA_24BIT_ENABLE;
+//1:支持解码输出S24 PCM数据.    0:不支持解码输出S24 PCM数据,自动优化相关代码(大概200byte).  仅影响代码量,不影响ram大小. 目前仅非rom 代码配置使用
+const char config_bt_aac_dec_fifo_precision = 24;
+//16:内部overlap缓存使用short类型,运行空间少2*2*1024字节.  24 :内部overlap缓存使用int类型,质量更高.
+//配置内部计算数据精度,与输出位宽无关,配置16,可以省ram,但是计算精度差一些,如果解码输出24bit,建议使用24bit计算.  目前仅非rom 代码配置使用
+
 //***********************
 //*		MP3 Codec       *
 //***********************
@@ -704,8 +710,8 @@ const int lfaudio_plc_mode24bit_16bit_en = 1;
 -----------------------------------------------------------------------
  */
 
-
-const  int  ESCO_PLC_SUPPORT_24BIT_EN = MEDIA_24BIT_ENABLE;  //24bit开关
+//通话流程默认使用的是16bit ,如果通话使用24bit音频流需要打开plc24bit配置
+const  int  ESCO_PLC_SUPPORT_24BIT_EN = 0;//MEDIA_24BIT_ENABLE;  //24bit开关
 const  int  ESCO_PLC_FADE_OUT_START_POINT = 500;	//丢包后修复过程中，维持音量的点数.即修复这么多点后，开始淡出
 const  int  ESCO_PLC_FADE_OUT_POINTS = 2048; 		//丢包维持指定点数后,淡出的速度,音量从满幅到0需要的点数. 即淡出完需要的点数
 const  int  ESCO_PLC_FADE_IN_POINTS = 32; 			//丢包后收到正确包淡入,淡入的速度,音量从0到满幅需要的点数.即淡入完需要的点数
@@ -713,6 +719,21 @@ const  int  ESCO_PLC_FADE_IN_POINTS = 32; 			//丢包后收到正确包淡入,�
 //1:在配置的淡出点数结束之前，根据信号的特征如果认为已经修不好了，提前快速淡出，
 //0:按照实际配置的淡出点数淡出
 const  int  ESCO_PLC_ADV_ENABLE = 1;
+/*
+   不同配置的code/ram使用情况
+------------------------------------------------------------------------
+  ESCO_PLC_SUPPORT_24BIT_EN     |        0          |         1        |
+------------------------------------------------------------------------
+   ESCO_PLC_ADV_ENABLE          |   0     |    1    |    0    |   1    |
+------------------------------------------------------------------------
+        code(byte)              |   1.8K  |    6K   |   3.6k  |   11K  |
+------------------------------------------------------------------------
+        ram(byte)               |   1.3K  |   4.1K  |   2.4K  |   5.3K |
+------------------------------------------------------------------------
+ */
+
+
+
 
 //***********************
 //*   Howling Suppress  *

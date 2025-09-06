@@ -39,6 +39,8 @@
 #define AUDIO_DAC_MAX_SAMPLE_RATE           TCFG_AUDIO_GLOBAL_SAMPLE_RATE
 #endif
 
+#define TCFG_AUDIO_IIS_CLOCK_CLOSE          0
+
 //**************************************
 // 		    场景参数更新使能
 //**************************************
@@ -130,6 +132,7 @@
 //**************************************
 #define AUDIO_VBASS_LINK_VOLUME     0 //虚拟低音与音量联动调节
 #define AUDIO_EQ_LINK_VOLUME        0 //EQ与音量联动调节
+#define AUDIO_AUTODUCK_LINK_VOLUME  0 //自动闪避与音量联动调节
 //人声消除串在每个模式的数据流中
 #define AUD_VOCAL_REMOVE_SUB_PATH_ENABLE      0
 #define TCFG_DEC_ENGINE_SOUND_ENABLE  0 //摩托车引擎声使能

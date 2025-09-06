@@ -36,6 +36,13 @@
 #include "app_ble_spp_api.h"
 #include "ble_fmy_modet.h"
 
+#include "audio_config.h"
+#include "volume_node.h"
+#include "app_main.h"
+#include "jlstream.h"
+#include "app_tone.h"
+
+
 #if (THIRD_PARTY_PROTOCOLS_SEL & FMNA_EN)
 
 #if 1
@@ -297,6 +304,23 @@ static void fmy_sound_timer_control(void *priv)
     __fydata->sound_onoff = !__fydata->sound_onoff;
 }
 
+static void fmna_tone_set_volume()
+{
+    printf("func:%s:%d", __FUNCTION__, app_audio_volume_max_query(SysVol_TONE));
+    u32 param = VOLUME_NODE_CMD_SET_VOL | app_audio_volume_max_query(SysVol_TONE);
+    jlstream_set_node_param(NODE_UUID_VOLUME_CTRLER, "Vol_BtcRing", &param, sizeof(param));
+}
+
+static int fmna_tone_play_callback(void *priv, enum stream_event event)
+{
+    printf("func:%s, event:%d", __FUNCTION__, event);
+    if (event == STREAM_EVENT_START) {
+        int msg[] = {(int)fmna_tone_set_volume, 0};
+        os_taskq_post_type("app_core", Q_CALLBACK, ARRAY_SIZE(msg), msg);
+    }
+    return 0;
+}
+
 static int fmy_sound_control(FMNA_SOUND_OP_t op)
 {
     log_info("func:%s,op= %d", __FUNCTION__, op);
@@ -310,6 +334,8 @@ static int fmy_sound_control(FMNA_SOUND_OP_t op)
 #if TCFG_PWMLED_ENABLE
         fmy_state_idle_set_active(true);
 #endif
+        play_ring_file_alone_with_callback(get_tone_files()->phone_in, NULL, fmna_tone_play_callback);
+
         __fydata->sound_onoff = 1;
         if (!__fydata->sound_ctrl_timer_id) {
             __fydata->sound_ctrl_timer_id = sys_timer_add(NULL, fmy_sound_timer_control, SOUND_TICKS_MS);
@@ -320,6 +346,9 @@ static int fmy_sound_control(FMNA_SOUND_OP_t op)
 #if TCFG_PWMLED_ENABLE
         fmy_state_idle_set_active(false);
 #endif
+
+        tone_player_stop();
+        ring_player_stop();
 
         if (__fydata->sound_ctrl_timer_id) {
             sys_timer_del(__fydata->sound_ctrl_timer_id);
@@ -519,19 +548,19 @@ int fmy_set_adv_enable(u8 enable)
             return 0;
         }
         if (__fydata->adv_fmna_state == FMNA_SM_PAIR) {
-            if (0 == __fydata->pairing_mode_enable) {
-                log_info("hold Find My network pairing mode!!!");
-                return 0;
+            /* if (0 == __fydata->pairing_mode_enable) { */
+            /* log_info("hold Find My network pairing mode!!!"); */
+            /* return 0; */
+            /* } else { */
+            if (__fydata->pairing_mode_timer_id) {
+                log_info("reset pairing timer");
+                fmy_pairing_timeout_stop();
+                fmy_pairing_timeout_start();
             } else {
-                if (__fydata->pairing_mode_timer_id) {
-                    log_info("reset pairing timer");
-                    fmy_pairing_timeout_stop();
-                    fmy_pairing_timeout_start();
-                } else {
-                    log_info("start pairing timer");
-                    fmy_pairing_timeout_start();
-                }
+                log_info("start pairing timer");
+                fmy_pairing_timeout_start();
             }
+            /* } */
         } else {
             //other state,bonded, default pairing unlock
             __fydata->pairing_mode_enable = 1;
@@ -662,6 +691,7 @@ static const fmna_app_api_t fmna_app_api_table = {
     .get_battery_level = fmy_get_battery_level,
     .call_disconnect = fmy_disconnect,
     .sound_control = fmy_sound_control,
+    .uarp_ota_process = fmy_ota_process,
 
 #if TCFG_GSENSOR_ENABLE && TCFG_P11GSENSOR_EN
     .sensor_init = fmy_motion_detection_init,
@@ -705,7 +735,7 @@ static int fmy_set_user_infomation(void)
                 ret = FMY_ERROR_INVALID_DATA;
                 goto w_end;
             }
-            len = fmna_Base64Decode(fmy_token_auth_char, input_cfg.token, 1024);
+            len = fmna_Base64Decode((char *)fmy_token_auth_char, (char *)input_cfg.token, 1024);
             if (len == 0) {
                 log_info("err token char");
                 ret = FMY_ERROR_INVALID_DATA;
@@ -764,6 +794,11 @@ void fmy_fmna_init(void)
     log_info("reboot fmna state: %d", fmna_get_current_state());
 }
 
+static void fmy_set_adv_enable_timeout(void *priv)
+{
+    fmy_set_adv_enable((u8)priv);
+}
+
 int fmy_enable(bool en)
 {
     // 写开关标志位
@@ -775,9 +810,10 @@ int fmy_enable(bool en)
         // 使能fmy外设
         fmy_devices_init();
         // 处于配对状态就不需要做开关配对广播操作
-        if (__fydata->adv_fmna_state == FMNA_SM_PAIR) {
-            return 0;
-        }
+        /* if (__fydata->adv_fmna_state == FMNA_SM_PAIR) { */
+        /* printf("err:fmna_state == FMNA_SM_PAIR\n"); */
+        /* return 0; */
+        /* } */
     } else {
         log_info(">>>>>fmy close");
         // 关闭findmy外设
@@ -785,6 +821,7 @@ int fmy_enable(bool en)
         // 如果处于连接状态则需要先断开连接再关广播
         if (__fydata->fmna_state == FMNA_SM_CONNECTED) {
             fmy_test_disconnect();
+            sys_timeout_add((void *)0, fmy_set_adv_enable_timeout, 500);
             return 0;
         }
     }

@@ -33,10 +33,14 @@
 #include "ble_fmy_profile.h"
 #include "system/malloc.h"
 #include "ble_fmy_cfg.h"
+#include "ble_fmy_fmna.h"
 #include "app_ble_spp_api.h"
 #include "clock_manager/clock_manager.h"
+#include "ble_fmy_ota.h"
 
 #if (THIRD_PARTY_PROTOCOLS_SEL & FMNA_EN)
+
+unsigned int fmna_lib_debug_enable = 0x1;
 
 #if 1
 #define log_info(x, ...)  printf("[BLE_FMY]" x "\r\n", ## __VA_ARGS__)
@@ -103,6 +107,10 @@ static const uint8_t fmy_battery_type = FMNA_BAT_NON_RECHARGEABLE;
 //set capability
 static const uint8_t FMY_AccessoryCapabilities[4] = {
     (FMY_CAPABILITY_SUPPORTS_PLAY_SOUND
+
+#if FMY_OTA_SUPPORT_CONFIG
+    | FMY_CAPABILITY_SUPPORTS_FW_UPDATE_SERVICE
+#endif
 
 #if TCFG_GSENSOR_ENABLE && TCFG_P11GSENSOR_EN
     | FMY_CAPABILITY_SUPPORTS_MOTION_DETECTOR_UT
@@ -817,8 +825,8 @@ static int fmy_att_write_callback(void *ble_hdl, hci_con_handle_t connection_han
         break;
 
     case ATT_CHARACTERISTIC_94110001_6D9B_4225_A4F1_6A4A7F01B0DE_01_VALUE_HANDLE:
-        log_info("---firmware update write data:%04x,%d", handle, buffer_size);
-        log_info_hexdump(buffer, buffer_size);
+        /* log_info("---firmware update write data:%04x,%d", handle, buffer_size); */
+        /* log_info_hexdump(buffer, buffer_size); */
         if (FMY_CHECK_CAPABILITIES(FMY_CAPABILITY_SUPPORTS_FW_UPDATE_SERVICE)) {
             fmna_gatt_uarp_char_write_handler(connection_handle, 0, buffer_size, buffer);
         }
@@ -939,6 +947,8 @@ void fmy_bt_ble_init(void)
     }
     fmna_connection_set_sys_max_connections(FMY_MAX_CONNECTIONS);
     // fmy_enable(1);
+
+    fmy_enable(__fy_vm->is_open);
 }
 
 /*************************************************************************************************/
@@ -954,7 +964,24 @@ void fmy_bt_ble_init(void)
 /*************************************************************************************************/
 void fmy_bt_ble_exit(void)
 {
+    int cnt = 5;
     log_info("%s\n", __FUNCTION__);
+    fmna_connection_disconnect_all();
+
+    while (cnt--) {
+        if (app_ble_get_hdl_con_handle(fmy_ble_hdl) \
+            || app_ble_get_hdl_con_handle(fmy_second_ble_hdl)) {
+            printf("wait disconnect cnt = %d\n", cnt);
+            os_time_dly(10);
+        } else {
+            break;
+        }
+    }
+
+    app_ble_hdl_free(fmy_ble_hdl);
+    fmy_ble_hdl = NULL;
+    app_ble_hdl_free(fmy_second_ble_hdl);
+    fmy_second_ble_hdl = NULL;
 
     /* ble_module_enable(0); */
     /* ble_comm_exit(); */
@@ -986,6 +1013,33 @@ void ble_server_send_test_key_num(u8 key_num)
 u16 ble_fmy_get_con_handle(void)
 {
     return fmy_cur_con_handle;
+}
+
+// for_test   0:enable/disable  1:factory reset
+u8 test_fmy_en = 0;
+void fmy_key_do_in_task(int key_event)
+{
+    test_fmy_en = !test_fmy_en;
+    if (key_event == 0) {
+        printf("fmy_enable %d\n", test_fmy_en);
+        fmy_enable(test_fmy_en);
+        /* fmy_open_close_pairing_mode(test_fmy_en); */
+    } else if (key_event == 1) {
+        printf("fmy_factory_reset\n");
+        fmy_factory_reset();
+    }
+}
+
+void fmy_key_do(int key_event)
+{
+    int argv[3];
+    argv[0] = (int)fmy_key_do_in_task;
+    argv[1] = 1;
+    argv[2] = (int)key_event;
+    int ret = os_taskq_post_type("app_core", Q_CALLBACK, 3, argv);
+    if (ret) {
+        printf("fmna_app_evnet_post err \n");
+    }
 }
 
 #endif

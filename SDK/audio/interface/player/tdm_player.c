@@ -29,7 +29,7 @@ static void tdm_player_callback(void *private_data, int event)
     switch (event) {
     case STREAM_EVENT_START:
 #if TCFG_VOCAL_REMOVER_NODE_ENABLE
-        musci_vocal_remover_update_parm();
+        music_vocal_remover_update_parm();
 #endif
 #if AUDIO_VBASS_LINK_VOLUME
         vbass_link_volume();

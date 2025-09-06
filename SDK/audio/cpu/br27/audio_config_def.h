@@ -103,6 +103,7 @@
 //**************************************
 #define AUDIO_VBASS_LINK_VOLUME     0 //虚拟低音与音量联动调节
 #define AUDIO_EQ_LINK_VOLUME        0 //EQ与音量联动调节
+#define AUDIO_AUTODUCK_LINK_VOLUME  0 //自动闪避与音量联动调节
 //人声消除串在每个模式的数据流中
 #define AUD_VOCAL_REMOVE_SUB_PATH_ENABLE      0
 
@@ -181,6 +182,8 @@
 #error "AHS-NN不支持非16k倍数的采样率输出"
 #endif
 #endif
+
+#define TCFG_AUDIO_IIS_CLOCK_CLOSE          0
 
 #define TCFG_AUDIO_DAC_NOISEGATE_ENABLE     0
 

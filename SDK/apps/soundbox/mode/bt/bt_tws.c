@@ -215,9 +215,15 @@ char tws_host_get_local_channel()
     }
 #endif
     channel = bt_tws_get_local_channel();
+#if CONFIG_TWS_CHANNEL_SELECT == CONFIG_TWS_MASTER_AS_LEFT
     if (channel != 'R') {
         channel = 'L';
     }
+#else
+    if (channel != 'L') {
+        channel = 'R';
+    }
+#endif
     /*y_printf("tws_host_get_local_channel: %c\n", channel);*/
 
     return channel;
@@ -284,6 +290,14 @@ bool tws_host_role_switch(int remote_info, int local_info)
     }
     /*3、最后再判断VM记录*/
     if (local_want_role == TWS_ROLE_MASTER && remote_want_role == TWS_ROLE_SLAVE) {
+        return TRUE;
+    }
+    return FALSE;
+}
+#else
+bool tws_host_role_switch(int remote_info, int local_info)
+{
+    if (gtws.state & BT_TWS_SEARCH_SIBLING) {
         return TRUE;
     }
     return FALSE;
@@ -408,8 +422,6 @@ int bt_tws_poweron()
         return 0;
     }
 #endif
-
-    tws_profile_init();
 
 #if TCFG_TEST_BOX_ENABLE
     if (testbox_get_ex_enter_dut_flag()) {
@@ -598,8 +610,6 @@ int bt_tws_poweroff()
     } else {
         tws_api_detach(TWS_DETACH_BY_POWEROFF, 5000);   //这里不等完全断开的话，退出蓝牙模式把资源全部释放之后如果还没断完，底层的状态就乱了
     }
-
-    tws_profile_exit();
 
     if (tws_api_get_tws_state() & TWS_STA_SIBLING_DISCONNECTED) {
         return 1;

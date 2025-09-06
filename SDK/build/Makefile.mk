@@ -1,0 +1,414 @@
+# 需要编译的 .c 文件
+c_SRC_FILES := \
+	apps/common/app_mode_manager/app_mode_manager.c \
+	apps/common/bt_common/bt_fre_offset_storage.c \
+	apps/common/bt_common/bt_test_api.c \
+	apps/common/cJSON/cJSON.c \
+	apps/common/clock_manager/clock_manager.c \
+	apps/common/debug/debug.c \
+	apps/common/debug/debug_lite.c \
+	apps/common/debug/debug_uart_config.c \
+	apps/common/dev_manager/dev_manager.c \
+	apps/common/dev_manager/dev_reg.c \
+	apps/common/device/storage_device/norflash/norflash.c \
+	apps/common/device/storage_device/norflash/norflash_sfc.c \
+	apps/common/device/touch_panel/IT7259E.c \
+	apps/common/fat_nor/virfat_flash.c \
+	apps/common/file_operate/file_bs_deal.c \
+	apps/common/file_operate/file_manager.c \
+	apps/common/music/breakpoint.c \
+	apps/common/music/general_player.c \
+	apps/common/music/music_decrypt.c \
+	apps/common/music/music_id3.c \
+	apps/common/music/music_player.c \
+	apps/common/net/lwip_2_2_0/apps/sock_api/sock_api.c \
+	apps/common/net/lwip_2_2_0/port/LwIP.c \
+	apps/common/net/lwip_2_2_0/port/bt_ethernetif.c \
+	apps/common/net/lwip_2_2_0/port/fixme.c \
+	apps/common/net/lwip_2_2_0/port/sys_arch.c \
+	apps/common/netapps/intelligent_duer/duer_auth_algorithm.c \
+	apps/common/netapps/intelligent_duer/duer_http_req.c \
+	apps/common/netapps/intelligent_duer/duer_json_parse.c \
+	apps/common/netapps/intelligent_duer/duer_json_request.c \
+	apps/common/netapps/intelligent_duer/duer_record.c \
+	apps/common/netapps/intelligent_duer/duer_socket.c \
+	apps/common/netapps/intelligent_iflytek/SparkDesk/sparkdesk_main.c \
+	apps/common/netapps/intelligent_iflytek/authentication.c \
+	apps/common/netapps/intelligent_iflytek/demo.c \
+	apps/common/netapps/intelligent_iflytek/ifly_common.c \
+	apps/common/netapps/intelligent_iflytek/ifly_socket.c \
+	apps/common/netapps/intelligent_iflytek/tts/tts_main.c \
+	apps/common/netapps/intelligent_iflytek/vad/vad_main.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_api.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_canonical_headers.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_exceptslash.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_hmac_sig.c \
+	apps/common/netapps/intelligent_rtc/rtc_auth_uriencode.c \
+	apps/common/netapps/intelligent_rtc/rtc_record.c \
+	apps/common/netapps/intelligent_rtc/rtc_socket.c \
+	apps/common/netapps/my_platform/my_platform_cjson.c \
+	apps/common/netapps/my_platform/my_platform_http.c \
+	apps/common/netapps/my_platform/my_platform_http_api.c \
+	apps/common/netapps/my_platform/my_platform_list_download.c \
+	apps/common/netapps/my_platform/my_platform_mem.c \
+	apps/common/netapps/my_platform/my_platform_record.c \
+	apps/common/netapps/my_platform/my_platform_time.c \
+	apps/common/netapps/my_platform/my_platform_url_list.c \
+	apps/common/temp_trim/dtemp_pll_trim.c \
+	apps/common/test/fs_test.c \
+	apps/soundbox/app_main.c \
+	apps/soundbox/audio/jlstream_event_handler.c \
+	apps/soundbox/audio/mix_record_api.c \
+	apps/soundbox/audio/scene_switch.c \
+	apps/soundbox/audio/tone_table.c \
+	apps/soundbox/audio/vol_sync.c \
+	apps/soundbox/board/br27/board_config.c \
+	apps/soundbox/board/br27/lp_nfc_tag_config.c \
+	apps/soundbox/board/br27/lp_touch_key_config.c \
+	apps/soundbox/board/rdeckey_config.c \
+	apps/soundbox/board/sdk_board_config.c \
+	apps/soundbox/board/tocuhkey_config.c \
+	apps/soundbox/demo/att_over_edr_demo.c \
+	apps/soundbox/demo/pbg_demo.c \
+	apps/soundbox/demo/trans_data_demo.c \
+	apps/soundbox/device_config.c \
+	apps/soundbox/log_config/app_config.c \
+	apps/soundbox/log_config/lib_btctrler_config.c \
+	apps/soundbox/log_config/lib_btstack_config.c \
+	apps/soundbox/log_config/lib_driver_config.c \
+	apps/soundbox/log_config/lib_media_config.c \
+	apps/soundbox/log_config/lib_net_config.c \
+	apps/soundbox/log_config/lib_system_config.c \
+	apps/soundbox/log_config/lib_update_config.c \
+	apps/soundbox/message/adapter/app_msg.c \
+	apps/soundbox/message/adapter/audio_player.c \
+	apps/soundbox/message/adapter/battery.c \
+	apps/soundbox/message/adapter/btstack.c \
+	apps/soundbox/message/adapter/driver.c \
+	apps/soundbox/message/adapter/key.c \
+	apps/soundbox/mode/bt/bt_app_msg_handler.c \
+	apps/soundbox/mode/bt/bt_background.c \
+	apps/soundbox/mode/bt/bt_call_kws_handler.c \
+	apps/soundbox/mode/bt/bt_emitter.c \
+	apps/soundbox/mode/bt/bt_event_func.c \
+	apps/soundbox/mode/bt/bt_key_func.c \
+	apps/soundbox/mode/bt/bt_key_msg_table.c \
+	apps/soundbox/mode/bt/bt_mode_manage.c \
+	apps/soundbox/mode/bt/bt_net_event.c \
+	apps/soundbox/mode/bt/bt_slience_detect.c \
+	apps/soundbox/mode/bt/sniff.c \
+	apps/soundbox/mode/bt/soundbox.c \
+	apps/soundbox/mode/bt/tone.c \
+	apps/soundbox/mode/common/app_default_msg_handler.c \
+	apps/soundbox/mode/common/dev_multiplex_api.c \
+	apps/soundbox/mode/common/dev_status.c \
+	apps/soundbox/mode/idle/idle.c \
+	apps/soundbox/mode/idle/idle_app_msg_handler.c \
+	apps/soundbox/mode/idle/idle_key_msg_table.c \
+	apps/soundbox/mode/key_tone.c \
+	apps/soundbox/mode/music/music.c \
+	apps/soundbox/mode/music/music_app_msg_handler.c \
+	apps/soundbox/mode/music/music_key_msg_table.c \
+	apps/soundbox/mode/power_on/power_on.c \
+	apps/soundbox/mode/undef_func.c \
+	apps/soundbox/mode/update/update.c \
+	apps/soundbox/scene/bt_ability.c \
+	apps/soundbox/test/rssi.c \
+	apps/soundbox/third_part/app_protocol_deal.c \
+	apps/soundbox/tools/app_testbox.c \
+	apps/soundbox/user_cfg.c \
+
+
+# 需要编译的 .S 文件
+S_SRC_FILES := \
+	apps/soundbox/sdk_version.z.S \
+
+
+# 需要编译的 .s 文件
+s_SRC_FILES :=
+
+
+# 需要编译的 .cpp 文件
+cpp_SRC_FILES :=
+
+
+# 需要编译的 .cc 文件
+cc_SRC_FILES :=
+
+
+# 需要编译的 .cxx 文件
+cxx_SRC_FILES :=
+
+
+include build/fileList.mk
+
+# 链接参数
+LFLAGS := \
+	--plugin-opt=-pi32v2-always-use-itblock=false \
+	--plugin-opt=-enable-ipra=true \
+	--plugin-opt=-pi32v2-merge-max-offset=4096 \
+	--plugin-opt=-pi32v2-enable-simd=true \
+	--plugin-opt=mcpu=r3 \
+	--plugin-opt=-global-merge-on-const \
+	--plugin-opt=-inline-threshold=5 \
+	--plugin-opt=-inline-max-allocated-size=32 \
+	--plugin-opt=-inline-normal-into-special-section=true \
+	--plugin-opt=-dont-used-symbol-list=malloc,free,sprintf,printf,puts,putchar \
+	--plugin-opt=save-temps \
+	--plugin-opt=-pi32v2-enable-rep-memop \
+	--plugin-opt=-warn-stack-size=256 \
+	--sort-common \
+	--plugin-opt=-used-symbol-file=apps/soundbox/sdk_used_list.used \
+	--plugin-opt=-enable-movable-region=true \
+	--plugin-opt=-movable-region-section-prefix=.movable.slot. \
+	--plugin-opt=-movable-region-stub-section-prefix=.movable.stub. \
+	--plugin-opt=-movable-region-prefix=.movable.region. \
+	--plugin-opt=-movable-region-stub-prefix=__movable_stub_ \
+	--plugin-opt=-movable-region-stub-swi-number=-2 \
+	--plugin-opt=-movable-region-map-file-list=apps/soundbox/movable/funcname.txt \
+	--plugin-opt=-movable-region-section-map-file-list=apps/soundbox/movable/section.txt \
+	--plugin-opt=-movable-region-exclude-func-file-list=apps/soundbox/movable/exclude.txt \
+	--plugin-opt=-pi32v2-large-program=true \
+	--plugin-opt=-floating-point-may-trap=true \
+	--gc-sections \
+	--plugin-opt=-pi32v2-csync-before-rti=true \
+	--start-group \
+	cpu/br27/liba/cpu.a \
+	cpu/br27/liba/system.a \
+	cpu/br27/liba/btstack.a \
+	cpu/br27/liba/rcsp_stack.a \
+	cpu/br27/liba/tme_stack.a \
+	cpu/br27/liba/btctrler.a \
+	cpu/br27/liba/aec.a \
+	cpu/br27/liba/media.a \
+	cpu/br27/liba/fmna_stack.a \
+	cpu/br27/liba/lib_fmy_auth_br27.a \
+	cpu/br27/liba/libdma-protocol.a \
+	cpu/br27/liba/libdma-device-ota.a \
+	cpu/br27/liba/libepmotion.a \
+	cpu/br27/liba/libAptFilt_pi32v2_OnChip.a \
+	cpu/br27/liba/libEchoSuppress_pi32v2_OnChip.a \
+	cpu/br27/liba/libNoiseSuppress_pi32v2_OnChip.a \
+	cpu/br27/liba/libSplittingFilter_pi32v2_OnChip.a \
+	cpu/br27/liba/libDelayEstimate_pi32v2_OnChip.a \
+	cpu/br27/liba/libDualMicSystem_pi32v2_OnChip.a \
+	cpu/br27/liba/libDualMicSystem_flexible_pi32v2_OnChip.a \
+	cpu/br27/liba/libSMS_TDE_pi32v2_OnChip.a \
+	cpu/br27/liba/libSMS_TDE_Stereo_pi32v2_OnChip.a \
+	cpu/br27/liba/libAdaptiveEchoSuppress_pi32v2_OnChip.a \
+	cpu/br27/liba/libOpcore_maskrom_pi32v2_OnChip.a \
+	cpu/br27/liba/sbc_eng_lib.a \
+	cpu/br27/liba/lib_m4a_dec.a \
+	cpu/br27/liba/mp3_decstream_lib.a \
+	cpu/br27/liba/lib_mty_dec.a \
+	cpu/br27/liba/lib_f2a_dec.a \
+	cpu/br27/liba/lib_wav_dec.a \
+	cpu/br27/liba/libLHDCv4DecodeLib.a \
+	cpu/br27/liba/libLHDCv5DecodeLib.a \
+	cpu/br27/liba/lib_ldac_dec.a \
+	cpu/br27/liba/lib_flac_dec.a \
+	cpu/br27/liba/lib_ape_dec.a \
+	cpu/br27/liba/lib_amr_dec.a \
+	cpu/br27/liba/lib_dts_dec.a \
+	cpu/br27/liba/lib_wma_dec.a \
+	cpu/br27/liba/agreement.a \
+	cpu/br27/liba/lib_jl_codec_common.a \
+	cpu/br27/liba/lib_lc3_codec.a \
+	cpu/br27/liba/lib_jla_codec.a \
+	cpu/br27/liba/lib_jla_v2_codec.a \
+	cpu/br27/liba/opus_enc_lib.a \
+	cpu/br27/liba/lib_opus_stenc.a \
+	cpu/br27/liba/lib_ogg_opus_dec.a \
+	cpu/br27/liba/lib_ogg_vorbis_dec.a \
+	cpu/br27/liba/msbc_codec_lib.a \
+	cpu/br27/liba/lib_midi_dec.a \
+	cpu/br27/liba/lib_advaudio_plc.a \
+	cpu/br27/liba/SpectrumShow.a \
+	cpu/br27/liba/DynamicEQ.a \
+	cpu/br27/liba/DynamicEQPro.a \
+	cpu/br27/liba/lib_voiceChanger.a \
+	cpu/br27/liba/lib_SurroundEffect.a \
+	cpu/br27/liba/loudness.a \
+	cpu/br27/liba/howling.a \
+	cpu/br27/liba/noisegate.a \
+	cpu/br27/liba/lib_FrequencyShift.a \
+	cpu/br27/liba/crossover_coff.a \
+	cpu/br27/liba/lib_reverb_cal.a \
+	cpu/br27/liba/lib_pitch_speed.a \
+	cpu/br27/liba/lib_esco_audio_plc.a \
+	cpu/br27/liba/lib_mp3_enc.a \
+	cpu/br27/liba/lib_mp2_code.a \
+	cpu/br27/liba/lib_adpcm_code.a \
+	cpu/br27/liba/lib_adpcm_ima_code.a \
+	cpu/br27/liba/lib_StereoWidener.a \
+	cpu/br27/liba/lib_HarmonicExciter.a \
+	cpu/br27/liba/lib_resample_fast_cal.a \
+	cpu/br27/liba/lib_Chorus.a \
+	cpu/br27/liba/VirtualBass.a \
+	cpu/br27/liba/lib_virtual_bass_classic.a \
+	cpu/br27/liba/lib_virtual_bass_pro.a \
+	cpu/br27/liba/lib_plateReverb_adv.a \
+	cpu/br27/liba/lib_Reverb.a \
+	cpu/br27/liba/drc.a \
+	cpu/br27/liba/lib_drc_detect.a \
+	cpu/br27/liba/lib_drc_advance.a \
+	cpu/br27/liba/libjlsp.a \
+	cpu/br27/liba/lib_PcmDelay.a \
+	cpu/br27/liba/lib_speex_codec.a \
+	cpu/br27/liba/bt_hash_enc.a \
+	cpu/br27/liba/lib_AutoWah.a \
+	cpu/br27/liba/lib_PingPongDelay.a \
+	cpu/br27/liba/lib_ThreeD_effect.a \
+	cpu/br27/liba/libllns.a \
+	cpu/br27/liba/libjlsp_kws.a \
+	cpu/br27/liba/libjlsp_kws_india_english.a \
+	cpu/br27/liba/libkwscommon.a \
+	cpu/br27/liba/libjlsp_kws_far_keyword.a \
+	cpu/br27/liba/JL_Phone_Call.a \
+	cpu/br27/liba/spectrum.a \
+	cpu/br27/liba/lib_StereoMtapsEcho.a \
+	cpu/br27/liba/lib_HowlingGate.a \
+	cpu/br27/liba/lib_DistortionEXP.a \
+	cpu/br27/liba/lib_noisegate_pro.a \
+	cpu/br27/liba/lib_iir_filter.a \
+	cpu/br27/liba/le_audio_profile.a \
+	cpu/br27/liba/lib_eq_design_coeff.a \
+	cpu/br27/liba/lib_limiter.a \
+	cpu/br27/liba/libSAS_pi32v2_OnChip.a \
+	cpu/br27/liba/lib_phaser.a \
+	cpu/br27/liba/lib_flanger.a \
+	cpu/br27/liba/lib_chorus_adv.a \
+	cpu/br27/liba/lib_pingpong_echo.a \
+	cpu/br27/liba/libStereoSpatialWider_pi32v2_OnChip.a \
+	cpu/br27/liba/libdistortion.a \
+	cpu/br27/liba/lib_frequency_compressor.a \
+	cpu/br27/liba/lib_jlsp_ahs.a \
+	cpu/br27/liba/lib_tremolo.a \
+	cpu/br27/liba/libFFT_pi32v2_OnChip.a \
+	cpu/br27/liba/lib_wtg_dec.a \
+	cpu/br27/liba/bfilterfun_lib.a \
+	cpu/br27/liba/lib_wtgv2_dec.a \
+	cpu/br27/liba/lib_bt_aac_dec.a \
+	cpu/br27/liba/lib_mp3_rom_dec.a \
+	cpu/br27/liba/crypto_toolbox_Osize.a \
+	cpu/br27/liba/lib_dns.a \
+	cpu/br27/liba/update.a \
+	cpu/br27/liba/res_new.a \
+	cpu/br27/liba/ui_draw_new.a \
+	cpu/br27/liba/font_new.a \
+	cpu/br27/liba/ui_new.a \
+	cpu/br27/liba/cbuf.a \
+	cpu/br27/liba/lbuf.a \
+	cpu/br27/liba/printf.a \
+	cpu/br27/liba/device.a \
+	cpu/br27/liba/fs.a \
+	cpu/br27/liba/ascii.a \
+	cpu/br27/liba/cfg_tool.a \
+	cpu/br27/liba/vm.a \
+	cpu/br27/liba/ftl.a \
+	cpu/br27/liba/debug_record.a \
+	cpu/br27/liba/apple_dock.a \
+	cpu/br27/liba/chargestore.a \
+	--end-group \
+	-Tcpu/br27/sdk.ld \
+	-M=cpu/br27/tools/sdk.map \
+	--plugin-opt=mcpu=r3 \
+	--plugin-opt=-mattr=+fprev1 \
+
+
+LIBPATHS := \
+	-L$(SYS_LIB_DIR) \
+
+
+LIBS := \
+	$(SYS_LIB_DIR)/libm.a \
+	$(SYS_LIB_DIR)/libc.a \
+	$(SYS_LIB_DIR)/libm.a \
+	$(SYS_LIB_DIR)/libcompiler-rt.a \
+
+
+
+c_OBJS    := $(c_SRC_FILES:%.c=%.c.o)
+S_OBJS    := $(S_SRC_FILES:%.S=%.S.o)
+s_OBJS    := $(s_SRC_FILES:%.s=%.s.o)
+cpp_OBJS  := $(cpp_SRC_FILES:%.cpp=%.cpp.o)
+cxx_OBJS  := $(cxx_SRC_FILES:%.cxx=%.cxx.o)
+cc_OBJS   := $(cc_SRC_FILES:%.cc=%.cc.o)
+
+OBJS      := $(c_OBJS) $(S_OBJS) $(s_OBJS) $(cpp_OBJS) $(cxx_OBJS) $(cc_OBJS)
+DEP_FILES := $(OBJS:%.o=%.d)
+
+
+OBJS      := $(addprefix $(BUILD_DIR)/, $(OBJS))
+DEP_FILES := $(addprefix $(BUILD_DIR)/, $(DEP_FILES))
+
+
+# 表示下面的不是一个文件的名字，无论是否存在 all, clean, pre_build 这样的文件
+# 还是要执行命令
+# see: https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
+.PHONY: all clean pre_build
+
+# 不要使用 make 预设置的规则
+# see: https://www.gnu.org/software/make/manual/html_node/Suffix-Rules.html
+.SUFFIXES:
+
+all: pre_build $(OUT_ELF)
+	$(info +POST-BUILD)
+	$(QUITE) $(RUN_POST_SCRIPT) sdk
+
+pre_build:
+	$(info +PRE-BUILD)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P build/genFileList.c -o build/fileList.dumy
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P build/fileList.c -o build/fileList.mk
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P apps/soundbox/sdk_used_list.c -o apps/soundbox/sdk_used_list.used
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P apps/soundbox/movable/section.c -o apps/soundbox/movable/section.txt
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P cpu/br27/sdk_ld.c -o cpu/br27/sdk.ld
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P cpu/br27/tools/download.c -o $(POST_SCRIPT)
+	$(QUITE) $(FIXBAT) $(POST_SCRIPT)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -D__LD__ -E -P cpu/br27/tools/isd_config_rule.c -o cpu/br27/tools/isd_config.ini
+
+ifeq ($(LINK_AT), 1)
+$(OUT_ELF): $(OBJS)
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
+	$(file >$(OBJ_FILE), $(OBJS))
+	$(QUITE) $(LD) -o $(OUT_ELF) @$(OBJ_FILE) $(LFLAGS) $(LIBPATHS) $(LIBS)
+else
+$(OUT_ELF): $(OBJS)
+	$(info +LINK $@)
+	$(shell $(MKDIR) $(@D))
+	$(QUITE) $(LD) -o $(OUT_ELF) $(OBJS) $(LFLAGS) $(LIBPATHS) $(LIBS)
+endif
+
+
+$(BUILD_DIR)/%.c.o : %.c
+	$(info +CC $<)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
+
+$(BUILD_DIR)/%.S.o : %.S
+	$(info +AS $<)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
+
+$(BUILD_DIR)/%.s.o : %.s
+	$(info +AS $<)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
+
+$(BUILD_DIR)/%.cpp.o : %.cpp
+	$(info +CXX $<)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
+
+$(BUILD_DIR)/%.cxx.o : %.cxx
+	$(info +CXX $<)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
+
+$(BUILD_DIR)/%.cc.o : %.cc
+	$(info +CXX $<)
+	$(QUITE) $(MKDIR) $(@D)
+	$(QUITE) $(CXX) $(CXXFLAGS) $(CFLAGS) $(DEFINES) $(INCLUDES) -MMD -MF $(@:.o=.d) -c $< -o $@
+
+-include $(DEP_FILES)

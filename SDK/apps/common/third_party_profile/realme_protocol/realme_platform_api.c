@@ -17,7 +17,7 @@
 #include "realme_platform_api.h"
 #include "fs/sdfile.h"
 
-#if (BT_AI_SEL_PROTOCOL & REALME_EN)
+#if (THIRD_PARTY_PROTOCOLS_SEL & REALME_EN)
 
 int realme_platform_feature_switch(u8 *remote_addr, u8 feature_id, u8 state)
 {
@@ -226,56 +226,6 @@ int realme_check_upgrade_area(int update)
     return 0;
 }
 
-/*****************************
-        tws sync
-*****************************/
-#if TCFG_USER_TWS_ENABLE
-
-#define REALME_TWS_SYNC_HDL_UUID \
-	(((u8)('R' + 'E' + 'A' + 'L') << (3 * 8)) | \
-	 ((u8)('M' + 'E') << (2 * 8)) | \
-	 ((u8)('T' + 'W' + 'S') << (1 * 8)) | \
-	 ((u8)('S' + 'Y' + 'N' + 'C') << (0 * 8)))
-
-static void realme_tws_sync_recv_in_task(u8 *data, int len)
-{
-    int ret;
-    ret = realme_tws_sync_data_recv(NULL, data, len);
-    free(data);
-}
-
-static void realme_tws_sync_recv_in_irq(void *_data, u16 len, bool rx)
-{
-    int msg[4];
-    u8 *data = (u8 *)_data;
-    if (!rx) {  // 只有 rx 处理
-        return;
-    }
-    u8 *buf = malloc(len);
-    if (!buf) {
-        return;
-    }
-    memcpy(buf, data, len);
-    msg[0] = (int)realme_tws_sync_recv_in_task;
-    msg[1] = 2;
-    msg[2] = (int)buf;
-    msg[3] = (int)len;
-    os_taskq_post_type("app_core", Q_CALLBACK, 4, msg);
-}
-
-REGISTER_TWS_FUNC_STUB(realme_tws_sync_stub) = {
-    .func_id = REALME_TWS_SYNC_HDL_UUID,
-    .func = realme_tws_sync_recv_in_irq,
-};
-
-
-int realme_tws_sync_state_send(void)
-{
-    return realme_tws_sync_state_manually();
-}
-
-#endif
-
 int test_realme_log_remain = 0;
 //lib收到控制消息后，会传消息上来处理
 int realme_message_callback_handler(u8 *remote_addr, int id, int opcode, u8 *data, u32 len)
@@ -288,11 +238,6 @@ int realme_message_callback_handler(u8 *remote_addr, int id, int opcode, u8 *dat
     u32 firmware_id = 0;
     u32 temp32 = 0;
     switch (opcode) {
-    case APP_PROTOCOL_REALME_TWS_SYNC_SEND:
-#if TCFG_USER_TWS_ENABLE
-        ret = tws_api_send_data_to_sibling(data, len, REALME_TWS_SYNC_HDL_UUID);
-#endif
-        break;
     case APP_PROTOCOL_REALME_FEATURE_SWITCH:
         //模式切换
         /* uint8_t change_feature = data[0]; */

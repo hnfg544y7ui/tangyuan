@@ -81,7 +81,7 @@ static void audio_irq_handler()
 struct dac_platform_data dac_data = {
     .performance_mode   = TCFG_DAC_PERFORMANCE_MODE,
     .dma_buf_time_ms    = TCFG_AUDIO_DAC_BUFFER_TIME_MS,
-    .dcc_level          = 14,
+    .dcc_level          = 15,
     .l_ana_gain        = TCFG_AUDIO_FL_CHANNEL_GAIN,
     .r_ana_gain        = TCFG_AUDIO_FR_CHANNEL_GAIN,
     .rl_ana_gain        = TCFG_AUDIO_RL_CHANNEL_GAIN,

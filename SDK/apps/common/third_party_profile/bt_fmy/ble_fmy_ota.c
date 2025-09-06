@@ -34,6 +34,7 @@
 #include "ble_fmy_ota.h"
 #include "system/malloc.h"
 #include "dual_bank_updata_api.h"
+#include "update/update.h"
 
 #if (THIRD_PARTY_PROTOCOLS_SEL & FMNA_EN)
 
@@ -82,6 +83,8 @@ extern void set_ota_status(u8 stu);
 static int fmy_ota_init(void)
 {
     log_info("%s", __FUNCTION__);
+    // 关闭flash写保护
+    norflash_set_write_protect_remove();
     dual_bank_passive_update_exit(NULL);
     if (!fmy_ota) {
         fmy_ota = malloc(sizeof(fmy_ota_t));
@@ -109,6 +112,7 @@ static int fmy_ota_exit(void)
     }
     fmy_ota_set_state(FMY_OTA_STATE_IDLE);
     fmy_state_idle_set_active(false);
+    norflash_set_write_protect_en();
     return FMNA_OTA_OP_SUCC;
 }
 

@@ -1696,7 +1696,7 @@ int get_spdif_data_isr_time_diff(void)
 static void spdif_fix_one_package(void)
 {
     struct spdif_file_hdl *hdl = spdif_file_t;
-    if (!hdl || hdl->start == 0 || hdl->online_flag == 0) {
+    if (!hdl || hdl->start == 0 || hdl->online_flag == 0 || hdl->spdif_ctl_stream_run == 0) {
         return;
     }
     putchar('@');

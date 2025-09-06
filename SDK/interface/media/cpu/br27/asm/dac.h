@@ -15,7 +15,7 @@ Notes:以下为芯片规格定义，不可修改，仅供引用
 ***************************************************************************/
 #define AUDIO_DAC_CHANNEL_NUM				4	//DAC通道数
 #define AUDIO_ADDA_IRQ_MULTIPLEX_ENABLE			//DAC和ADC中断入口复用使能
-
+#define AUDIO_DAC_IO_ENABLE					1
 
 /************************************************************************************************************
                                        AUDIO DAC 相关配置
@@ -83,24 +83,9 @@ Notes:以下为芯片规格定义，不可修改，仅供引用
 #define PCM_PHASE_BIT           8
 #endif
 
-#define DA_LEFT        0
-#define DA_RIGHT       1
-#define DA_REAR_RIGHT  2
-#define DA_REAR_LEFT   3
-
-#define DA_SOUND_NORMAL                 0x0
-#define DA_SOUND_RESET                  0x1
-#define DA_SOUND_WAIT_RESUME            0x2
-
 #define DACR32_DEFAULT		8192
 #define DA_SYNC_INPUT_BITS              20
 #define DA_SYNC_MAX_NUM                 (1 << DA_SYNC_INPUT_BITS)
-
-
-#define DAC_ANALOG_OPEN_PREPARE         (1)
-#define DAC_ANALOG_OPEN_FINISH          (2)
-#define DAC_ANALOG_CLOSE_PREPARE        (3)
-#define DAC_ANALOG_CLOSE_FINISH         (4)
 
 #define DAC_TRIM_SEL_FL_P               0
 #define DAC_TRIM_SEL_FL_N               0
@@ -204,29 +189,17 @@ struct audio_dac_fade {
 struct audio_dac_hdl {
     u8 state;
     u8 light_state;
-    u8 ng_threshold;
     u8 analog_inited;
-
     u8 gain;
     u8 vol_set_en;
 	u8 dvol_mute;             //DAC数字音量是否mute
     u8 volume_enhancement;
-    u16 d_volume[4];
-    s16 fade_vol;
-    s16 fadein_frames;
-	u32 dac_dvol;             //记录DAC 停止前数字音量寄存器DAC_VL0的值
-	u32 dac_dvol1;            //记录DAC 停止前数字音量寄存器DAC_VL1的值
-
     u8 channel;
     u8 protect_fadein;
-    u8 sound_state;
-    /**sniff退出时，dac模拟提前初始化，避免模拟初始化延时,影响起始同步********/
 	u8 power_on;
     u8 need_close;
     u8 anc_dac_open;
     u8 dac_read_flag;	//AEC可读取DAC参考数据的标志
-	u8 active;
-    u8 clk_fre;     // 0:6M   1:6.6666M
     u16 start_ms;
     u16 delay_ms;
     u16 start_points;
@@ -236,9 +209,14 @@ struct audio_dac_hdl {
     s16 protect_time;
     s16 protect_pns;
     u16 unread_samples;             /*未读样点个数*/
+    u16 d_volume[4];
+    s16 fade_vol;
+    s16 fadein_frames;
     s16 *output_buf;
     u32 output_buf_len;
     u32 sample_rate;
+	u32 dac_dvol;             //记录DAC 停止前数字音量寄存器DAC_VL0的值
+	u32 dac_dvol1;            //记录DAC 停止前数字音量寄存器DAC_VL1的值
     OS_SEM *sem;
     OS_MUTEX mutex;
     spinlock_t lock;
@@ -249,7 +227,34 @@ struct audio_dac_hdl {
 	void (*irq_handler_cb)(void);
 };
 
-
+struct audio_dac_io_param {
+    /*
+     *       state 通道初始状态
+     * 使能单左/单右声道，初始状态为高电平：state[0] = 1
+     * 使能双声道，左声道初始状态为高，右声道初始状态为低：state[0] = 1，state[1] = 0。
+     */
+    u8 state[4];
+    /*
+     *       irq_points 中断点数
+     * 申请buf的大小为 buf_len = irq_points * channel_num * 4
+     */
+    u16 irq_points;
+    /*
+     *       channel 打开的通道
+     * 可配 “BIT(0)、BIT(1)、BIT(2)、BIT(3)” 对应 “FL FR RL RR”
+     * 打开多通道时使用或配置：channel = BIT(0) | BIT(1) | BIT(2) | BIT(3);
+     *
+     * 注意，不支持以下配置类型：
+     * channel = BIT(1)                             "MONO FR"
+     * channel = DAC_CH(0) | DAC_CH(1) | DAC_CH(3)  "FL FR RR"
+     */
+    u8 channel;
+    /*
+     *       digital_gain 增益
+     * 影响输出电平幅值，-8192~8192可配
+     */
+    u16 digital_gain;
+};
 
 #endif
 

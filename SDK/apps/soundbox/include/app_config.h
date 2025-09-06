@@ -125,6 +125,10 @@
 #define CONFIG_FINDMY_INFO_ENABLE      		    0
 #endif
 
+#ifndef CONFIG_FINDMY_UARP_ENABLE
+#define CONFIG_FINDMY_UARP_ENABLE               0
+#endif
+
 //*********************************************************************************//
 //                                  le_audio 配置                                       //
 //*********************************************************************************//

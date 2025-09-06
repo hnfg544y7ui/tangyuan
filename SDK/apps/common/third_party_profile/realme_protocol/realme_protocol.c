@@ -16,7 +16,7 @@
 #include "asm/charge.h"
 #include "realme_platform_api.h"
 
-#if (BT_AI_SEL_PROTOCOL & REALME_EN)
+#if (THIRD_PARTY_PROTOCOLS_SEL & REALME_EN)
 
 extern bool check_tws_master_role();
 
@@ -79,7 +79,6 @@ APP_MSG_HANDLER(realme_stack_msg_handler) = {
     .handler    = realme_bt_status_event_handler,
 };
 
-#if TCFG_USER_TWS_ENABLE
 
 static int realme_tws_msg_handler(int *_msg)
 {
@@ -90,12 +89,6 @@ static int realme_tws_msg_handler(int *_msg)
     switch (evt->event) {
     case TWS_EVENT_CONNECTED:
         realme_update_tws_state_to_lib(USER_NOTIFY_STATE_TWS_CONNECT);
-        if (role == TWS_ROLE_MASTER) {
-            realme_tws_sync_state_send();
-            realme_ble_adv_enable(1);
-        } else {
-            realme_ble_adv_enable(0);
-        }
         break;
     case TWS_EVENT_ROLE_SWITCH:
         //对耳主从切换时，将旧主机的蓝牙地址和pair_state同步给新主机
@@ -119,7 +112,6 @@ APP_MSG_HANDLER(realme_tws_msg_entry) = {
     .handler = realme_tws_msg_handler,
 };
 
-#endif
 
 #define REALME_PRODUCT_TEST 0
 

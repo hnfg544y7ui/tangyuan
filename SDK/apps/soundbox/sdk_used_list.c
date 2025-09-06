@@ -1,5 +1,6 @@
 #include "app_config.h"
 
+breakpoint_init
 
 source_node_adapter
 
@@ -37,7 +38,7 @@ file_play_plug
 #endif
 
 sbc_hwaccel
-sbc_decoder_plug
+sbc_decoder_hw_plug
 msbc_decoder_plug
 
 #if TCFG_PDM_NODE_ENABLE
@@ -710,4 +711,14 @@ mute_node_adapter
 noisefloor_node_adapter
 #endif
 
+#if TCFG_VIBRATO_NODE_ENABLE
+vibrato_node_adapter
+#endif
 
+#if TCFG_HARMONY_NODE_ENABLE
+harmony_node_adapter
+#endif
+
+#if TCFG_TREMOLO_NODE_ENABLE
+tremolo_node_adapter
+#endif

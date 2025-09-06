@@ -130,7 +130,7 @@ int mic_effect_player_open()
             }
             jlstream_set_scene(player->stream[i], STREAM_SCENE_MIC_EFFECT);
 
-#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
+#if LE_AUDIO_MIX_MIC_EFFECT_EN
             //混合mic广播需要广播混响，添加LE Audio的编码器配置防止协商不过
             struct stream_enc_fmt fmt = {
                 .coding_type = 0xa000000,
@@ -193,9 +193,6 @@ int mic_effect_player_open()
     printf("\n mic dvol %d \n", player->dvol);
     g_mic_effect_player = player;
 
-#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
-    set_need_resume_le_audio_mix_mic(1);
-#endif
     return 0;
 
 __exit1:
@@ -214,17 +211,6 @@ bool mic_effect_player_runing()
     return g_mic_effect_player != NULL;
 }
 
-int get_micEff2DAC_switch_status(void)
-{
-#if LE_AUDIO_MIX_MIC_EFFECT_EN
-    if (is_le_audio_mix_mic_recorder_running()) {
-        return 0;
-    }
-    return 1;
-#else
-    return 1;
-#endif
-}
 
 int mic_effect_player_is_playing()
 {
@@ -250,10 +236,6 @@ void mic_effect_player_close()
     mic_effect_ram_code_unload();
     free(player);
     g_mic_effect_player = NULL;
-
-#if LE_AUDIO_MIX_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN
-    set_need_resume_le_audio_mix_mic(0);
-#endif
 
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
 

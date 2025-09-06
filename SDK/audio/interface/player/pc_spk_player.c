@@ -96,7 +96,7 @@ static void pc_spk_player_callback(void *private_data, int event)
             }
         }
 #if TCFG_VOCAL_REMOVER_NODE_ENABLE
-        musci_vocal_remover_update_parm();
+        music_vocal_remover_update_parm();
 #endif
         break;
     }
@@ -316,7 +316,7 @@ int pcspk_restart_player_by_taskq(void)
 
 static void pc_spk_set_volume(void)
 {
-#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE))
+#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == WIRELES_MIC_1TNR_MODE))
     char *vol_name = "Vol_PcspkMusic";
     s16 cur_vol = app_audio_get_volume(APP_AUDIO_STATE_MUSIC);
     u16 l_vol = 0, r_vol = 0;

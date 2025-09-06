@@ -596,7 +596,7 @@ static void do_operate_search_handle(void)
     log_info("find target_handle:");
     log_info_hexdump((u8 *)&target_handle[cur_dev_cid], sizeof(target_hdl_t));
 
-    if (get_ble_work_state(cur_dev_cid) != BLE_ST_CREATE_CONN) {
+    if (get_ble_work_state(cur_dev_cid) == BLE_ST_DISCONN) {
         return;
     }
     if (0 == opt_handle_used_cnt) {
@@ -688,6 +688,10 @@ int l2cap_connection_update_request_just(u8 *packet, hci_con_handle_t handle)
 //协议栈内部调用
 void user_client_multi_report_search_result(search_result_t *result_info)
 {
+    if (!client_con_handle[cur_dev_cid]) {
+        return;
+    }
+
     if (result_info == (void *) - 1) {
         log_info("client_report_search_result finish!!!\n");
         do_operate_search_handle();

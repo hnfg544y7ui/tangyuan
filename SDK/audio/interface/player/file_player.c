@@ -18,6 +18,7 @@
 #include "clock_manager/clock_manager.h"
 #include "audio_config_def.h"
 #include "effects/audio_vbass.h"
+#include "audio_effect_demo.h"
 #include "framework/include/decoder_node.h"
 #include "le_audio_player.h"
 #if AUDIO_EQ_LINK_VOLUME
@@ -76,6 +77,9 @@ static void music_player_callback(void *_player_id, int event)
 #endif
 #if AUDIO_EQ_LINK_VOLUME
         eq_link_volume();
+#endif
+#if AUDIO_AUTODUCK_LINK_VOLUME
+        autoduck_link_volume();
 #endif
         if (list_empty(&(g_file_player.head))) {          //先判断是否为空防止触发异常
             break;
@@ -202,10 +206,10 @@ static int music_file_close(void *file)
 
 static int music_file_get_fmt(void *file, struct stream_fmt *fmt)
 {
-    u8 name[16];
+    u8 name[12 + 1] = {0}; //8.3+\0
     struct file_player *player = (struct file_player *)file;
 
-    fget_name(player->file, name, 16);
+    fget_name(player->file, name, sizeof(name));
     struct stream_file_info info = {
         .file = player,
         .fname = (char *)name,
