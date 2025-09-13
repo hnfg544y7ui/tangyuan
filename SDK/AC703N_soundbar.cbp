@@ -386,6 +386,7 @@
 <Add option="cpu/br27/liba/lib_drc_detect.a" />
 <Add option="cpu/br27/liba/lib_drc_advance.a" />
 <Add option="cpu/br27/liba/libjlsp.a" />
+<Add option="cpu/br27/liba/lib_llns_dns.a" />
 <Add option="cpu/br27/liba/lib_PcmDelay.a" />
 <Add option="cpu/br27/liba/lib_speex_codec.a" />
 <Add option="cpu/br27/liba/bt_hash_enc.a" />
@@ -417,6 +418,7 @@
 <Add option="cpu/br27/liba/lib_frequency_compressor.a" />
 <Add option="cpu/br27/liba/lib_jlsp_ahs.a" />
 <Add option="cpu/br27/liba/lib_tremolo.a" />
+<Add option="cpu/br27/liba/lib_gain_mix.a" />
 <Add option="cpu/br27/liba/libFFT_pi32v2_OnChip.a" />
 <Add option="cpu/br27/liba/lib_wtg_dec.a" />
 <Add option="cpu/br27/liba/bfilterfun_lib.a" />
@@ -1435,6 +1437,7 @@
 <Unit filename="audio/interface/include/a2dp_player.h" />
 <Unit filename="audio/interface/include/adda_loop_player.h" />
 <Unit filename="audio/interface/include/ai_voice_recoder.h" />
+<Unit filename="audio/interface/include/audio_dsp_low_latency_player.h" />
 <Unit filename="audio/interface/include/cvp_node.h" />
 <Unit filename="audio/interface/include/dev_flow_player.h" />
 <Unit filename="audio/interface/include/dev_flow_recoder.h" />
@@ -1485,6 +1488,7 @@
 <Unit filename="audio/interface/recoder/le_audio_mix_mic_recorder.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/recoder/le_audio_recorder.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/recoder/pc_mic_recoder.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/interface/user_defined/audio_dsp_low_latency_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/jl_kws/jl_kws_algo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/jl_kws/jl_kws_api.h" />
 <Unit filename="audio/jl_kws/jl_kws_audio.c"><Option compilerVer="CC"/></Unit>
@@ -1835,6 +1839,7 @@
 <Unit filename="interface/media/effects/excitor_api.h" />
 <Unit filename="interface/media/effects/fix_iir_filter_api.h" />
 <Unit filename="interface/media/effects/frequency_compressor_api.h" />
+<Unit filename="interface/media/effects/gain_mix_api.h" />
 <Unit filename="interface/media/effects/howling_pitchshifter_api.h" />
 <Unit filename="interface/media/effects/jlsp_ahs_api.h" />
 <Unit filename="interface/media/effects/lf_chorusStereo_api.h" />

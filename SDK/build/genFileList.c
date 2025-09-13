@@ -276,6 +276,9 @@ c_SRC_FILES += \
 	  audio/interface/recoder/ai_voice_recoder.c \
 	  audio/interface/recoder/dev_flow_recoder.c \
 
+c_SRC_FILES += \
+	  audio/interface/user_defined/audio_dsp_low_latency_player.c
+
 #if TCFG_LE_AUDIO_APP_CONFIG
 c_SRC_FILES += \
 	audio/interface/player/le_audio_player.c \

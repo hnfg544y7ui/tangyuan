@@ -58,14 +58,26 @@ int loudspeaker_iis_player_open(void)
     jlstream_set_scene(player->stream, STREAM_SCENE_LOUDSPEAKER_IIS);
 
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable) {
+    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+        //软件回采
         set_aec_ref_dac_ch_name("DacSPK");
         aec_ref_dac_ch_data_read_init();
+        //iis输入dac输出 回采数据需要添加固定采样率变化
+        RS_PARA_STRUCT rs_para_obj;
+        rs_para_obj.nch = AUDIO_CH_NUM(TCFG_AUDIO_DAC_CONNECT_MODE);
+        rs_para_obj.new_insample = 624 * 20;
+        rs_para_obj.new_outsample = 625 * 20;
+        rs_para_obj.dataTypeobj.IndataBit = 0;
+        rs_para_obj.dataTypeobj.OutdataBit = 0;
+        rs_para_obj.dataTypeobj.IndataInc = AUDIO_CH_NUM(TCFG_AUDIO_DAC_CONNECT_MODE);
+        rs_para_obj.dataTypeobj.OutdataInc = AUDIO_CH_NUM(TCFG_AUDIO_DAC_CONNECT_MODE);
+        rs_para_obj.dataTypeobj.Qval = 15;
+        aec_ref_dac_ch_data_src_init(&rs_para_obj);
+        //设置回采数据采样率
+        extern struct audio_dac_hdl dac_hdl;
+        u32 ref_sr = audio_dac_get_sample_rate(&dac_hdl);
+        jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_FMT, (int)ref_sr);
     }
-    extern struct audio_dac_hdl dac_hdl;
-
-    u32 ref_sr = audio_dac_get_sample_rate(&dac_hdl);
-    jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_FMT, (int)ref_sr);
     u8 iis_in_dac_out = 1; //loudspeaker_iis模式自动使能，其他模式需要手动使能const_audio_howling_ahs_iis_in_dac_out变量
     //高16bit传递iis_in_dac_out使能位，低16bit传递帧长
     jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_PRIV_FMT, (iis_in_dac_out << 16) | AHS_NN_FRAME_POINTS);
@@ -111,7 +123,8 @@ void loudspeaker_iis_player_close()
     free(player);
     g_loudspeaker_iis_player = NULL;
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable) {
+    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+        //软件回采
         aec_ref_dac_ch_data_read_exit();
     }
 #endif

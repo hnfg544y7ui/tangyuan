@@ -73,14 +73,15 @@ int loudspeaker_mic_player_open(void)
     jlstream_set_callback(player->stream, player->stream, loudspeaker_mic_player_callback);
     jlstream_set_scene(player->stream, STREAM_SCENE_LOUDSPEAKER_MIC);
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable) {
+    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+        //软件回采
         set_aec_ref_dac_ch_name("Dacline");
         aec_ref_dac_ch_data_read_init();
+        //设置回采数据采样率
+        extern struct audio_dac_hdl dac_hdl;
+        u32 ref_sr = audio_dac_get_sample_rate(&dac_hdl);
+        jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_FMT, (int)ref_sr);
     }
-    extern struct audio_dac_hdl dac_hdl;
-
-    u32 ref_sr = audio_dac_get_sample_rate(&dac_hdl);
-    jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_FMT, (int)ref_sr);
     jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_PRIV_FMT, AHS_NN_FRAME_POINTS);
     jlstream_add_thread(player->stream, "mic_effect1");
     jlstream_add_thread(player->stream, "mic_effect2");
@@ -122,7 +123,8 @@ void loudspeaker_mic_player_close()
     free(player);
     g_loudspeaker_mic_player = NULL;
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable) {
+    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+        //软件回采
         aec_ref_dac_ch_data_read_exit();
     }
 #endif

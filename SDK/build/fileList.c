@@ -192,6 +192,9 @@ objs += \
 	  $(ROOT)/audio/interface/recoder/dev_flow_recoder.o \
 
 objs += \
+	  $(ROOT)/audio/interface/user_defined/audio_dsp_low_latency_player.o
+
+objs += \
 	$(ROOT)/audio/interface/player/le_audio_player.o \
 	$(ROOT)/audio/framework/nodes/le_audio_source.o \
 	$(ROOT)/audio/framework/plugs/source/le_audio_file.o \

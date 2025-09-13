@@ -253,6 +253,7 @@ LFLAGS := \
 	cpu/br27/liba/lib_drc_detect.a \
 	cpu/br27/liba/lib_drc_advance.a \
 	cpu/br27/liba/libjlsp.a \
+	cpu/br27/liba/lib_llns_dns.a \
 	cpu/br27/liba/lib_PcmDelay.a \
 	cpu/br27/liba/lib_speex_codec.a \
 	cpu/br27/liba/bt_hash_enc.a \
@@ -284,6 +285,7 @@ LFLAGS := \
 	cpu/br27/liba/lib_frequency_compressor.a \
 	cpu/br27/liba/lib_jlsp_ahs.a \
 	cpu/br27/liba/lib_tremolo.a \
+	cpu/br27/liba/lib_gain_mix.a \
 	cpu/br27/liba/libFFT_pi32v2_OnChip.a \
 	cpu/br27/liba/lib_wtg_dec.a \
 	cpu/br27/liba/bfilterfun_lib.a \

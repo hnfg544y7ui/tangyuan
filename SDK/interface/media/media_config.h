@@ -2,23 +2,30 @@
 #define LIB_MEDIA_CONFIG_H
 
 
-extern const int CONFIG_JLSTREAM_MULTI_THREAD_ENABLE;
 extern const int CONFIG_MULTI_THREAD_SELF_ADAPTION_ENABLE;
 extern const int config_media_24bit_enable;
 extern const int CONFIG_SEAMLESS_RECORDER_ENABLE;
 extern const int config_ch_adapter_32bit_enable;
 extern const int config_mixer_32bit_enable;
-extern const int config_jlstream_fade_32bit_enable;
 extern const int config_out_dev_limiter_enable;
 extern const int config_peak_rms_32bit_enable;
 extern const int config_audio_vocal_track_synthesis_32bit_enable;
-extern const int config_jlstream_node_report_enable;
 extern const int CONFIG_MAX_ENC_DATA_CACHE_SIZE;
 extern const int CONFIG_LOG_OUTPUT_ENABLE;
 extern const int config_audio_cfg_online_enable;
 extern const int CONFIG_MEDIA_MEM_DEBUG;
 extern const int config_media_tws_en;
 extern const int config_audio_cvp_ref_ch_recognize_enable;
+
+/*
+ *******************************************************************
+ *						jlstream Configs
+ *******************************************************************
+ */
+extern const int CONFIG_JLSTREAM_MULTI_THREAD_ENABLE;
+extern const int config_jlstream_fade_32bit_enable;
+extern const int config_jlstream_node_report_enable;
+extern const int CONFIG_JLSTREAM_ASYNC_NODE_ENABLE;
 
 /*
  *******************************************************************
@@ -116,11 +123,20 @@ extern const int const_audio_howling_ahs_ref_src_type;
 extern const int const_audio_howling_ahs_data_export;
 extern const int const_audio_howling_ahs_iis_in_dac_out;
 extern const int const_audio_howling_ahs_dual_core;
+extern const int const_audio_howling_ahs_adc_hw_ref;
+extern const int const_audio_howling_ahs_adc_hw_ref_ch;
+extern const int const_audio_howling_ahs_adc_hw_ref_mic_gain;
+extern const int const_audio_howling_ahs_adc_hw_ref_mic_pre_gain;
+extern const int const_audio_howling_ahs_dac_read_points_offset;
 
 extern const int virtualbass_noisegate_attack_time;
 extern const int virtualbass_noisegate_release_time;
 extern const int virtualbass_noisegate_hold_time;
 extern const float virtualbass_noisegate_threshold;
+extern const int config_audio_limiter_xfade_enable;
+extern const int config_audio_mblimiter_xfade_enable;
+
+
 /*
  *******************************************************************
  *						Audio Codec Configs

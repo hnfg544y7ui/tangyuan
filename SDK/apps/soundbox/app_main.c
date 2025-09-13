@@ -207,6 +207,10 @@ const struct task_info task_info_table[] = {
     {"periph_demo",       3,     0,   512,   0 },
     {"CVP_RefTask",	        4,	   0,   256,   128	},
     {"trim_task",	        4,	   0,   256,   128	},
+#if (TCFG_LLNS_DNS_NODE_ENABLE)
+    {"llns_dns",	        4,	   0,   256,   128	},
+    {"llns_dns1",	        4,	   0,   256,   128	},
+#endif
     {0, 0},
 };
 
