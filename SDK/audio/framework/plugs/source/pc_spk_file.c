@@ -18,6 +18,8 @@
 #include "circular_buf.h"
 #include "pc_spk_player.h"
 #include "uac_stream.h"
+#include "jlstream.h"
+
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
 #include "le_broadcast.h"
 #include "app_le_broadcast.h"
@@ -59,6 +61,7 @@ struct pc_spk_file_hdl {
     u8 start;
     u8 data_run;
     u32 timestamp;
+    u32 frame_len;
 };
 static struct pc_spk_file_hdl *pc_spk = NULL;
 
@@ -93,7 +96,10 @@ struct pc_spk_fmt_t pc_spk_fmt = {
 #define SPK_PUSH_FRAME_NUM 5 //SPK一次push的帧数，单位：uac rx中断间隔
 #endif
 
+#define SPK_PUSH_FRAME_WAY 0 // 0代表存够SPK_PUSH_FRAME_NUM包后全部推出，1代表存够SPK_PUSH_FRAME_NUM包作为缓存，没有数据进来时推缓存数据
+
 static DEFINE_SPINLOCK(pc_spk_lock);
+static volatile int pc_cached_flag = 0;
 
 void pc_spk_data_isr_cb(void *buf, u32 len)
 {
@@ -113,7 +119,7 @@ void pc_spk_data_isr_cb(void *buf, u32 len)
         return;
     }
 
-    if (!hdl->start || !len) { //增加0长帧的过滤，避免引起后续节点的写异常
+    if (!hdl->start) { //当前使用usb SOF中断推数，会出现len = 0情况，下面处理
         pc_spk_isr.pc_spk_in_isr = 0;
         return;
     }
@@ -122,8 +128,13 @@ void pc_spk_data_isr_cb(void *buf, u32 len)
         log_error("uac iso error : %d, %d\n", len, pc_spk_fmt.iso_data_len);
         return;
     }
+
+    if (!hdl->frame_len && len) {
+        hdl->frame_len = len;
+    }
+
     if (!hdl->cache_buf) {
-        int cache_buf_len = len * SPK_PUSH_FRAME_NUM * 4; //4块输出buf
+        int cache_buf_len = hdl->frame_len * SPK_PUSH_FRAME_NUM * 4; //4块输出buf
         //申请cbuffer
         hdl->cache_buf = zalloc(cache_buf_len);
         if (hdl->cache_buf) {
@@ -131,27 +142,48 @@ void pc_spk_data_isr_cb(void *buf, u32 len)
         }
     }
 
+#if SPK_PUSH_FRAME_WAY
+    hdl->timestamp = audio_jiffies_usec();
+#else
     if (cbuf_get_data_len(&hdl->spk_cache_cbuffer) == 0) {
         hdl->timestamp = audio_jiffies_usec();
     }
+#endif
 
 #if PC_SPK_ONLINE_DET_EN
     hdl->irq_cnt++;
 #endif
 
     //1ms 起一次中断，一次长度192, 中断太快,需缓存
-    wlen = cbuf_write(&hdl->spk_cache_cbuffer, buf, len);
-    if (wlen != len) {
-        /*putchar('W');*/
+    if (len) {
+        wlen = cbuf_write(&hdl->spk_cache_cbuffer, buf, len);
+        if (wlen != len) {
+            /*putchar('W');*/
+        }
     }
+
     u32 cache_len = cbuf_get_data_len(&hdl->spk_cache_cbuffer);
-    if (cache_len >= len * SPK_PUSH_FRAME_NUM) {
+    if ((cache_len >= hdl->frame_len * SPK_PUSH_FRAME_NUM) && len) {
+#if SPK_PUSH_FRAME_WAY
+        if (!pc_cached_flag) {
+            pc_cached_flag = 1;
+            return;
+        }
+        frame = source_plug_get_output_frame(hdl->source_node, hdl->frame_len);
+        if (!frame) {
+            pc_spk_isr.pc_spk_in_isr = 0;
+            return;
+        }
+        frame->len    = hdl->frame_len;
+#else
         frame = source_plug_get_output_frame(hdl->source_node, cache_len);
         if (!frame) {
             pc_spk_isr.pc_spk_in_isr = 0;
             return;
         }
         frame->len    = cache_len;
+
+#endif
 #if 1
         frame->flags        = FRAME_FLAG_TIMESTAMP_ENABLE | FRAME_FLAG_PERIOD_SAMPLE | FRAME_FLAG_UPDATE_TIMESTAMP;
         frame->timestamp    = hdl->timestamp * TIMESTAMP_US_DENOMINATOR;
@@ -162,10 +194,66 @@ void pc_spk_data_isr_cb(void *buf, u32 len)
         cbuf_read(&hdl->spk_cache_cbuffer, frame->data, frame->len);
         source_plug_put_output_frame(hdl->source_node, frame);
         hdl->data_run = 1;
+    } else {
+        if (!hdl->frame_len) {
+            return;
+        }
+#if SPK_PUSH_FRAME_WAY //没数据来时候用缓存的数据输出
+        if (cache_len >= hdl->frame_len && pc_cached_flag) { //把缓存的剩余数据也推出来
+            frame = source_plug_get_output_frame(hdl->source_node, hdl->frame_len);
+            if (!frame) {
+                pc_spk_isr.pc_spk_in_isr = 0;
+                return;
+            }
+            frame->len    = hdl->frame_len;
+#if 1
+            frame->flags        = FRAME_FLAG_TIMESTAMP_ENABLE | FRAME_FLAG_PERIOD_SAMPLE | FRAME_FLAG_UPDATE_TIMESTAMP;
+            frame->timestamp    = hdl->timestamp * TIMESTAMP_US_DENOMINATOR;
+#else
+            frame->flags  = FRAME_FLAG_SYS_TIMESTAMP_ENABLE;
+            frame->timestamp = hdl->timestamp;
+#endif
+            cbuf_read(&hdl->spk_cache_cbuffer, frame->data, frame->len);
+            hdl->data_run = 1;
+            if (cache_len == hdl->frame_len) {
+                source_plug_set_node_state(hdl->source_node, NODE_STA_DEC_END);//输出最后一包时设置节点状态为解码结束
+                hdl->start = 0;
+                hdl->frame_len = 0;
+                pc_cached_flag = 0;
+                hdl->data_run = 0;
+            }
+            source_plug_put_output_frame(hdl->source_node, frame);
+
+        }
+#else
+        frame = source_plug_get_output_frame(hdl->source_node, hdl->frame_len * SPK_PUSH_FRAME_NUM);
+        if (!frame) {
+            pc_spk_isr.pc_spk_in_isr = 0;
+            return;
+        }
+        memset(frame->data, 0, hdl->frame_len * SPK_PUSH_FRAME_NUM);
+        frame->len    = hdl->frame_len * SPK_PUSH_FRAME_NUM;
+
+#if 1
+        frame->flags        = FRAME_FLAG_TIMESTAMP_ENABLE | FRAME_FLAG_PERIOD_SAMPLE | FRAME_FLAG_UPDATE_TIMESTAMP;
+        frame->timestamp    = hdl->timestamp * TIMESTAMP_US_DENOMINATOR;
+#else
+        frame->flags  = FRAME_FLAG_SYS_TIMESTAMP_ENABLE;
+        frame->timestamp = hdl->timestamp;
+#endif
+        source_plug_set_node_state(hdl->source_node, NODE_STA_DEC_END);//设置节点状态为解码结束
+        source_plug_put_output_frame(hdl->source_node, frame);
+
+        hdl->start = 0;
+        hdl->frame_len = 0;
+        pc_cached_flag = 0;
+        hdl->data_run = 0;
+#endif
     }
     pc_spk_isr.pc_spk_in_isr = 0;
 }
 
+#if PC_SPK_ONLINE_DET_EN
 /* 定时器检测 pcspk 在线 */
 static void pcspk_det_timer_cb(void *priv)
 {
@@ -184,6 +272,7 @@ static void pcspk_det_timer_cb(void *priv)
         }
     }
 }
+#endif // PC_SPK_ONLINE_DET_EN
 
 /*
  * 申请 pc_spk_file 结构体内存空间

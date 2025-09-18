@@ -1123,11 +1123,13 @@ void btstack_init_for_app(void)
 int btstack_exit_for_app(void)
 {
     if (g_bt_hdl.init_ok) {
+#if TCFG_APP_BT_EN
 #if TCFG_USER_TWS_ENABLE
         tws_dual_conn_close();
         bt_tws_poweroff();
 #else
         dual_conn_close();
+#endif
 #endif
         bt_cmd_prepare(USER_CTRL_WRITE_SCAN_DISABLE, 0, NULL);
         bt_cmd_prepare(USER_CTRL_WRITE_CONN_DISABLE, 0, NULL);

@@ -98,9 +98,9 @@ copy jl_isd.ufw update.ufw
 del jl_isd.ufw
 
 
-copy update.ufw %PROJ_DOWNLOAD_PATH%\update.ufw
-copy jl_isd.bin %PROJ_DOWNLOAD_PATH%\jl_isd.bin
-copy jl_isd.fw %PROJ_DOWNLOAD_PATH%\jl_isd.fw
+copy update.ufw %PROJ_DOWNLOAD_PATH%
+copy jl_isd.bin %PROJ_DOWNLOAD_PATH%
+copy jl_isd.fw %PROJ_DOWNLOAD_PATH%
 
 
 

@@ -59,6 +59,7 @@
 //*********************************************************************************//
 //                                  BREDR && BLE配置                               //
 //*********************************************************************************//
+#define TCFG_USER_BT_CLASSIC_ENABLE        1
 #if !TCFG_APP_BT_EN
 #undef TCFG_BT_BACKGROUND_ENABLE
 #define TCFG_BT_BACKGROUND_ENABLE   0

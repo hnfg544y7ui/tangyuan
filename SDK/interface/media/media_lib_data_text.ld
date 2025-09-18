@@ -81,6 +81,9 @@
     *(.llns_dns.code)
     *(.conv_params)
     *(.seq_params)
+    *(.seq2_params)
+#elif !AUDIO_LLNS_DNS_CODEC_AT_RAM && AUDIO_LLNS_DNS_BASIC_CODEC_AT_RAM
+    *(.llns_dns.code)
 #endif
     . = ALIGN(4);
     *(.pSOUND360TD_cal_sparse_code)

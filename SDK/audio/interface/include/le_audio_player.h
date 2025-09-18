@@ -33,4 +33,8 @@ void le_audio_dvol_up(u8 le_audio_num);
 
 void le_audio_dvol_down(u8 le_audio_num);
 
+#if TCFG_VIR_UDISK_ENABLE
+int virtual_udisk_get_enc_time(void);
+#endif
+
 #endif

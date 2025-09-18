@@ -37,6 +37,7 @@
 -Iapps/soundbox/include/jl_ui
 -Iapps/soundbox/board/br27
 -Iapps/soundbox/ui
+-Iapps/soundbox/demo
 -Iapps/common
 -Iapps/common/power_manage
 -Iapps/common/device

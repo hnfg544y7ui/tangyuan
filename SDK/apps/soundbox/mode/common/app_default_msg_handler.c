@@ -35,6 +35,7 @@
 #include "btstack_rcsp_user.h"
 #include "bt_key_func.h"
 #include "le_audio_common.h"
+#include "ble_fmy.h"
 #if LE_AUDIO_LOCAL_MIC_EN
 #include "le_audio_mix_mic_recorder.h"
 #endif
@@ -394,6 +395,16 @@ void app_common_key_msg_handler(int *msg)
 #endif
         break;
 
+    case APP_MSG_FINDMY_ENABLE:
+#if (THIRD_PARTY_PROTOCOLS_SEL & FMNA_EN)
+        fmy_key_do_in_task(1);
+#endif
+        break;
+    case APP_MSG_FINDMY_DISABLE:
+#if (THIRD_PARTY_PROTOCOLS_SEL & FMNA_EN)
+        fmy_key_do_in_task(0);
+#endif
+        break;
     case APP_MSG_LE_AUDIO_ENTER_PAIR:
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))
         app_broadcast_enter_pair(BROADCAST_ROLE_UNKNOW, 0);

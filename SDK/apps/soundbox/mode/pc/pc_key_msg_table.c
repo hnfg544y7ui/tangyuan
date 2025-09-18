@@ -146,9 +146,15 @@ const int key_pc_ir_num20_msg_table[KEY_ACTION_MAX] = {
 
 #if TCFG_IOKEY_ENABLE
 //短按                  //长按                  //hold                       //长按抬起                  //双击                       //三击
+#if TCFG_VIR_UDISK_ENABLE
+const int key_pc_io_num0_msg_table[KEY_ACTION_MAX] = {
+    APP_MSG_LE_BROADCAST_SW,     APP_MSG_NULL,   APP_MSG_NULL,   APP_MSG_NULL,             APP_MSG_NULL,     		 APP_MSG_NULL,
+};
+#else
 const int key_pc_io_num0_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_CHANGE_MODE,     APP_MSG_KEY_POWER_OFF,   APP_MSG_KEY_POWER_OFF_HOLD,   APP_MSG_KEY_POWER_OFF_RELEASE,             APP_MSG_NULL,     		 APP_MSG_NULL,
 };
+#endif
 const int key_pc_io_num1_msg_table[KEY_ACTION_MAX] = {
     APP_MSG_MUSIC_PP,       APP_MSG_NULL,           APP_MSG_NULL,           APP_MSG_NULL,           APP_MSG_NULL,     		APP_MSG_NULL,
 };

@@ -245,10 +245,12 @@ static int pc_local_audio_open(void)
 static int pc_local_audio_close(void)
 {
     if (1) {
+#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
         if (pc_spk_player_runing()) {
             //关闭本地播放
             pc_spk_player_close();
         }
+#endif
     }
     return 0;
 }

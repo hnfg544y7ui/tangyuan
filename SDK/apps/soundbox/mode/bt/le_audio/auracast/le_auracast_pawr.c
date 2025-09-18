@@ -14,6 +14,8 @@
 #include "system/includes.h"
 #include "le_auracast_pawr.h"
 #include "app_config.h"
+#include "btstack/btstack_task.h"
+#include "btstack/bluetooth.h"
 
 #define LOG_TAG             "[PAWR]"
 #define LOG_ERROR_ENABLE
@@ -27,8 +29,6 @@
 #define PAWR_TX_RESPONSE_SLOTS           5           // Number of response slots per subevent
 
 #define PAWR_TX_SLOT_SPACING             2           // Slot spacing in 0.125 ms units (2 = 250us)
-#define PAWR_TX_CHANNEL_INDEX            30           // fix channel index
-#define PAWR_TX_RESPONSE_ACCESS_ADDRESS  0x692e0e53  // Example AA for responses
 #define PAWR_TX_VENDOR_OP_PADV_FIELD     0xEF
 
 /* PAwR Receiver Configuration */
@@ -68,7 +68,7 @@ void app_speaker_set_pa_response_data(const uint8_t *data, uint8_t data_len)
 static void ble_pawr_tx_update_adv_data(const uint8_t *data, uint16_t len)
 {
     log_info("Updating PAwR advertising data");
-    if (len > sizeof(pawr_tx_vendor_padv_data) - 1)  {
+    if (len > sizeof(pawr_tx_vendor_padv_data))  {
         log_info("update tx data too long");
         return;
     }
@@ -136,7 +136,7 @@ static void app_speaker_pawr_scan_callback(uint8_t *packet, uint16_t size)
         put_buf(output, output_size);
         log_info("pawr rx len %d", output_size);
 
-        // 更新rsp数据示例
+        /* 更新rsp数据示例 */
         /* static uint8_t index = 0; */
         /* const uint8_t data_len = sizeof(pawr_rx_adv_data1); */
         /* app_speaker_set_pa_response_data(rx_data_list[index], data_len); */
@@ -187,20 +187,17 @@ void app_speaker_start_pawr(void)
     pawr_api.tx_add_adv_field(PAWR_TX_VENDOR_OP_PADV_FIELD, pawr_tx_vendor_padv_data, sizeof(pawr_tx_vendor_padv_data));
     // Initialize PAwR transmitter with configured parameters
     pawr_api.tx_open(
-        PAWR_TX_RESPONSE_ACCESS_ADDRESS,
         PAWR_TX_RESPONSE_SLOTS,
         PAWR_TX_SLOT_SPACING,
-        PAWR_TX_SUBEVENT_COUNT,
-        PAWR_TX_CHANNEL_INDEX
+        PAWR_TX_SUBEVENT_COUNT
     );
 
     log_info("PAwR Transmitter initialized:");
-    log_info("- Response AA: 0x%08X", PAWR_TX_RESPONSE_ACCESS_ADDRESS);
     log_info("- %d response slots per subevent", PAWR_TX_RESPONSE_SLOTS);
     log_info("- Slot spacing: %d * 1.25ms", PAWR_TX_SLOT_SPACING);
     log_info("- %d total subevents", PAWR_TX_SUBEVENT_COUNT);
-    log_info("- Channel index: %d", PAWR_TX_CHANNEL_INDEX);
 }
+
 
 /**
  * @brief Initialize PAwR Receiver functionality
@@ -213,24 +210,20 @@ void app_speaker_create_pawr_sync(u8 sub_num, u8 slot_num)
     /* log_info("fix sub_num :%d, slot_num:%d", sub_num, slot_num); */
     // Register RX callback function
     pawr_api.rx_set_callback(app_speaker_pawr_scan_callback);
-
+    /* pawr_rx_adv_data[0] = sub_num; */
+    /* pawr_rx_adv_data[1] = slot_num; */
     // Initialize PAwR receiver with configured parameters
     pawr_api.rx_init(
         sub_num,
         slot_num,
-        PAWR_TX_CHANNEL_INDEX,
         sizeof(pawr_rx_adv_data),
-        pawr_rx_adv_data,
-        PAWR_TX_SLOT_SPACING,
-        PAWR_TX_RESPONSE_ACCESS_ADDRESS
+        pawr_rx_adv_data
     );
 
     log_info("PAwR Receiver initialized:");
 
-    log_info("- Response AA: 0x%08X", PAWR_TX_RESPONSE_ACCESS_ADDRESS);
     log_info("- Target subevent: %d", sub_num);
     log_info("- Target slot: %d", slot_num);
-    log_info("- Channel index: %d", PAWR_TX_CHANNEL_INDEX);
     log_info("- Adv data length: %d", sizeof(pawr_rx_adv_data));
 }
 

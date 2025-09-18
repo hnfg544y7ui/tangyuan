@@ -53,6 +53,8 @@
 #include "le_broadcast.h"
 #include "app_le_broadcast.h"
 #include "rcsp_device_status.h"
+#include "uart_demo.h"
+
 #if LEA_DUAL_STREAM_MERGE_TRANS_MODE
 #include "surround_sound.h"
 #endif
@@ -458,6 +460,9 @@ static struct app_mode *app_task_init()
 #endif
 
     arch_trim();
+#if TCFG_USER_UART_DEMO_EN
+    uart_demo_init();
+#endif
 
     struct app_mode *mode;
     mode = app_mode_switch_handler(msg);

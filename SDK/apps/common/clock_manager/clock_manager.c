@@ -413,7 +413,12 @@ void clock_refurbish(void)
 
     //clk driver 需要提供每个芯片可以设置的最高挡位
 #if (defined TCFG_FIX_CLOCK_FREQ  && TCFG_FIX_CLOCK_FREQ)
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
+    int min_clk = clock_list_sum();
+    clk_set_api("sys", min_clk);
+#else
     clk_set_api("sys", TCFG_FIX_CLOCK_FREQ);
+#endif
 #else
     clk_set_api("sys", CLOCK_MAXIMUM_FREQ);
 #endif

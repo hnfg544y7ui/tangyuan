@@ -28,8 +28,6 @@
 #include "btstack/a2dp_media_codec.h"
 #include "classic/tws_api.h"
 
-extern const u32 LLNS_DNS_SUPPORT_SAMPLE_RATE; //当前LLNS_DNS 降噪节点只支持32kHZ采样率
-
 struct le_audio_a2dp_recorder {
     void *stream;
     void *file;
@@ -420,7 +418,7 @@ static void muti_ch_iis_recorder_callback(void *private_data, int event)
 int le_audio_muti_ch_iis_recorder_open(void *params_ch0, void *params_ch1, void *le_audio, int latency)
 {
     int err = 0;
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     struct le_audio_stream_params *lea_params_0 = params_ch0;
     struct le_audio_stream_params *lea_params_1 = params_ch1;
 
@@ -465,7 +463,7 @@ int le_audio_muti_ch_iis_recorder_open(void *params_ch0, void *params_ch1, void 
     }
     //延时设置
 
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     if (lea_params_0->service_type == LEA_SERVICE_WL_MIC) {
         //printf("LEA Recoder:WL_MIC_MULT_IIS\n");
         jlstream_node_ioctl(g_muti_ch_iis_recorder->stream, NODE_UUID_CAPTURE_SYNC, NODE_IOC_SET_PARAM, latency);
@@ -482,11 +480,6 @@ int le_audio_muti_ch_iis_recorder_open(void *params_ch0, void *params_ch1, void 
         irq_point =  AUDIO_IIS_IRQ_POINTS;//fmt.sample_rate * 1000 / 1000000; //默认1ms 的中断,//sr * interval(us) / 1000000
 #endif
 
-#if TCFG_LLNS_DNS_NODE_ENABLE
-        if (LLNS_DNS_SUPPORT_SAMPLE_RATE) {
-            jlstream_node_ioctl(g_muti_ch_iis_recorderr->stream, NODE_UUID_LLNS_DNS, NODE_IOC_SET_PRIV_FMT, LLNS_DNS_SUPPORT_SAMPLE_RATE); //当前LLNS_DNS降噪节点只支持32k
-        }
-#endif
         jlstream_node_ioctl(g_muti_ch_iis_recorder->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, irq_point);
         jlstream_node_ioctl(g_muti_ch_iis_recorder->stream, NODE_UUID_IIS0_RX, NODE_IOC_SET_PARAM, AUDIO_NETWORK_LOCAL);
         jlstream_node_ioctl(g_muti_ch_iis_recorder->stream, NODE_UUID_IIS1_RX, NODE_IOC_SET_PARAM, AUDIO_NETWORK_LOCAL);
@@ -550,7 +543,7 @@ void le_audio_muti_ch_iis_recorder_close(void)
 
     free(iis_recorder);
     g_muti_ch_iis_recorder = NULL;
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
 #else
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"iis_le_audio");
@@ -571,7 +564,7 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
     struct le_audio_stream_params *lea_params = params;
     struct le_audio_stream_format *le_audio_fmt = &lea_params->fmt;
 
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
 #else
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"iis_le_audio");
@@ -590,7 +583,7 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
             return -ENOMEM;
         }
     }
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     g_iis_recorder->stream = jlstream_pipeline_parse_by_node_name(uuid, "WL_IIS0_RX");
 #else
     g_iis_recorder->stream = jlstream_pipeline_parse_by_node_name(uuid, "IIS0_RX2");
@@ -612,11 +605,6 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
         irq_point =  AUDIO_IIS_IRQ_POINTS;//fmt.sample_rate * 1000 / 1000000; //默认1ms 的中断,//sr * interval(us) / 1000000
 #endif
 
-#if TCFG_LLNS_DNS_NODE_ENABLE
-        if (LLNS_DNS_SUPPORT_SAMPLE_RATE) {
-            jlstream_node_ioctl(g_iis_recorder->stream, NODE_UUID_LLNS_DNS, NODE_IOC_SET_PRIV_FMT, LLNS_DNS_SUPPORT_SAMPLE_RATE); //当前LLNS_DNS降噪节点只支持32k
-        }
-#endif
         jlstream_node_ioctl(g_iis_recorder->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, irq_point);
         jlstream_node_ioctl(g_iis_recorder->stream, NODE_UUID_IIS0_RX, NODE_IOC_SET_PARAM, AUDIO_NETWORK_LOCAL);
         jlstream_node_ioctl(g_iis_recorder->stream, NODE_UUID_IIS0_TX, NODE_IOC_SET_PARAM, AUDIO_NETWORK_LOCAL);
@@ -646,7 +634,7 @@ int le_audio_iis_recorder_open(void *params, void *le_audio, int latency)
         return err;
     }
 
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     char *vol_name = "Vol_WMicTX";
     struct volume_cfg cfg = {0};
     int ret = jlstream_get_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg));
@@ -702,7 +690,7 @@ void le_audio_iis_recorder_close(void)
 
     free(iis_recorder);
     g_iis_recorder = NULL;
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
 #else
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"iis_le_audio");
@@ -725,7 +713,7 @@ int le_audio_pc_recorder_open(void *params, void *le_audio, int latency)
     }
     int err = 0;
     struct le_audio_stream_format *le_audio_fmt = (struct le_audio_stream_format *)params;
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
 #else
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"pc_le_audio");
@@ -954,7 +942,7 @@ int le_audio_mic_recorder_open(void *params, void *le_audio, int latency)
     struct le_audio_stream_params *lea_params = params;
     struct le_audio_stream_format *le_audio_fmt = &lea_params->fmt;
     u16 source_uuid;
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
 #else
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_le_audio");
@@ -1013,7 +1001,7 @@ int le_audio_mic_recorder_open(void *params, void *le_audio, int latency)
     //设置中断点数
     /* jlstream_node_ioctl(g_mic_recorder->stream, NODE_UUID_SOURCE, NODE_IOC_SET_PRIV_FMT, AUDIO_ADC_IRQ_POINTS); */
 
-#ifndef CONFIG_WIRELESS_MIC_ENABLE
+#ifndef CONFIG_WIRELESS_MIC_CASE_ENABLE
     u16 node_uuid = get_cvp_node_uuid();
     if (node_uuid) {
         u32 ref_sr = audio_dac_get_sample_rate(&dac_hdl);
@@ -1034,7 +1022,7 @@ int le_audio_mic_recorder_open(void *params, void *le_audio, int latency)
         goto __exit1;
     }
 
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     char *vol_name = "Vol_WMicTX";
     struct volume_cfg cfg = {0};
     int ret = jlstream_get_node_param(NODE_UUID_VOLUME_CTRLER, vol_name, (void *)&cfg, sizeof(struct volume_cfg));
@@ -1100,7 +1088,7 @@ void le_audio_mic_recorder_close(void)
     }
     free(mic_recorder);
     g_mic_recorder = NULL;
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
 #else
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_le_audio");
@@ -1108,7 +1096,7 @@ void le_audio_mic_recorder_close(void)
 }
 #endif
 
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
 
 static void le_audio_tx_volume_save_do(void *priv)
 {

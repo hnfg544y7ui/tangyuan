@@ -17,7 +17,7 @@
 #include "iic_api.h"
 #include "hdmi_cec_api.h"
 #include "norflash.h"
-
+#include "virtual_disk.h"
 
 #if TCFG_SD0_ENABLE
 SD0_PLATFORM_DATA_BEGIN(sd0_data) = {
@@ -272,6 +272,9 @@ REGISTER_DEVICES(device_table) = {
 #endif
 #if TCFG_UDISK_ENABLE
     { "udisk0",   &mass_storage_ops, NULL},
+#endif
+#if TCFG_VIR_UDISK_ENABLE
+    { "vir_udisk0",   &vir_udisk0_ops, NULL},
 #endif
 #if TCFG_NANDFLASH_DEV_ENABLE
     {"nand_flash",   &nandflash_dev_ops, (void *) &nandflash_dev_data},

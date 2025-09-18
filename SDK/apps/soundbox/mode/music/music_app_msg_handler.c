@@ -532,12 +532,10 @@ int music_app_msg_handler(int *msg)
         //程序跑到这里rett的值只能是<=0
         //如果返回值为0的话说明打开了广播，那么音乐的播放控制权交给广播的逻辑, 不在这里做控制
         if (rett != 0) {
-            if (dev_manager_get_total(1)) {
-                if (true == breakpoint_vm_read(music_hdl.breakpoint, logo)) {
-                    err = music_player_play_by_breakpoint(music_hdl.player_hd, logo, music_hdl.breakpoint);
-                } else {
-                    err = music_player_play_first_file(music_hdl.player_hd, logo);
-                }
+            if (true == breakpoint_vm_read(music_hdl.breakpoint, logo)) {
+                err = music_player_play_by_breakpoint(music_hdl.player_hd, logo, music_hdl.breakpoint);
+            } else {
+                err = music_player_play_first_file(music_hdl.player_hd, logo);
             }
         }
 #if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN)) && (LEA_BIG_FIX_ROLE==0)

@@ -58,6 +58,10 @@ static u8 pc_idle_flag = 1;
 /*----------------------------------------------------------------------------*/
 static int app_pc_check(void)
 {
+#if TCFG_VIR_UDISK_ENABLE
+    return true;
+#endif
+
 #if ((defined TCFG_PC_BACKMODE_ENABLE) && (TCFG_PC_BACKMODE_ENABLE))
     return false;
 #endif//TCFG_PC_BACKMODE_ENABLE
@@ -98,6 +102,7 @@ static void pc_task_start(void)
     usb_otg_resume(0);
 #endif
     __this->onoff = 1;
+
 }
 
 //*----------------------------------------------------------------------------*/
@@ -193,6 +198,10 @@ static void app_pc_init()
 #endif
 
     app_send_message(APP_MSG_ENTER_MODE, APP_MODE_PC);
+
+#if TCFG_VIR_UDISK_ENABLE
+    app_send_message(APP_MSG_LE_BROADCAST_SW, 0);
+#endif
 }
 
 //*----------------------------------------------------------------------------*/

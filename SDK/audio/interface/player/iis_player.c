@@ -4,6 +4,9 @@
 #include "effects/audio_pitchspeed.h"
 #include "audio_config_def.h"
 #include "scene_switch.h"
+#include "dsp_mode.h"
+#include "effects/audio_llns_dns.h"
+#include "node_param_update.h"
 
 
 struct iis_file_player {
@@ -28,6 +31,23 @@ static void iis_player_callback(void *private_data, int event)
     }
 }
 
+void llns_dns_bypass_reset_latency(void)
+{
+#if (TCFG_AS_WIRELESS_MIC_DSP_ENABLE && TCFG_LLNS_DNS_NODE_ENABLE)
+    int bypass_latency = 8000; //us
+    int node_bypass1 = get_dsp_llns1_bypass_status();
+    int node_bypass2 = get_dsp_llns2_bypass_status();
+
+    if (node_bypass1 && node_bypass2) {
+        g_printf("reset play latency:%d", bypass_latency);
+        //llns_dns bypass后重新设置播放同步节点延时
+        jlstream_set_node_param(NODE_UUID_PLAY_SYNC, "PLAY_SYNC1", &bypass_latency, sizeof(int));
+        jlstream_set_node_specify_param(NODE_UUID_LLNS_DNS, "LLNS_DNS3", NODE_IOC_SET_PRIV_FMT, &node_bypass1, sizeof(node_bypass1));
+        jlstream_set_node_specify_param(NODE_UUID_LLNS_DNS, "LLNS_DNS4", NODE_IOC_SET_PRIV_FMT, &node_bypass2, sizeof(node_bypass2));
+    }
+    y_printf("llns_dns1_bypass:%d, llns_dns2_bypass:%d", node_bypass1, node_bypass2);
+#endif
+}
 
 int iis_player_open(void)
 {
@@ -77,6 +97,8 @@ int iis_player_open(void)
 #endif
 
 #if (TCFG_AS_WIRELESS_MIC_DSP_ENABLE && TCFG_LLNS_DNS_NODE_ENABLE)
+    //根据llns_dns是否bypass重设延时
+    llns_dns_bypass_reset_latency();
     jlstream_set_node_task(player->stream, NODE_UUID_LLNS_DNS, "LLNS_DNS3", "llns_dns");
     jlstream_set_node_task(player->stream, NODE_UUID_LLNS_DNS, "LLNS_DNS4", "llns_dns1");
 #endif

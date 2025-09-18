@@ -330,12 +330,11 @@ int audio_digital_vol_node_name_get(u8 dvol_idx, char *node_name)
 #endif
 #if TCFG_APP_DSP_EN
             case APP_MODE_DSP:
-                if (iis_player_runing()) {
-                    sprintf(node_name, "%s", "Vol_DSP_IIS");
-                } else {
-                    sprintf(node_name, "%s", "Vol_DSP_MIC");
-                }
-
+#if TCFG_DSP_MODE
+                sprintf(node_name, "%s", "Vol_DSP_IIS");
+#else
+                sprintf(node_name, "%s", "Vol_DSP_MIC");
+#endif
                 printf("vol_name:%d,%s\n", __LINE__, node_name);
                 break;
 #endif
@@ -945,7 +944,7 @@ u8 app_audio_get_state(void)
 s16 app_audio_get_max_volume(void)
 {
     if (__this->state == APP_AUDIO_STATE_IDLE) {
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
         return  app_audio_volume_max_query(AppVol_WMic);
 #else
         return  app_audio_volume_max_query(AppVol_BT_MUSIC);

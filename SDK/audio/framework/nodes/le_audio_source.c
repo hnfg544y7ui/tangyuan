@@ -184,7 +184,7 @@ static void le_audio_source_set_bt_addr(struct stream_iport *iport, int arg)
 
     ctx->le_audio = (void *)arg;
 
-#if LE_AUDIO_LOCAL_MIC_EN && LE_AUDIO_MIX_MIC_EFFECT_EN && LEA_LOCAL_SYNC_PLAY_EN
+#if LEA_LOCAL_SYNC_PLAY_EN //本地播放的音频流提前打开，避免在发送的音频流挂起或暂时没有数据的时候，本地播放的流程开启出现获取不到参数的问题
     if (!ctx->rx_stream) {
         ctx->rx_stream = le_audio_stream_rx_open(ctx->le_audio, AUDIO_CODING_PCM);
     }

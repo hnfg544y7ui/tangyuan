@@ -4,7 +4,7 @@
 #include "system/includes.h"
 
 typedef struct pawr_api_s {
-    void (*tx_open)(uint32_t rspaa, uint8_t rsp_slots, uint8_t rsp_slot_space, uint8_t sub_nums, uint8_t freq);
+    void (*tx_open)(uint8_t rsp_slots, uint8_t rsp_slot_space, uint8_t sub_nums);
     void (*tx_close)(void);
     void (*tx_set_callback)(void (*cb)(uint8_t *packet, uint16_t size));
     void (*tx_update_adv_field)(u8 type, const u8 *data, u8 data_len);
@@ -12,7 +12,7 @@ typedef struct pawr_api_s {
     void (*tx_acl_scan_hw_get_reg)(u8 enable);
 
     void (*rx_set_callback)(void (*cb)(uint8_t *packet, uint16_t size));
-    void (*rx_init)(uint8_t sub_index, uint8_t sub_slot, uint8_t freq_idx, uint8_t adv_len, const uint8_t *adv_data, u8 rsp_slot_space, uint32_t rspaa);
+    void (*rx_init)(uint8_t sub_index, uint8_t sub_slot, uint8_t adv_len, const uint8_t *adv_data);
     void (*rx_close)(void);
     int (*rx_rsp_adv_update)(const uint8_t *data, uint8_t len);
     void (*rx_acl_adv_hw_get_reg)(u8 enable);
@@ -43,4 +43,6 @@ extern void pawr_slave_init(void);
 extern void ble_pawr_rx_acl_adv_hw_reg(u8 en);
 extern void ble_pawr_tx_acl_scan_hw_reg(u8 en);
 void ble_client_module_enable(u8 en);
+void ble_multi_client_init();
+void ble_multi_client_exit(void);
 #endif /* BLE_PAWR_DEMO_H */

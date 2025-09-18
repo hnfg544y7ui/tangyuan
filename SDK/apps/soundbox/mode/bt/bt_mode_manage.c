@@ -213,10 +213,12 @@ static int bt_enter_next_mode(u8 mode)
     g_bt_hdl.work_mode = mode;
     switch (mode) {
     case BT_MODE_SIGLE_BOX:
+#if TCFG_APP_BT_EN
         if (TCFG_BT_BACKGROUND_ENABLE || app_in_mode(APP_MODE_BT)) {
             clr_page_mode_active();
             dual_conn_page_device();
         }
+#endif
         break;
     case BT_MODE_TWS:
 #if TCFG_USER_TWS_ENABLE
@@ -226,10 +228,12 @@ static int bt_enter_next_mode(u8 mode)
         break;
     case BT_MODE_BROADCAST:
     case BT_MODE_AURACAST:
+#if TCFG_APP_BT_EN
         if (TCFG_BT_BACKGROUND_ENABLE || app_in_mode(APP_MODE_BT)) {
             clr_page_mode_active();
             dual_conn_page_device();
         }
+#endif
 #if (TCFG_BT_SUPPORT_LHDC_V5 ||TCFG_BT_SUPPORT_LHDC || TCFG_BT_SUPPORT_LDAC)
         ret = boardcast_onoff_reconn_a2dp_channel(1);
 #endif

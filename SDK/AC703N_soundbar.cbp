@@ -141,6 +141,7 @@
 <Add directory="apps/soundbox/include/jl_ui" />
 <Add directory="apps/soundbox/board/br27" />
 <Add directory="apps/soundbox/ui" />
+<Add directory="apps/soundbox/demo" />
 <Add directory="apps/common" />
 <Add directory="apps/common/power_manage" />
 <Add directory="apps/common/device" />
@@ -584,8 +585,6 @@
 <Unit filename="apps/common/device/usb/usb_std_class_def.h" />
 <Unit filename="apps/common/device/usb/usb_task.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/device/usb/usb_task.h" />
-<Unit filename="apps/common/fat_nor/cfg_private.c"><Option compilerVer="CC"/></Unit>
-<Unit filename="apps/common/fat_nor/cfg_private.h" />
 <Unit filename="apps/common/fat_nor/nor_fs.h" />
 <Unit filename="apps/common/fat_nor/virfat_flash.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/common/file_operate/file_bs_deal.c"><Option compilerVer="CC"/></Unit>
@@ -976,6 +975,8 @@
 <Unit filename="apps/soundbox/demo/att_over_edr_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/demo/pbg_demo.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/demo/trans_data_demo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/demo/uart_demo.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/demo/uart_demo.h" />
 <Unit filename="apps/soundbox/device_config.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/include/adkey_config.h" />
 <Unit filename="apps/soundbox/include/alarm.h" />
@@ -1129,6 +1130,7 @@
 <Unit filename="apps/soundbox/mode/dsp/dsp.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/dsp/dsp_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/dsp/dsp_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="apps/soundbox/mode/dsp/dsp_key_msg_table.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/fm/fm.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/fm/fm_api.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="apps/soundbox/mode/fm/fm_app_msg_handler.c"><Option compilerVer="CC"/></Unit>
@@ -1410,6 +1412,7 @@
 <Unit filename="audio/framework/nodes/surround_demo_node.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/nodes/tdm_node.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/nodes/uart_node.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/framework/nodes/virtual_udisk_node.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/nodes/volume_node.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/a2dp_file.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/framework/plugs/source/a2dp_streamctrl.c"><Option compilerVer="CC"/></Unit>
@@ -1475,6 +1478,7 @@
 <Unit filename="audio/interface/player/local_tws_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/loudspeaker_iis_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/loudspeaker_mic_player.c"><Option compilerVer="CC"/></Unit>
+<Unit filename="audio/interface/player/mic_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/pc_spk_player.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/reference_time.c"><Option compilerVer="CC"/></Unit>
 <Unit filename="audio/interface/player/ring_player.c"><Option compilerVer="CC"/></Unit>
@@ -2098,6 +2102,7 @@
 <Unit filename="interface/utils/fs/resfile.h" />
 <Unit filename="interface/utils/fs/sdfile.h" />
 <Unit filename="interface/utils/fs/virfat_flash.h" />
+<Unit filename="interface/utils/fs/virtual_disk.h" />
 <Unit filename="interface/utils/generic/ascii.h" />
 <Unit filename="interface/utils/generic/atomic.h" />
 <Unit filename="interface/utils/generic/circular_buf.h" />

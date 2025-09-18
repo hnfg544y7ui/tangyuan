@@ -69,6 +69,7 @@
 #define NODE_UUID_LOCAL_TWS_SINK  	0x7303
 #define NODE_UUID_TDM_TX            0xB455
 #define NODE_UUID_TDM_RX            0xB413
+#define NODE_UUID_VIRTUAL_UDISK    	0x17AB
 
 /*通话CVP子模块UUID*/
 #define NODE_UUID_AEC				0xA9CE

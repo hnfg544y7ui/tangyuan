@@ -370,11 +370,17 @@
     *(.audio_codec_code)
 
 	/********************CODEC LD Ends*************************/
-#if !AUDIO_LLNS_DNS_CODEC_AT_RAM
+#if (!AUDIO_LLNS_DNS_CODEC_AT_RAM && !AUDIO_LLNS_DNS_BASIC_CODEC_AT_RAM)
     *(.llns_dns.const)
     *(.llns_dns.code)
     *(.conv_params)
     *(.seq_params)
+    *(.seq2_params)
+#elif !AUDIO_LLNS_DNS_CODEC_AT_RAM && AUDIO_LLNS_DNS_BASIC_CODEC_AT_RAM
+    *(.llns_dns.const)
+    *(.conv_params)
+    *(.seq_params)
+    *(.seq2_params)
 #endif
     *(.media_device_code)
     *(.media_device_const)

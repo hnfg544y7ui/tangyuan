@@ -13,6 +13,9 @@ objs += \
       $(ROOT)/audio/framework/nodes/volume_node.o \
 
 objs += \
+      $(ROOT)/audio/framework/nodes/virtual_udisk_node.o
+
+objs += \
       $(ROOT)/audio/framework/nodes/ns_node.o
 
 objs += \
@@ -180,16 +183,24 @@ objs += \
 	  $(ROOT)/audio/interface/player/key_tone_player.o \
 	  $(ROOT)/audio/interface/player/dev_flow_player.o \
 	  $(ROOT)/audio/interface/player/adda_loop_player.o \
-	  $(ROOT)/audio/interface/player/linein_player.o \
       $(ROOT)/audio/interface/player/reference_time.o \
-	  $(ROOT)/audio/interface/player/loudspeaker_iis_player.o \
-	  $(ROOT)/audio/interface/player/loudspeaker_mic_player.o \
 
+objs += \
+	  $(ROOT)/audio/interface/player/linein_player.o 
+
+objs += \
+	  $(ROOT)/audio/interface/player/loudspeaker_iis_player.o \
+	  $(ROOT)/audio/interface/player/loudspeaker_mic_player.o 
+
+objs += \
+	  $(ROOT)/audio/interface/player/mic_player.o 
 
 objs += \
 	  $(ROOT)/audio/interface/recoder/esco_recoder.o \
-	  $(ROOT)/audio/interface/recoder/ai_voice_recoder.o \
 	  $(ROOT)/audio/interface/recoder/dev_flow_recoder.o \
+
+objs += \
+	  $(ROOT)/audio/interface/recoder/ai_voice_recoder.o
 
 objs += \
 	  $(ROOT)/audio/interface/user_defined/audio_dsp_low_latency_player.o
@@ -461,8 +472,6 @@ objs += \
 	$(ROOT)/apps/common/config/bt_name_parse.o
 
 
-objs += \
-	$(ROOT)/apps/common/fat_nor/cfg_private.o
 
 
 #ifdef TCFG_DEBUG_DLOG_ENABLE
@@ -1272,6 +1281,9 @@ objs += \
 
 
 objs += \
+	$(ROOT)/apps/soundbox/demo/uart_demo.o
+
+objs += \
     $(ROOT)/apps/soundbox/ble/bt_ble.o \
     $(ROOT)/apps/soundbox/ble/ble_adv.o
 
@@ -1480,6 +1492,7 @@ objs += \
 	$(ROOT)/apps/soundbox/mode/dsp/dsp.o \
 	$(ROOT)/apps/soundbox/mode/dsp/dsp_app_msg_handler.o \
 	$(ROOT)/apps/soundbox/mode/dsp/dsp_api.o \
+    $(ROOT)/apps/soundbox/mode/dsp/dsp_key_msg_table.o \
 
 
 objs += \

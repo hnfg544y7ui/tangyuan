@@ -134,6 +134,15 @@ const int ENABLE_PSRAM_UI_FRAME = 0;
 #endif
 
 //================================================//
+//          虚拟U盘 Dongle Auracast功能配置       //
+//================================================//
+#if TCFG_VIR_UDISK_ENABLE
+const int ENABLE_VIR_UDISK_AURACAST = 1;
+#else
+const int ENABLE_VIR_UDISK_AURACAST = 0;
+#endif
+
+//================================================//
 //          不可屏蔽中断使能配置(UNMASK_IRQ)      //
 //================================================//
 const int CONFIG_CPU_UNMASK_IRQ_ENABLE = 1;

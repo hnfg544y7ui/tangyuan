@@ -92,12 +92,16 @@ static void usb_task(void *p)
     extern int usb_memory_init(void);
     usb_memory_init();
 #endif
-#if TCFG_OTG_MODE
+#if TCFG_OTG_MODE && !TCFG_VIR_UDISK_ENABLE
     extern int usb_otg_init(const struct dev_node * node,  void *arg);
     usb_otg_init(NULL, &otg_data);
 #endif
 #if TCFG_HOST_AUDIO_ENABLE
     uac_host_init();
+#endif
+
+#if TCFG_VIR_UDISK_ENABLE
+    usb_driver_event_from_otg(DEVICE_EVENT_FROM_OTG, DEVICE_EVENT_IN, "s:0");
 #endif
 
     while (1) {

@@ -226,6 +226,24 @@ void le_audio_dvol_down(u8 le_audio_num)
 }
 #endif
 
+#if TCFG_VIR_UDISK_ENABLE
+int virtual_udisk_get_enc_time(void)
+{
+    struct le_audio_player *player = &g_le_audio_player;
+    if (!player) {
+        return 0;
+    }
+    if (!player->inused) {
+        return 0;
+    }
+    int time = 0;
+    if (player->stream) {
+        jlstream_ioctl(player->stream, NODE_IOC_GET_ENC_TIME, (int)(&time));
+    }
+    return time;
+}
+#endif
+
 static void le_audio_player_callback(void *private_data, int event)
 {
     struct le_audio_player *player = &g_le_audio_player;
@@ -294,7 +312,7 @@ int le_audio_player_open(u8 *conn, struct le_audio_stream_params *lea_param)
 #else
     struct le_audio_player *player = &g_le_audio_player;
 
-#ifdef CONFIG_WIRELESS_MIC_ENABLE
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
     uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
 #else
     uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"le_audio");
@@ -321,7 +339,7 @@ int le_audio_player_open(u8 *conn, struct le_audio_stream_params *lea_param)
             jlstream_set_scene(player->stream, STREAM_SCENE_LEA_CALL);
         } else {
             printf("LEA Service Type:Media\n");
-#if TCFG_APP_PC_EN
+#if TCFG_APP_PC_EN && TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
             if (app_in_mode(APP_MODE_PC)) {
                 u16 l_vol = 0, r_vol = 0;
                 uac_speaker_stream_get_volume(&l_vol, &r_vol);

@@ -38,6 +38,11 @@ static int app_dsp_init()
     dsp_idle_flag = 0;
     app_send_message(APP_MSG_ENTER_MODE, APP_MODE_DSP);
     app_send_message(APP_MSG_DSP_OPEN, 0);
+
+#if (TCFG_AS_WIRELESS_MIC_DSP_ENABLE)
+    dsp_effect_status_init();
+#endif
+
     return 0;
 }
 
@@ -58,7 +63,7 @@ struct app_mode *app_enter_dsp_mode(int arg)
     app_dsp_init();
 
     while (1) {
-        if (!app_get_message(msg, ARRAY_SIZE(msg), NULL)) {
+        if (!app_get_message(msg, ARRAY_SIZE(msg), dsp_mode_key_table)) {
             continue;
         }
         next_mode = app_mode_switch_handler(msg);

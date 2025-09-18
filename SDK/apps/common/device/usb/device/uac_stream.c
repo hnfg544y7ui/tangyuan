@@ -77,6 +77,22 @@ void set_uac_speaker_rx_handler(void *priv, void (*rx_handler)(int, void *, int)
 }
 
 
+static u8 spk_double_buf[2][256];
+static u8 spk_index = 0;
+
+static void usb_sof_spk_write_callback(struct usb_device_t *usb_device, u32 ep, u32 frame)
+{
+#if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
+    u16 len;
+    u8 index = spk_index ^ 1;
+
+    memcpy(&len, &spk_double_buf[index][0], 2);
+    pc_spk_data_isr_cb((void *)&spk_double_buf[index][2], len);
+    memset(&spk_double_buf[index][0], 0, 2);
+#endif
+}
+
+
 //这里起中断往后面推数
 void uac_speaker_stream_write(const u8 *obuf, u32 len)
 {
@@ -94,6 +110,8 @@ void uac_speaker_stream_write(const u8 *obuf, u32 len)
                                    (uac_speaker->channel << 24) |
                                    uac_speaker->samplerate));
             uac_speaker->stream_state = 1;
+            memset(spk_double_buf, 0, sizeof(spk_double_buf));
+            usb_g_set_sof_hander(0, 0, usb_sof_spk_write_callback);
         }
     }
 
@@ -130,7 +148,10 @@ void uac_speaker_stream_write(const u8 *obuf, u32 len)
     }
 #endif
 #if TCFG_USB_SLAVE_AUDIO_SPK_ENABLE
-    pc_spk_data_isr_cb((void *)obuf, len);
+    /* pc_spk_data_isr_cb((void *)obuf, len); */
+    memcpy(&spk_double_buf[spk_index][0], &len, 2);
+    memcpy(&spk_double_buf[spk_index][2], obuf, len);
+    spk_index ^= 1;
 #endif
 }
 
@@ -300,6 +321,7 @@ void uac_mute_volume(u32 type, u32 l_vol, u32 r_vol)
     static u32 last_mic_vol = (u32) - 1;
 
     switch (type) {
+#if TCFG_USB_SLAVE_AUDIO_MIC_ENABLE
     case MIC_FEATURE_UNIT_ID: //MIC
         if (mic_stream_is_open == 0) {
             return ;
@@ -312,6 +334,7 @@ void uac_mute_volume(u32 type, u32 l_vol, u32 r_vol)
         pc_mic_set_volume_by_taskq(l_vol);
 #endif
         break;
+#endif
     case SPK_FEATURE_UNIT_ID: //SPK
         /* if (speaker_stream_is_open == 0) { */
         /*     return; */

@@ -51,10 +51,10 @@ extern service_record_item_t  sdp_record_item_end[];
 const int config_stack_modules = BT_BTSTACK_LE;
 #else /* TCFG_BLE_AUDIO_TEST_EN */
 
-#if ((THIRD_PARTY_PROTOCOLS_SEL && TCFG_USER_BLE_ENABLE) || (TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_AURACAST_SOURCE_EN || TCFG_LE_AUDIO_APP_CONFIG & LE_AUDIO_AURACAST_SINK_EN))
+#if ((THIRD_PARTY_PROTOCOLS_SEL && TCFG_USER_BLE_ENABLE) || (TCFG_LE_AUDIO_APP_CONFIG))
 const int config_stack_modules = (BT_BTSTACK_CLASSIC | BT_BTSTACK_LE);
-#elif TCFG_USER_BLE_ENABLE
-const int config_stack_modules = BT_BTSTACK_CLASSIC | BT_BTSTACK_LE_ADV;
+#elif (TCFG_USER_BLE_ENABLE)
+const int config_stack_modules = (BT_BTSTACK_CLASSIC | BT_BTSTACK_LE_ADV);
 #else
 const int config_stack_modules = BT_BTSTACK_CLASSIC;
 #endif
@@ -62,8 +62,14 @@ const int config_stack_modules = BT_BTSTACK_CLASSIC;
 #endif /* TCFG_BLE_AUDIO_TEST_EN */
 
 #else
+#if TCFG_USER_BT_CLASSIC_ENABLE
 const int config_stack_modules = BT_BTSTACK_CLASSIC;
+#else
+const int config_stack_modules = 0;
 #endif
+#endif
+
+#if TCFG_USER_BT_CLASSIC_ENABLE
 
 #if (TCFG_BT_SUPPORT_PNP==1)
 SDP_RECORD_HANDLER_REGISTER(pnp_sdp_record_item) = {
@@ -239,6 +245,17 @@ SDP_RECORD_HANDLER_REGISTER(hfp_ag_sdp_record_item) = {
 const u8 hci_inquiry_support = 0;
 const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
 #endif
+#else
+const u8 hci_inquiry_support = 0;
+const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
+const u8 more_avctp_cmd_support = 0;
+const u8 hid_conn_depend_on_dev_company = 1;
+const u8 sdp_get_remote_pnp_info = 0;
+const int CONFIG_BTSTACK_SUPPORT_FUN = 0;//HFP_UPDATE_BATTERY;
+const u8 pbg_support_enable = 0;
+const u8 adt_profile_support = 0;
+const u8 more_hfp_cmd_support = 0;
+#endif
 /*u8 l2cap_debug_enable = 0xf0;
 u8 rfcomm_debug_enable = 0xf;
 u8 profile_debug_enable = 0xff;
@@ -248,7 +265,7 @@ u8 btstack_tws_debug_enable = 0xf;*/
 #else
 const u8 hci_inquiry_support = 0;
 const u8 more_avctp_cmd_support = 0;
-const u8 btstack_emitter_support  = 1;  /*定义用于优化代码编译*/
+const u8 btstack_emitter_support  = 0;  /*定义用于优化代码编译*/
 const u8 adt_profile_support = 0;
 const u8 pbg_support_enable = 0;
 const int config_stack_modules = 0;

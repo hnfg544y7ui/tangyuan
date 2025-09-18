@@ -13,6 +13,11 @@ c_SRC_FILES += \
       audio/framework/nodes/plc_node.c \
       audio/framework/nodes/volume_node.c \
 
+#if TCFG_VIRTUAL_UDISK_NODE
+c_SRC_FILES += \
+      audio/framework/nodes/virtual_udisk_node.c
+#endif
+
 #if TCFG_NS_NODE_ENABLE
 c_SRC_FILES += \
       audio/framework/nodes/ns_node.c
@@ -264,17 +269,33 @@ c_SRC_FILES += \
 	  audio/interface/player/key_tone_player.c \
 	  audio/interface/player/dev_flow_player.c \
 	  audio/interface/player/adda_loop_player.c \
-	  audio/interface/player/linein_player.c \
       audio/interface/player/reference_time.c \
-	  audio/interface/player/loudspeaker_iis_player.c \
-	  audio/interface/player/loudspeaker_mic_player.c \
 
+#if TCFG_APP_LINEIN_EN
+c_SRC_FILES += \
+	  audio/interface/player/linein_player.c 
+#endif
+
+#if TCFG_APP_LOUDSPEAKER_EN
+c_SRC_FILES += \
+	  audio/interface/player/loudspeaker_iis_player.c \
+	  audio/interface/player/loudspeaker_mic_player.c 
+#endif
+
+#if TCFG_APP_MIC_EN || TCFG_APP_DSP_EN
+c_SRC_FILES += \
+	  audio/interface/player/mic_player.c 
+#endif
 
 // Audio Recoder
 c_SRC_FILES += \
 	  audio/interface/recoder/esco_recoder.c \
-	  audio/interface/recoder/ai_voice_recoder.c \
 	  audio/interface/recoder/dev_flow_recoder.c \
+
+#if (BT_MIC_EN)
+c_SRC_FILES += \
+	  audio/interface/recoder/ai_voice_recoder.c
+#endif
 
 c_SRC_FILES += \
 	  audio/interface/user_defined/audio_dsp_low_latency_player.c
@@ -611,8 +632,6 @@ c_SRC_FILES += \
 #endif
 
 
-c_SRC_FILES += \
-	apps/common/fat_nor/cfg_private.c
 
 
 #ifdef TCFG_DEBUG_DLOG_ENABLE
@@ -1753,6 +1772,11 @@ c_SRC_FILES += \
 
 #endif
 
+#if TCFG_USER_UART_DEMO_EN
+c_SRC_FILES += \
+	apps/soundbox/demo/uart_demo.c
+#endif
+
 #if TCFG_USER_BLE_ENABLE
 c_SRC_FILES += \
     apps/soundbox/ble/bt_ble.c \
@@ -2049,6 +2073,7 @@ c_SRC_FILES += \
 	apps/soundbox/mode/dsp/dsp.c \
 	apps/soundbox/mode/dsp/dsp_app_msg_handler.c \
 	apps/soundbox/mode/dsp/dsp_api.c \
+    apps/soundbox/mode/dsp/dsp_key_msg_table.c \
 
 #endif
 

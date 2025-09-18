@@ -584,7 +584,7 @@ int audio_general_init()
 #if defined(TCFG_SCENE_UPDATE_ENABLE) && TCFG_SCENE_UPDATE_ENABLE
     //若流程中有较多音效模块（或渲染封装节点），会导致此处遍历模块耗时较长
     get_music_pipeline_node_uuid();
-#if (TCFG_MIC_EFFECT_ENABLE || (defined CONFIG_WIRELESS_MIC_ENABLE))
+#if (TCFG_MIC_EFFECT_ENABLE || (defined CONFIG_WIRELESS_MIC_CASE_ENABLE))
     get_mic_pipeline_node_uuid();
 #endif
 #endif

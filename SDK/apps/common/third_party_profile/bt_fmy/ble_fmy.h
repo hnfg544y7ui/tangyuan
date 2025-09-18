@@ -75,6 +75,7 @@ void fmy_state_idle_set_active(u8 active);
 bool fmy_vm_deal(fmy_vm_t *info, u8 rw_flag);
 void fmy_pairing_timeout_start(void);
 void fmy_pairing_timeout_stop(void);
+void fmy_key_do_in_task(int key_event);
 
 //--------------------------------------------------------------------------------
 

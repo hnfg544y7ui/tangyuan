@@ -128,7 +128,7 @@ int pc_spk_player_open(void)
         return 0;
     }
 
-#ifndef CONFIG_WIRELESS_MIC_ENABLE
+#ifndef CONFIG_WIRELESS_MIC_CASE_ENABLE
     if (!app_in_mode(APP_MODE_PC)) {
         return 0;
     }
@@ -315,7 +315,7 @@ int pcspk_restart_player_by_taskq(void)
 
 static void pc_spk_set_volume(void)
 {
-#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_1T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == WIRELES_MIC_1TNR_MODE))
+#if (defined(WIRELESS_MIC_PRODUCT_MODE) && (WIRELESS_MIC_PRODUCT_MODE == ADAPTER_2T1R_MODE || WIRELESS_MIC_PRODUCT_MODE == WIRELES_MIC_1TNR_MODE))
     char *vol_name = "Vol_PcspkMusic";
     s16 cur_vol = app_audio_get_volume(APP_AUDIO_STATE_MUSIC);
     u16 l_vol = 0, r_vol = 0;
@@ -402,7 +402,7 @@ int usb_device_event_handler(int *msg)
     case APP_MSG_PC_AUDIO_PLAY_CLOSE:
         pc_player_status = 0;
         printf("APP_MSG_PC_AUDIO_PLAY_CLOSE\n");
-#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))&& (!(defined CONFIG_WIRELESS_MIC_ENABLE))
+#if (TCFG_LE_AUDIO_APP_CONFIG & (LE_AUDIO_JL_BIS_TX_EN | LE_AUDIO_JL_BIS_RX_EN))&& (!(defined CONFIG_WIRELESS_MIC_CASE_ENABLE))
         if (get_broadcast_role()) {
             //广播（发送端）
             printf(">>[PC] spk lost audio stream, broadcast audio need suspend!\n");

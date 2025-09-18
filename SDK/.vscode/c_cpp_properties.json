@@ -122,6 +122,7 @@
                 "${workspaceFolder}/apps/soundbox/include/jl_ui",
                 "${workspaceFolder}/apps/soundbox/board/br27",
                 "${workspaceFolder}/apps/soundbox/ui",
+                "${workspaceFolder}/apps/soundbox/demo",
                 "${workspaceFolder}/apps/common",
                 "${workspaceFolder}/apps/common/power_manage",
                 "${workspaceFolder}/apps/common/device",

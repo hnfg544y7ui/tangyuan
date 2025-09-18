@@ -270,11 +270,11 @@ void cfg_file_parse(u8 idx)
     struct volume_cfg ring_vol_cfg;
     //赋予相关变量初值
 #if TCFG_AS_WIRELESS_MIC_DSP_ENABLE
-    volume_ioc_get_cfg("Vol_DSPMusic", &music_vol_cfg);
-    volume_ioc_get_cfg("Vol_DSPMusic", &call_vol_cfg);
-    volume_ioc_get_cfg("Vol_DSPMusic", &tone_vol_cfg);
-    volume_ioc_get_cfg("Vol_DSPMusic", &ktone_vol_cfg);
-    volume_ioc_get_cfg("Vol_DSPMusic", &ring_vol_cfg);
+    volume_ioc_get_cfg("Vol_DSP_IIS", &music_vol_cfg);
+    volume_ioc_get_cfg("Vol_DSP_IIS", &call_vol_cfg);
+    volume_ioc_get_cfg("Vol_DSP_IIS", &tone_vol_cfg);
+    volume_ioc_get_cfg("Vol_DSP_IIS", &ktone_vol_cfg);
+    volume_ioc_get_cfg("Vol_DSP_IIS", &ring_vol_cfg);
 #else
     volume_ioc_get_cfg("Vol_BtmMusic", &music_vol_cfg);
     volume_ioc_get_cfg("Vol_BtcCall", &call_vol_cfg);

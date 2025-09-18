@@ -12,6 +12,7 @@ extern const struct key_remap_table record_mode_key_table[];
 extern const struct key_remap_table rtc_mode_key_table[];
 extern const struct key_remap_table surround_sound_mode_key_table[];
 extern const struct key_remap_table mic_mode_key_table[];
+extern const struct key_remap_table dsp_mode_key_table[];
 
 
 #endif

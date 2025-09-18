@@ -19,7 +19,7 @@ static void mic_player_callback(void *private_data, int event)
     switch (event) {
     case STREAM_EVENT_START:
 #ifdef TCFG_VOCAL_REMOVER_NODE_ENABLE
-        musci_vocal_remover_update_parm();
+        music_vocal_remover_update_parm();
 #endif
 
         break;
@@ -44,7 +44,12 @@ int mic_player_open(void)
         .coding_type = LOCAL_TWS_CODEC_TYPE,
     };
 #endif
+
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
+    u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic_effect");
+#else
     u16 uuid = jlstream_event_notify(STREAM_EVENT_GET_PIPELINE_UUID, (int)"mic");
+#endif
     if (uuid == 0) {
         return -EFAULT;
     }
@@ -66,7 +71,11 @@ int mic_player_open(void)
 
     jlstream_node_ioctl(player->stream, NODE_UUID_VOCAL_TRACK_SYNTHESIS, NODE_IOC_SET_PRIV_FMT, AUDIO_ADC_IRQ_POINTS);//四声道时，指定声道合并单个声道的点数
     jlstream_set_callback(player->stream, player->stream, mic_player_callback);
+#ifdef CONFIG_WIRELESS_MIC_CASE_ENABLE
+    jlstream_set_scene(player->stream, STREAM_SCENE_WIRELESS_MIC);
+#else
     jlstream_set_scene(player->stream, STREAM_SCENE_MIC);
+#endif
 #if TCFG_LOCAL_TWS_ENABLE
     err = jlstream_ioctl(player->stream, NODE_IOC_SET_ENC_FMT, (int)&fmt);
     if (err == 0) {
