@@ -75,10 +75,13 @@ if exist %PROJ_DOWNLOAD_PATH%\tone_en.cfg copy %PROJ_DOWNLOAD_PATH%\tone_en.cfg 
 if exist %PROJ_DOWNLOAD_PATH%\tone_zh.cfg copy %PROJ_DOWNLOAD_PATH%\tone_zh.cfg .
 
 if %TONE_EN_ENABLE%A==1A (
-    set TONE_FILES=tone_en.cfg
+    if not exist tone_en.cfg copy ..\..\tone_en.cfg .
+    set TONE_FILES=-tone tone_en.cfg
 )
 if %TONE_ZH_ENABLE%A==1A (
-    set TONE_FILES=%TONE_FILES% tone_zh.cfg
+    if not exist tone_zh.cfg copy ..\..\tone_zh.cfg .
+	if %TONE_EN_ENABLE%A==1A set TONE_FILES=%TONE_FILES% tone_zh.cfg
+	if %TONE_EN_ENABLE%A==0A set TONE_FILES=-tone tone_zh.cfg
 )
 
 if %LCD_SOURCE_ENABLE%A==1A (
@@ -117,7 +120,7 @@ copy /b text.bin + data.bin + data_code.bin + aec.bin + aac.bin + ps_ram_data_co
 del text.bin data.bin data_code.bin aec.bin aac.bin ps_ram_data_code.bin d_ram_data.bin i0_ram_data_code.bin i1_ram_data_code.bin
 
 
-isd_download.exe -tonorflash -dev br27 -boot 0x120000 -div8 -wait 300 -uboot uboot.boot -app app.bin -tone %TONE_FILES% -res cfg_tool.bin p11_code.bin stream.bin %LCD_SOURCE_FILES% %KEY_FILE% %FORMAT%
+isd_download.exe -tonorflash -dev br27 -boot 0x120000 -div8 -wait 300 -uboot uboot.boot -app app.bin %TONE_FILES% -res cfg_tool.bin p11_code.bin stream.bin %LCD_SOURCE_FILES% %KEY_FILE% %FORMAT%
 ::-uboot_compress
 ::-format all
 
