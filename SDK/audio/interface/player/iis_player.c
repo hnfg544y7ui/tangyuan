@@ -31,8 +31,11 @@ static void iis_player_callback(void *private_data, int event)
     }
 }
 
-void llns_dns_bypass_reset_latency(void)
+void llns_dns_bypass_reset_latency(void *priv)
 {
+
+    struct iis_file_player *player = (struct iis_file_player *)priv;
+
 #if (TCFG_AS_WIRELESS_MIC_DSP_ENABLE && TCFG_LLNS_DNS_NODE_ENABLE)
     int bypass_latency = 8000; //us
     int node_bypass1 = get_dsp_llns1_bypass_status();
@@ -41,7 +44,7 @@ void llns_dns_bypass_reset_latency(void)
     if (node_bypass1 && node_bypass2) {
         g_printf("reset play latency:%d", bypass_latency);
         //llns_dns bypass后重新设置播放同步节点延时
-        jlstream_set_node_param(NODE_UUID_PLAY_SYNC, "PLAY_SYNC1", &bypass_latency, sizeof(int));
+        jlstream_node_ioctl(player->stream, NODE_UUID_PLAY_SYNC, NODE_IOC_SET_PARAM, bypass_latency);
         jlstream_set_node_specify_param(NODE_UUID_LLNS_DNS, "LLNS_DNS3", NODE_IOC_SET_PRIV_FMT, &node_bypass1, sizeof(node_bypass1));
         jlstream_set_node_specify_param(NODE_UUID_LLNS_DNS, "LLNS_DNS4", NODE_IOC_SET_PRIV_FMT, &node_bypass2, sizeof(node_bypass2));
     }
@@ -98,7 +101,7 @@ int iis_player_open(void)
 
 #if (TCFG_AS_WIRELESS_MIC_DSP_ENABLE && TCFG_LLNS_DNS_NODE_ENABLE)
     //根据llns_dns是否bypass重设延时
-    llns_dns_bypass_reset_latency();
+    llns_dns_bypass_reset_latency(player);
     jlstream_set_node_task(player->stream, NODE_UUID_LLNS_DNS, "LLNS_DNS3", "llns_dns");
     jlstream_set_node_task(player->stream, NODE_UUID_LLNS_DNS, "LLNS_DNS4", "llns_dns1");
 #endif

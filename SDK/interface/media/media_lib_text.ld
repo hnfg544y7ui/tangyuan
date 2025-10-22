@@ -624,6 +624,14 @@
 	*(.gain_mix.text.cache.L2.const)	
 #endif
 
+#if AFx_AHS_NN_AT_RAM == 0
+    *(.jlsp_model_data)
+    *(.jlsp_model_const)
+    *(.jlsp_model_code)
+    *(.jlsp_ahs_data)
+    *(.jlsp_ahs_const)
+    *(.jlsp_ahs_code)
+#endif
     . = ALIGN(4);
     media_code_begin = .;
     *(.media.*.text)

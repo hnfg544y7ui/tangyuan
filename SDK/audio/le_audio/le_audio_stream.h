@@ -82,6 +82,7 @@ int le_audio_stream_tx_buffered_time(void *stream);
 int le_audio_stream_tx_data_handler(void *le_audio, void *data, int len, u32 timestamp, int latency);
 
 void *le_audio_stream_rx_open(void *le_audio, int coding_type);
+int le_audio_stream_rx_buf_init(void *le_audio, int coding_type);
 
 int le_audio_stream_rx_write(void *stream, void *data, int len);
 

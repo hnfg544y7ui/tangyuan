@@ -157,7 +157,7 @@ int mic_effect_player_open()
 #endif
 
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-            if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+            if (const_audio_howling_ahs_ref_enable && config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
                 //软件回采
                 set_aec_ref_dac_ch_name("DacEff");
                 aec_ref_dac_ch_data_read_init();
@@ -243,7 +243,7 @@ void mic_effect_player_close()
     jlstream_event_notify(STREAM_EVENT_CLOSE_PLAYER, (int)"mic_effect");
 
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+    if (const_audio_howling_ahs_ref_enable && config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
         //软件回采
         aec_ref_dac_ch_data_read_exit();
     }

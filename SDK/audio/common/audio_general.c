@@ -450,6 +450,7 @@ const int config_audio_limiter_xfade_enable = 0;
 const int config_audio_mblimiter_xfade_enable = 0;
 
 //howling_ahs配置
+const int const_audio_howling_ahs_ref_enable = 0;   //算法是否需要获取dac回采数据,算法不需要回采数据的情况下可关闭，节省资源消耗
 const int const_audio_howling_ahs_ref_src_type = 1; //0:不使能参考数据变采样，1:软件src，2:硬件src
 const int const_audio_howling_ahs_data_export = 0;  //数据写卡导出，需要使能AUDIO_DATA_EXPORT_VIA_UART，串口写卡工具配置3通道，每通道256byte
 

@@ -90,3 +90,5 @@
 	*(.anc_btspp_bss)
 	*(.anc_debug_bss)
 
+    *(.jlsp_model_bss)
+    *(.jlsp_ahs_bss)

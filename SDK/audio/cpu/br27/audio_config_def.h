@@ -58,6 +58,7 @@
 #define AFx_CONVERT_TEXT_AT_RAM             1   //convert,bitwidth convert
 #define AFx_VOCAL_REMOVER_TEXT_AT_RAM       1   //人声消除
 #define AFx_SPECTRUM_ADV_TEXT_AT_RAM        1   //频谱计算
+#define AFx_AHS_NN_AT_RAM                   0   //AHS_NN
 #define AUDIO_JLSTREAM_TEXT_AT_RAM          1   //数据流
 
 /*通话语音处理算法*/

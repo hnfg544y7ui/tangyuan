@@ -58,7 +58,7 @@ int loudspeaker_iis_player_open(void)
     jlstream_set_scene(player->stream, STREAM_SCENE_LOUDSPEAKER_IIS);
 
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+    if (const_audio_howling_ahs_ref_enable && config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
         //软件回采
         set_aec_ref_dac_ch_name("DacSPK");
         aec_ref_dac_ch_data_read_init();
@@ -83,6 +83,7 @@ int loudspeaker_iis_player_open(void)
     jlstream_node_ioctl(player->stream, NODE_UUID_HOWLING_AHS, NODE_IOC_SET_PRIV_FMT, (iis_in_dac_out << 16) | AHS_NN_FRAME_POINTS);
     jlstream_add_thread(player->stream, "mic_effect1");
     jlstream_add_thread(player->stream, "mic_effect2");
+    jlstream_add_thread(player->stream, "mic_effect3");
 #endif
     err = jlstream_start(player->stream);
     if (err) {
@@ -123,7 +124,7 @@ void loudspeaker_iis_player_close()
     free(player);
     g_loudspeaker_iis_player = NULL;
 #if (defined(TCFG_HOWLING_AHS_NODE_ENABLE) && TCFG_HOWLING_AHS_NODE_ENABLE)
-    if (config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
+    if (const_audio_howling_ahs_ref_enable && config_audio_dac_mix_enable && !const_audio_howling_ahs_adc_hw_ref) {
         //软件回采
         aec_ref_dac_ch_data_read_exit();
     }

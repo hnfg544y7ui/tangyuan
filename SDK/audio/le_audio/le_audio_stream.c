@@ -170,7 +170,7 @@ static int __le_audio_stream_dual_tx_data_handler(void *_ctx, void *data, int le
     /* printf("len :%d\n",len); */
     /*putchar('A');*/
     if (!ctx->start) {
-        u32 time_diff = (bb_le_clk_get_time_us() - ctx->start_time) & 0xfffffff;
+        u32 time_diff = (timestamp - ctx->start_time) & 0xfffffff;
         if (time_diff > 5000000) {
             return 0;
         }
@@ -224,7 +224,7 @@ static int __le_audio_stream_tx_data_handler(void *stream, void *data, int len, 
     u32 read_alloc_len = 0;
     /*putchar('A');*/
     if (!ctx->start) {
-        u32 time_diff = (bb_le_clk_get_time_us() - ctx->start_time) & 0xfffffff;
+        u32 time_diff = (timestamp - ctx->start_time) & 0xfffffff;
         if (time_diff > 5000000) {
             return 0;
         }
@@ -475,23 +475,17 @@ int le_audio_stream_set_bit_width(void *le_audio, u8 bit_width)
     return -1;
 }
 
-void *le_audio_stream_rx_open(void *le_audio, int coding_type)
+int le_audio_stream_rx_buf_init(void *le_audio, int coding_type)
 {
     struct le_audio_stream_context *ctx = (struct le_audio_stream_context *)le_audio;
     struct le_audio_rx_stream *rx_stream = ctx->rx_stream;
     int frame_size = 0;
     int buf_frame_number = 0;
 
-    if (rx_stream) {
-        atomic_inc(&rx_stream->ref);
-        return rx_stream;
+    if (!rx_stream ||  rx_stream->frames_max_size) {
+        return -1;
     }
 
-    rx_stream = (struct le_audio_rx_stream *)zalloc(sizeof(struct le_audio_rx_stream));
-    if (!rx_stream) {
-        return NULL;
-    }
-    INIT_LIST_HEAD(&rx_stream->frames);
     if (coding_type == AUDIO_CODING_PCM) {
         buf_frame_number = LE_AUDIO_RX_BUF_CONTAIN_FREAM_NUMBER_PCM;
         frame_size = ctx->fmt.frame_dms * ctx->fmt.sample_rate * ctx->fmt.nch * (ctx->fmt.bit_width ? 4 : 2) / 10000;
@@ -508,6 +502,27 @@ void *le_audio_stream_rx_open(void *le_audio, int coding_type)
     rx_stream->buf.addr = malloc(rx_stream->frames_max_size);
     rx_stream->isoIntervalUs_len = iso_interval_len;
     cbuf_init(&rx_stream->buf.cbuf, rx_stream->buf.addr, rx_stream->buf.size);
+
+    return 0;
+}
+
+
+void *le_audio_stream_rx_open(void *le_audio, int coding_type)
+{
+    struct le_audio_stream_context *ctx = (struct le_audio_stream_context *)le_audio;
+    struct le_audio_rx_stream *rx_stream = ctx->rx_stream;
+
+    if (rx_stream) {
+        atomic_inc(&rx_stream->ref);
+        return rx_stream;
+    }
+
+    rx_stream = (struct le_audio_rx_stream *)zalloc(sizeof(struct le_audio_rx_stream));
+    if (!rx_stream) {
+        return NULL;
+    }
+    INIT_LIST_HEAD(&rx_stream->frames);
+
     rx_stream->parent = ctx;
     rx_stream->coding_type = coding_type;
     rx_stream->online = 1;
@@ -656,7 +671,7 @@ int le_audio_stream_rx_frame(void *stream, void *data, int len, u32 timestamp)
     }
 #if LEA_DUAL_STREAM_MERGE_TRANS_MODE //环绕音
     if (len > 2) { //丢包判断
-        int rlen = 0;
+        int rlen;
 #if (SURROUND_SOUND_FIX_ROLE_EN && (SURROUND_SOUND_ROLE == 1) || (SURROUND_SOUND_ROLE == 2))
         //如果角色固定，并且是立体声数据流
         //立体声(LS(解码左声道)//RS(解码右声道))

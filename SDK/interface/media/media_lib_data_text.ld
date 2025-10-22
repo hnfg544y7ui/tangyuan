@@ -386,6 +386,15 @@
     *(.SPECTRUMTOOL.text.L2)
 #endif
 
+#if AFx_AHS_NN_AT_RAM
+    *(.jlsp_model_data)
+    *(.jlsp_model_const)
+    *(.jlsp_model_code)
+    *(.jlsp_ahs_data)
+    *(.jlsp_ahs_const)
+    *(.jlsp_ahs_code)
+#endif
+
 #if (AUDIO_JLSTREAM_TEXT_AT_RAM)
     *(.jlstream.text.cache.L2)
 #endif
