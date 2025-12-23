@@ -5,6 +5,9 @@
 
 
 c_SRC_FILES += \
+	apps/user/user_main.c \
+
+c_SRC_FILES += \
       audio/framework/plugs/source/a2dp_file.c \
       audio/framework/plugs/source/a2dp_streamctrl.c \
       audio/framework/plugs/source/esco_file.c \

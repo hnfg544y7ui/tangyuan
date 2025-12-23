@@ -113,6 +113,7 @@
 -Iapps/soundbox/include/le_audio/cig
 -Iapps/soundbox/include/le_audio/auracast
 -Iapps/common/third_party_profile/multi_ble_clinet
+-Iapps/user
 -Iinterface/ui/jl_ui
 -Iinterface/ui/jl_ui/ui/cpu/br27
 -Iinterface/btstack/third_party/le_audio

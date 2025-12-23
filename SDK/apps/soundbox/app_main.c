@@ -54,6 +54,7 @@
 #include "app_le_broadcast.h"
 #include "rcsp_device_status.h"
 #include "uart_demo.h"
+#include "user_main.h"
 
 #if LEA_DUAL_STREAM_MERGE_TRANS_MODE
 #include "surround_sound.h"
@@ -667,6 +668,8 @@ static void app_task_loop(void *p)
     struct app_mode *mode;
 
     mode = app_task_init();
+
+    user_init();
 
     while (1) {
         app_set_current_mode(mode);

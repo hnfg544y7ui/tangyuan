@@ -1,3 +1,6 @@
 info.json
 patch/
 
+SDK/obj
+SDK/objs
+cache/
