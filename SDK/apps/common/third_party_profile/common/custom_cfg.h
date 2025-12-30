@@ -6,7 +6,7 @@
 #include <string.h>
 #include "app_config.h"
 
-#define BT_CONNECTION_VERIFY        0   // 0是校验,1是不校验
+#define BT_CONNECTION_VERIFY        1   // 0是校验,1是不校验
 
 #if (RCSP_UPDATE_EN)
 #define VER_INFO_EXT_COUNT          2   //2
