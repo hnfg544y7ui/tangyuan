@@ -9,13 +9,13 @@
 
 #if TCFG_IO_CFG_AT_POWER_ON
 const struct gpio_cfg_item g_io_cfg_at_poweron [] =  {
-
+    
 };
 #endif // TCFG_IO_CFG_AT_POWER_ON
 
 #if TCFG_IO_CFG_AT_POWER_OFF
 const struct gpio_cfg_item g_io_cfg_at_poweroff [] =  {
-
+    
 };
 #endif // TCFG_IO_CFG_AT_POWER_OFF
 

@@ -529,7 +529,7 @@
        "label": "混响使能",
        "tag": "el-switch",
        "tagIcon": "switch",
-       "defaultValue": 0,
+       "defaultValue": 1,
        "span": 8,
        "showLabel": true,
        "labelWidth": null,

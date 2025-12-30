@@ -262,7 +262,7 @@
           "layout": "colFormItem",
           "span": 8,
           "required": false,
-          "defaultValue": 0,
+          "defaultValue": "SYS_CLOCK_INPUT_BT_OSC",
           "regList": [],
           "changeTag": true,
           "searchSource": false,
@@ -1493,7 +1493,7 @@
           "label": "开机充电",
           "tag": "el-switch",
           "tagIcon": "switch",
-          "defaultValue": 0,
+          "defaultValue": 1,
           "span": 4,
           "showLabel": true,
           "labelWidth": null,
@@ -1981,7 +1981,7 @@
        "paddingLeft": "",
        "saveWay": "code",
        "eventField": [],
-       "structDef": ""
+       "structDef": "const struct battery_curve g_battery_curve_table"
       },
       "type": "default",
       "justify": "start",
@@ -3092,7 +3092,7 @@
        "paddingLeft": "",
        "saveWay": "code",
        "eventField": [],
-       "structDef": ""
+       "structDef": "const struct battery_curve g_battery_curve_table"
       },
       "type": "default",
       "justify": "start",

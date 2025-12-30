@@ -9,7 +9,7 @@
  "patch": {
   "title": "patch_01.10",
   "sn": 100.001,
-  "relateVersion": "4.5.7"
+  "path": "D:\\Program\\JLStudio\\standard\\le_audio\\JL703N\\2.0.0\\patch\\patch_01.10"
  },
  "specialPatchKey": "",
  "projectType": "NormalProject",
@@ -61,25 +61,29 @@
      "type": 1,
      "fileName": "src\\LE_AUDIO配置\\公共配置.json",
      "binName": "leacfg.bin",
-     "showName": "公共配置"
+     "showName": "公共配置",
+     "data": ""
     },
     {
      "type": 1,
      "fileName": "src\\LE_AUDIO配置\\JL_BIS配置.json",
      "binName": "leacfg.bin",
-     "showName": "JL_BIS配置"
+     "showName": "JL_BIS配置",
+     "data": ""
     },
     {
      "type": 1,
      "fileName": "src\\LE_AUDIO配置\\JL_CIS配置.json",
      "binName": "leacfg.bin",
-     "showName": "JL_CIS配置"
+     "showName": "JL_CIS配置",
+     "data": ""
     },
     {
      "type": 1,
      "fileName": "src\\LE_AUDIO配置\\AURACAST配置.json",
      "binName": "leacfg.bin",
-     "showName": "AURACAST配置"
+     "showName": "AURACAST配置",
+     "data": ""
     }
    ]
   },
@@ -112,80 +116,95 @@
      "type": 4,
      "fileName": "src\\音频流程\\系统模式.x6flow",
      "binName": "stream.bin",
-     "showName": "系统模式"
+     "showName": "系统模式",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\媒体.x6flow",
      "binName": "stream.bin",
-     "showName": "媒体"
+     "showName": "媒体",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\蓝牙通话.x6flow",
      "binName": "stream.bin",
-     "showName": "蓝牙通话"
+     "showName": "蓝牙通话",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\麦克风音效.x6flow",
      "binName": "stream.bin",
-     "showName": "麦克风音效"
+     "showName": "麦克风音效",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\USB Audio.x6flow",
      "binName": "stream.bin",
-     "showName": "USB Audio"
+     "showName": "USB Audio",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\录音.x6flow",
      "binName": "stream.bin",
-     "showName": "录音"
+     "showName": "录音",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\LE_Audio.x6flow",
      "binName": "stream.bin",
-     "showName": "LE_Audio"
+     "showName": "LE_Audio",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\智能语音.x6flow",
      "binName": "stream.bin",
-     "showName": "智能语音"
+     "showName": "智能语音",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\扩音器音效.x6flow",
      "binName": "stream.bin",
-     "showName": "扩音器音效"
+     "showName": "扩音器音效",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\自定义.x6flow",
      "binName": "stream.bin",
-     "showName": "自定义"
+     "showName": "自定义",
+     "data": ""
     },
     {
      "type": 4,
      "fileName": "src\\音频流程\\产测模式.x6flow",
      "binName": "stream.bin",
-     "showName": "产测模式"
+     "showName": "产测模式",
+     "data": ""
     }
    ]
   }
  ],
  "create_time": "2025-12-19T08:37:32.368Z",
- "update_time": "2025-12-19T08:37:50.466Z",
- "lastOpenToolVersion": "4.7.0",
+ "update_time": "2025-12-30T06:12:48.917Z",
+ "standardPatch": "patch_01.08",
+ "lastOpenToolVersion": "4.7.1",
  "lastStencilFlowTime": "2025-12-19T16:37:41.1015768+08:00",
  "proxyRepoid": "",
  "versionName": "2.0.0",
  "provider": "杰理",
+ "publishType": 1,
  "checkPatchTime": 0,
  "relateVersion": "4.5.7",
  "variant": [],
- "defaultVariant": {}
+ "defaultVariant": {
+  "name": "默认配置"
+ }
 }
