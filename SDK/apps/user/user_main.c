@@ -9,10 +9,10 @@
 #define USER_BLINK_GPIO   IO_PORTB_01
 #endif
 
-static int g_pwm_pb5_id = -1;  // channel 1：PB5
-static int g_pwm_pb6_id = -1;  // channel 2：PB6
-static int g_pwm_pb7_id = -1;  // channel 3：PB7
-static int g_pwm_pb8_id = -1;  // channel 4：PB8
+static int g_pwm_pb10_id = -1;
+static int g_pwm_pb9_id = -1;
+static int g_pwm_pa1_id = -1;
+static int g_pwm_pa0_id = -1;
 
 /**
  * @brief Initialize PWM channels for motor control.
@@ -22,7 +22,6 @@ uint8_t pwm_init(void)
 {
 	struct mcpwm_config usr_mcpwm_cfg;
 
-	/* channel 1 PB5 */
 	usr_mcpwm_cfg.ch = MCPWM_CH0;
 	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
 	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
@@ -33,9 +32,8 @@ uint8_t pwm_init(void)
 	usr_mcpwm_cfg.detect_port = -1;
 	usr_mcpwm_cfg.irq_cb = NULL;
 	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pb5_id = mcpwm_init(&usr_mcpwm_cfg);
+	g_pwm_pb10_id = mcpwm_init(&usr_mcpwm_cfg);
 
-	/* channel 2 PB6 */
 	usr_mcpwm_cfg.ch = MCPWM_CH1;
 	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
 	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
@@ -46,9 +44,8 @@ uint8_t pwm_init(void)
 	usr_mcpwm_cfg.detect_port = -1;
 	usr_mcpwm_cfg.irq_cb = NULL;
 	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pb6_id = mcpwm_init(&usr_mcpwm_cfg);
+	g_pwm_pb9_id = mcpwm_init(&usr_mcpwm_cfg);
 
-	/* channel 3 PB7 */
 	usr_mcpwm_cfg.ch = MCPWM_CH0 + 2;
 	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
 	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
@@ -59,9 +56,8 @@ uint8_t pwm_init(void)
 	usr_mcpwm_cfg.detect_port = -1;
 	usr_mcpwm_cfg.irq_cb = NULL;
 	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pb7_id = mcpwm_init(&usr_mcpwm_cfg);
+	g_pwm_pa1_id = mcpwm_init(&usr_mcpwm_cfg);
 
-	/* channel 4 PB8 */
 	usr_mcpwm_cfg.ch = MCPWM_CH0 + 3;
 	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
 	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
@@ -72,12 +68,12 @@ uint8_t pwm_init(void)
 	usr_mcpwm_cfg.detect_port = -1;
 	usr_mcpwm_cfg.irq_cb = NULL;
 	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pb8_id = mcpwm_init(&usr_mcpwm_cfg);
+	g_pwm_pa0_id = mcpwm_init(&usr_mcpwm_cfg);
 
-	mcpwm_start(g_pwm_pb5_id);
-	mcpwm_start(g_pwm_pb6_id);
-	mcpwm_start(g_pwm_pb7_id);
-	mcpwm_start(g_pwm_pb8_id);
+	mcpwm_start(g_pwm_pb10_id);
+	mcpwm_start(g_pwm_pb9_id);
+	mcpwm_start(g_pwm_pa1_id);
+	mcpwm_start(g_pwm_pa0_id);
 
 	return 0;
 }
@@ -86,7 +82,7 @@ uint8_t pwm_init(void)
 
 /**
  * @brief Control motor PWM duty cycle with direction support.
- * @param motor_id Motor ID: 0=group1(PB5/PB6), 1=group2(PB7/PB8).
+ * @param motor_id Motor ID: 0=group1(PB10/PB9), 1=group2(PA1/PA0).
  * @param duty Duty cycle range -10000~10000.
  *             Positive: first pin outputs PWM, second pin outputs 0.
  *             Negative: second pin outputs PWM, first pin outputs 0.
@@ -106,12 +102,12 @@ void motor_set_duty(u8 motor_id, s16 duty)
 
 	switch (motor_id) {
 		case 0:
-			pin1_id = g_pwm_pb5_id;
-			pin2_id = g_pwm_pb6_id;
+			pin1_id = g_pwm_pb10_id;
+			pin2_id = g_pwm_pb9_id;
 			break;
 		case 1:
-			pin1_id = g_pwm_pb7_id;
-			pin2_id = g_pwm_pb8_id;
+			pin1_id = g_pwm_pa1_id;
+			pin2_id = g_pwm_pa0_id;
 			break;
 		default:
 			printf("Error: Invalid motor_id %d\n", motor_id);
