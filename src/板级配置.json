@@ -1091,7 +1091,7 @@
      }
     ],
     "eventField": [],
-    "disable": true,
+    "disable": false,
     "tip": "",
     "tipAlways": false,
     "showResetBtn": false
@@ -1253,7 +1253,7 @@
        "saveWay": "macro",
        "uuid": "CONFIG_FLASH_SIZE",
        "originValue": "0x100000",
-       "defaultValue": "0x100000"
+       "defaultValue": 2048576
       },
       "__slot__": {
        "options": [
@@ -1708,60 +1708,56 @@
          "value": "id_1659942549182_30"
         },
         {
-         "label": "IO_PORTG_00",
+         "label": "IO_PORTD_00",
          "value": "id_1651200719084_10"
         },
         {
-         "label": "IO_PORTG_01",
+         "label": "IO_PORTD_01",
          "value": "id_1651200755336_11"
         },
         {
-         "label": "IO_PORTG_02",
+         "label": "IO_PORTD_02",
          "value": "id_1651200759198_12"
         },
         {
-         "label": "IO_PORTG_03",
+         "label": "IO_PORTD_03",
          "value": "id_1651200760502_13"
         },
         {
-         "label": "IO_PORTG_04",
+         "label": "IO_PORTD_04",
          "value": "id_1651200761897_14"
         },
         {
-         "label": "IO_PORTG_05",
+         "label": "IO_PORTD_05",
          "value": "id_1651200763262_15"
         },
         {
-         "label": "IO_PORTG_06",
+         "label": "IO_PORTD_06",
          "value": "id_1651200764534_16"
         },
         {
-         "label": "IO_PORTG_07",
+         "label": "IO_PORTD_07",
          "value": "id_1651200765594_17"
-        },
-        {
-         "label": "IO_PORTG_08",
-         "value": "id_1676343428226_0"
-        },
-        {
-         "label": "IO_PORT_DM",
-         "value": "id_1651200854573_20"
-        },
-        {
-         "label": "IO_PORT_DP",
-         "value": "id_1651200840445_19"
         },
         {
          "label": "IO_PORT_LDOIN",
          "value": "id_1654138247476_3"
         },
         {
-         "label": "IO_PORT_VCOM",
-         "value": "id_1730898297312_0"
+         "label": "IO_PORT_DP",
+         "value": "id_1651200840445_19"
         },
         {
-         "label": "IO_PORT_SDC",
-         "value": "id_1730898313790_1"
+         "label": "IO_PORT_DM",
+         "value": "id_1651200854573_20"
+        },
+        {
+         "label": "IO_PORT_PR_00",
+         "value": "id_1676343428226_0"
+        },
+        {
+         "label": "IO_PORT_PR_01",
+         "value": "id_1676343431713_1"
         }
        ]
       },
@@ -13906,7 +13902,7 @@
        "layout": "colFormItem",
        "span": 7,
        "required": false,
-       "defaultValue": "id_1654138247476_3",
+       "defaultValue": "0",
        "regList": [],
        "changeTag": true,
        "searchSource": false,

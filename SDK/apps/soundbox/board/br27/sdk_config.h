@@ -124,6 +124,7 @@
 #define TCFG_FM_INSIDE_AGC_ENABLE 1 // 内置FM_AGC使能
 #define TCFG_FM_INSIDE_AGC_LEVEL 14 // 内置FM_AGC初值
 #define TCFG_FM_INSIDE_STEREO_ENABLE 0 // 内置FM立体声使能
+#define TCFG_FM_INSIDE_STEREO_SEPARATION_SELECTION 2 // 内置FM立体声分离度选择
 #endif // TCFG_FM_INSIDE_ENABLE
 
 #define TCFG_FM_OUTSIDE_ENABLE 0 // 外置FM配置
@@ -148,6 +149,17 @@
 #define TCFG_IO_CFG_AT_POWER_OFF 0 // 关机时IO配置
 
 #define TCFG_CHARGESTORE_PORT 0 // 通信IO
+#define TCFG_NORFLASH_DEV_ENABLE 0 // 外置flash配置
+#if TCFG_NORFLASH_DEV_ENABLE
+#define TCFG_NOR_FAT 0 // 挂载fatfs文件系统使能
+#define TCFG_FLASH_DEV_FLASH_READ_WIDTH 2 // flash线宽
+#define TCFG_FLASH_DEV_SPI_HW_NUM 1 // 支持flash的硬件SPI
+#define TCFG_FLASH_DEV_SPI_CS_PORT IO_PORTA_07 // CS片选IO
+#endif // TCFG_NORFLASH_DEV_ENABLE
+#define CONFIG_UART_UPDATE_PIN PP00 // INI配置（工具自动生成）
+#define TCFG_FREE_DCACHE_WAY_NUM 0 // dcache作为普通ram使用个数
+#define TCFG_FREE_ICACHE0_WAY_NUM 0 // icache0作为普通ram使用个数
+#define TCFG_FREE_ICACHE1_WAY_NUM 0 // icache1作为普通ram使用个数
 // ------------板级配置.json------------
 
 // ------------功能配置.json------------
@@ -187,6 +199,10 @@
 #endif // TCFG_LP_NFC_TAG_ENABLE
 
 #define TCFG_MIX_RECORD_ENABLE 0 // 混合录音使能
+#define TCFG_APP_IIS_EN 0 // IIS模式
+#define TCFG_APP_LOUDSPEAKER_EN 0 // 扩音器模式
+#define TCFG_APP_DSP_EN 0 // DSP模式
+#define TCFG_DSP_MODE 1 // DSP模式
 // ------------功能配置.json------------
 
 // ------------按键配置.json------------
@@ -270,6 +286,8 @@
 #define TCFG_LCD_PIN_DC IO_PORTA_02 // LCD DC
 #define TCFG_LCD_PIN_EN NO_CONFIG_PORT // LCD EN
 #define TCFG_LCD_PIN_TE NO_CONFIG_PORT // LCD TE
+#define TCFG_SPI_LCD_ENABLE 0 // LCD彩屏使能
+#define TCFG_LCD_SPI_ST7789V_ENABLE 0 // ST7789V
 #endif // TCFG_UI_ENABLE
 // ------------UI配置.json------------
 
@@ -332,6 +350,13 @@
 #define TCFG_LOCAL_TWS_ENABLE 0 // TWS本地音乐转发
 #define TCFG_LOCAL_TWS_SYNC_VOL 0 // TWS本地音乐音量同步
 #define TCFG_BACKGROUND_WITHOUT_EDR_CONNECT 0 // 后台关闭经典蓝牙连接
+#define TCFG_TWS_TONE_PLAY 0 // TWS提示音播放
+#define LOCAL_TWS_CODEC_TYPE 167772160 // 编解码格式
+#define LOCAL_TWS_CODEC_CHANNEL 2 // 编解码声道数
+#define LOCAL_TWS_CODEC_BIT_WIDTH 0 // 编解码位宽
+#define LOCAL_TWS_CODEC_FRAME_LEN 100 // 帧持续时间
+#define LOCAL_TWS_CODEC_SAMPLERATE 44100 // 采样率
+#define LOCAL_TWS_CODEC_BIT_RATE 96000 // 码率
 #endif // TCFG_USER_TWS_ENABLE
 
 #define TCFG_BT_SNIFF_ENABLE 0 // sniff
@@ -350,10 +375,13 @@
 #define TCFG_BT_BLE_ADV_ENABLE 0 // 广播
 #endif // TCFG_USER_BLE_ENABLE
 
-#define TCFG_THIRD_PARTY_PROTOCOLS_ENABLE 0 // 第三方协议配置
+#define TCFG_THIRD_PARTY_PROTOCOLS_ENABLE 1 // 第三方协议配置
 #if TCFG_THIRD_PARTY_PROTOCOLS_ENABLE
-#define TCFG_THIRD_PARTY_PROTOCOLS_SEL 0 // 第三方协议选择
+#define TCFG_THIRD_PARTY_PROTOCOLS_SEL (0 | RCSP_MODE_EN) // 第三方协议选择
 #endif // TCFG_THIRD_PARTY_PROTOCOLS_ENABLE
+#define TCFG_H4_UART_RX_PIN IO_PORTB_10 // 串口接收
+#define TCFG_H4_UART_TX_PIN IO_PORTB_08 // 串口发送
+#define TCFG_H4_UART_BAUD 115200 // 波特率
 // ------------蓝牙配置.json------------
 
 // ------------公共配置.json------------
@@ -368,6 +396,9 @@
 #define LEA_RX_DEC_OUTPUT_CHANNEL 37 // 接收端解码输出
 #define TCFG_KBOX_1T3_MODE_EN 0 // 1T3使能
 #define TCFG_KBOX_1T3_WITH_TWS_MODE 3 // TWS+MIC连接方式
+#define LE_AUDIO_LOCAL_MIC_EN 0 // 叠加Mic广播功能
+#define LE_AUDIO_MIX_MIC_LATENCY 85000 // 发送延时(us)
+#define LE_AUDIO_MIX_MIC_EFFECT_EN 0 // 叠加混响音效广播
 // ------------公共配置.json------------
 
 // ------------JL_BIS配置.json------------
@@ -389,6 +420,13 @@
 #define AURACAST_BIS_SAMPLING_RATE 5 // sampling_frequency
 #define AURACAST_BIS_VARIANT 1 // variant
 #define TCFG_LE_AUDIO_PLAY_LATENCY 30000 // le_audio延时（us）
+#define AURACAST_SOURCE_BIS_NUMS 2 // source广播链路数
+#define AURACAST_SINK_BIS_NUMS 2 // sink最多接收链路数
+#define TCFG_AURACAST_PAWR_ENABLE 0 // PAWR使能
+#define TCFG_AURACAST_ENCRYPT_ENABLE 0 // 是否收听加密设备
+#define TCFG_AURACAST_DEFAULT_KEY "8888" // 默认密钥
+#define AURACAST_TX_CODEC_CHANNEL 2 // source音频通道
+#define AURACAST_RX_CODEC_CHANNEL 2 // sink音频通道
 // ------------AURACAST配置.json------------
 
 // ------------升级配置.json------------
@@ -505,7 +543,14 @@
 #define TCFG_ENC_PCM_ENABLE 0 // PCM
 #define TCFG_DATA_EXPORT_UART_TX_PORT IO_PORT_DM // 串口发送引脚
 #define TCFG_DATA_EXPORT_UART_BAUDRATE 2000000 // 串口波特率
+#define TCFG_DEC_JLA_V2_ENABLE 1 // JLA_V2
+#define TCFG_ENC_JLA_V2_ENABLE 1 // JLA_V2
 // ------------音频配置.json------------
+
+
+// ------------JLStudio Auto generate------------
+#define PROJECT_CONFIG_NAME "" // 默认配置为空，非默认配置为配置名称
+// ------------JLStudio Auto generate------------
 #endif
 
 

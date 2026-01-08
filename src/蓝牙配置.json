@@ -1319,7 +1319,7 @@
           "labelWidth": 80,
           "tag": "el-input-number",
           "tagIcon": "number",
-          "defaultValue": 53,
+          "defaultValue": 38,
           "span": 6,
           "layout": "colFormItem",
           "required": false,
@@ -1354,7 +1354,7 @@
           "labelWidth": null,
           "tag": "el-input-number",
           "tagIcon": "number",
-          "defaultValue": 320000,
+          "defaultValue": 131072,
           "span": 10,
           "layout": "colFormItem",
           "required": false,
@@ -4199,7 +4199,7 @@
           "document": "https://element.eleme.cn/#/zh-CN/component/select",
           "formId": 113,
           "renderKey": "1131641979429141",
-          "defaultValue": 6,
+          "defaultValue": 5,
           "saveWay": "macro",
           "uuid": "TCFG_BT_BLE_TX_POWER",
           "eventField": [],
@@ -4375,7 +4375,8 @@
        "tag": "el-checkbox-group",
        "tagIcon": "checkbox",
        "defaultValue": [
-        0
+        0,
+        "RCSP_MODE_EN"
        ],
        "span": 11,
        "showLabel": true,
@@ -4453,7 +4454,7 @@
      }
     ],
     "eventField": [],
-    "disable": true,
+    "disable": false,
     "saveWay": "macro"
    },
    "type": "default",

@@ -710,7 +710,7 @@
              ],
              "uuid": "TCFG_LED7_PIN0",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1647485267192_70",
+             "defaultValue": "id_1659942254419_11",
              "originValue": "id_1647485267192_70"
             },
             "__slot__": {
@@ -986,7 +986,7 @@
              ],
              "uuid": "TCFG_LED7_PIN1",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1647485267192_72",
+             "defaultValue": "id_1659942300489_12",
              "originValue": "id_1647485267192_72"
             },
             "__slot__": {
@@ -1292,7 +1292,7 @@
              ],
              "uuid": "TCFG_LED7_PIN2",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1647485267192_73",
+             "defaultValue": "id_1659942301465_13",
              "originValue": "id_1647485267192_73"
             },
             "__slot__": {
@@ -1568,7 +1568,7 @@
              ],
              "uuid": "TCFG_LED7_PIN3",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1653449701350_0",
+             "defaultValue": "id_1659942302985_15",
              "originValue": "id_1653449701350_0"
             },
             "__slot__": {
@@ -1874,7 +1874,7 @@
              ],
              "uuid": "TCFG_LED7_PIN4",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1659942254419_11",
+             "defaultValue": "id_1659942303977_16",
              "originValue": "id_1659942254419_11"
             },
             "__slot__": {
@@ -2150,7 +2150,7 @@
              ],
              "uuid": "TCFG_LED7_PIN5",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1659942300489_12",
+             "defaultValue": "id_1659942305385_17",
              "originValue": "id_1659942300489_12"
             },
             "__slot__": {
@@ -2456,7 +2456,7 @@
              ],
              "uuid": "TCFG_LED7_PIN6",
              "emptyValue": "NO_CONFIG_PORT",
-             "defaultValue": "id_1659942301465_13",
+             "defaultValue": "id_1659942302234_14",
              "originValue": "id_1659942301465_13"
             },
             "__slot__": {
@@ -2774,7 +2774,7 @@
            "gpio"
           ],
           "emptyValue": "NO_CONFIG_PORT",
-          "defaultValue": "id_1647485267192_80",
+          "defaultValue": "id_1647485267192_69",
           "originValue": "id_1647485267192_80"
          },
          "__slot__": {
@@ -3050,7 +3050,7 @@
            "gpio"
           ],
           "emptyValue": "NO_CONFIG_PORT",
-          "defaultValue": "id_1647485267192_69",
+          "defaultValue": "id_1647485267192_70",
           "originValue": "id_1647485267192_69"
          },
          "__slot__": {
@@ -3326,7 +3326,7 @@
            "gpio"
           ],
           "emptyValue": "NO_CONFIG_PORT",
-          "defaultValue": "id_1659942689298_34",
+          "defaultValue": "NO_CONFIG_PORT",
           "originValue": "id_1659942689298_34"
          },
          "__slot__": {
@@ -3877,7 +3877,7 @@
            "gpio"
           ],
           "emptyValue": "NO_CONFIG_PORT",
-          "defaultValue": ""
+          "defaultValue": "NO_CONFIG_PORT"
          },
          "__slot__": {
           "options": [
@@ -4152,7 +4152,7 @@
            "gpio"
           ],
           "emptyValue": "NO_CONFIG_PORT",
-          "defaultValue": ""
+          "defaultValue": "NO_CONFIG_PORT"
          },
          "__slot__": {
           "options": [
