@@ -4,6 +4,7 @@
 #include "btstack/third_party/rcsp/btstack_rcsp_user.h"
 #include "btstack/le/att.h"
 #include "asm/mcpwm.h"
+#include "fat_nor/cfg_private.h"
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
@@ -186,6 +187,71 @@ void user_bt_send_custom_data(u16 ble_con_hdl, u8 *data, u16 len)
 	printf("[BLE TX] Sent %d bytes to hdl:%d\n", len, ble_con_hdl);
 }
 
+/**
+ * @brief Read or write music file from/to flash storage.
+ * @param write_data Data buffer to write, NULL for read-only operation.
+ * @param data_len Length of data to write.
+ * @param read_buf Buffer to store read data, NULL for write-only operation.
+ * @param read_len Length of data to read.
+ * @return 0 if success, negative value on error.
+ */
+int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
+{
+	int ret = 0;
+	RESFILE *fp = NULL;
+	char path[64] = "flash/APP/FATFSI/";
+	char file_path[64] = "flash/APP/FATFSI/music0.mp3";
+
+	ret = cfg_private_init(10, path);
+	if (ret != CFG_PRIVATE_OK) {
+		printf("[USER] Init failed: %d\n", ret);
+		return -1;
+	}
+	
+	if (write_data && data_len > 0) {
+
+		fp = cfg_private_open_by_maxsize(file_path, "w+", 4 * 1024);
+		if (!fp) {
+			printf("[USER] Failed to open file for writing\n");
+			cfg_private_uninit();
+			return -2;
+		}
+		
+		ret = cfg_private_write(fp, write_data, data_len);
+		if (ret < 0) {
+			printf("[USER] Write failed: %d\n", ret);
+			cfg_private_close(fp);
+			cfg_private_uninit();
+			return -3;
+		}
+
+		cfg_private_close(fp);
+	}
+	
+	if (read_buf && read_len > 0) {
+		
+		fp = cfg_private_open_by_maxsize(file_path, "r", 4 * 1024);
+		if (!fp) {
+			printf("[USER] File not found or open failed\n");
+			cfg_private_uninit();
+			return -4;
+		}
+		
+		ret = cfg_private_read(fp, read_buf, read_len);
+		if (ret < 0) {
+			printf("[USER] Read failed: %d\n", ret);
+			cfg_private_close(fp);
+			cfg_private_uninit();
+			return -5;
+		}
+
+		cfg_private_close(fp);
+	}
+	
+	cfg_private_uninit();
+	
+	return 0;
+}
 
 void user_init(void)
 {
