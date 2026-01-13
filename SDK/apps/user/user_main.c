@@ -5,6 +5,10 @@
 #include "btstack/le/att.h"
 #include "asm/mcpwm.h"
 #include "fat_nor/cfg_private.h"
+#include "fs/resfile.h"
+
+// Function declarations
+int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len);
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
@@ -144,17 +148,77 @@ static void user_gpio_init(void)
 
 static void user_blink_task(void *p)
 {
-	u8 level = 0;
-	static u32 counter = 0;
+	static u32 check_counter = 0;
 	
 	while (1) {
-		os_time_dly(1000);
+		// Check music file every 3 seconds
+		check_counter++;
+		if (check_counter >= 30) {  // 30 * 100ms = 3s
+			check_counter = 0;
+			
+			// Try to read file to check if it exists
+			RESFILE *fp;
+			char fatfsi_path[32] = "flash/APP/FATFSI/";
+			char file_check_path[64] = "flash/APP/FATFSI/music0.mp3";
+			int ret = cfg_private_init(5, fatfsi_path);
+			if (ret == 0) {
+				fp = cfg_private_open_by_maxsize(file_check_path, "r", 16 * 1024);
+				if (fp) {
+					// Get file size using resfile_get_attrs
+					struct resfile_attrs attrs;
+					if (resfile_get_attrs(fp, &attrs) == 0) {
+						int file_size = attrs.fsize;
+						
+						if (file_size > 0) {
+							// Read first 5 bytes
+							u8 first_5[5] = {0};
+							u8 last_5[5] = {0};
+							
+							cfg_private_seek(fp, 0, SEEK_SET);
+							cfg_private_read(fp, first_5, 5);
+							
+							// Read last 5 bytes
+							if (file_size >= 5) {
+								cfg_private_seek(fp, file_size - 5, SEEK_SET);
+								cfg_private_read(fp, last_5, 5);
+							}
+							
+							printf("[CHECK] music0.mp3 exists, size=%d bytes\n", file_size);
+							printf("[CHECK] First 5: %02X %02X %02X %02X %02X\n", 
+								   first_5[0], first_5[1], first_5[2], first_5[3], first_5[4]);
+							printf("[CHECK] Last 5:  %02X %02X %02X %02X %02X\n", 
+								   last_5[0], last_5[1], last_5[2], last_5[3], last_5[4]);
+						}
+					}
+					cfg_private_close(fp);
+				} else {
+					printf("[CHECK] music0.mp3 not found\n");
+				}
+				cfg_private_uninit();
+			}
+		}
+		
+		os_time_dly(100);  // Check every 100ms
 	}
 }
 
 
 /**
+ * @brief BLE file transfer state machine.
+ */
+static struct {
+	u8 receiving;
+	u8 *file_buf;
+	u32 file_size;
+	u32 received_bytes;
+} ble_file_transfer = {0};
+
+#define BLE_FILE_BUF_SIZE (16 * 1024)
+
+/**
  * @brief Handles BLE notification or indication data received from a remote device
+ * Protocol: 0xAA 0x55 CMD LEN_L LEN_H [DATA...]
+ * CMD: 0x01=Start, 0x02=Data, 0x03=End
  * 
  * @param ble_con_hdl The BLE connection handle identifying the active connection
  * @param remote_addr Pointer to the remote device's BLE address
@@ -165,13 +229,78 @@ static void user_blink_task(void *p)
  */
 void bt_rcsp_custom_recieve_callback(u16 ble_con_hdl, void *remote_addr, u8 *buf, u16 len, uint16_t att_handle)
 {
-	printf("[BLE RX] hdl:%d, len:%d, att:0x%04x\n", ble_con_hdl, len, att_handle);
-	printf("[BLE RX] Data: ");
-	for(u16 i = 0; i < len; i++) {
-		printf("%02X ", buf[i]);
-	}
-	printf("\n");
+	printf("[BLE RX] hdl:%d, len:%d\n", ble_con_hdl, len);
 	
+	if (len < 5) return;
+	
+	if (buf[0] != 0xAA || buf[1] != 0x55) {
+		printf("[BLE] Invalid header\n");
+		return;
+	}
+	
+	u8 cmd = buf[2];
+	u16 data_len = buf[3] | (buf[4] << 8);
+	u8 *data = &buf[5];
+	
+	switch (cmd) {
+		case 0x01: // Start
+			printf("[BLE] Start receiving file, size=%d\n", data_len);
+			if (ble_file_transfer.file_buf) {
+				free(ble_file_transfer.file_buf);
+			}
+			ble_file_transfer.file_buf = (u8 *)malloc(BLE_FILE_BUF_SIZE);
+			if (!ble_file_transfer.file_buf) {
+				printf("[BLE] Malloc failed\n");
+				return;
+			}
+			ble_file_transfer.file_size = data_len;
+			ble_file_transfer.received_bytes = 0;
+			ble_file_transfer.receiving = 1;
+			printf("[BLE] Ready to receive\n");
+			break;
+			
+		case 0x02: // Data
+			if (!ble_file_transfer.receiving) {
+				printf("[BLE] Not in receiving state\n");
+				return;
+			}
+			if (ble_file_transfer.received_bytes + data_len > BLE_FILE_BUF_SIZE) {
+				printf("[BLE] Buffer overflow\n");
+				return;
+			}
+			memcpy(ble_file_transfer.file_buf + ble_file_transfer.received_bytes, data, data_len);
+			ble_file_transfer.received_bytes += data_len;
+			printf("[BLE] Received %d/%d bytes\n", ble_file_transfer.received_bytes, ble_file_transfer.file_size);
+			break;
+			
+		case 0x03: // End
+			if (!ble_file_transfer.receiving) {
+				printf("[BLE] Not in receiving state\n");
+				return;
+			}
+			printf("[BLE] Transfer complete, saving to flash...\n");
+			int ret = user_music_file_rw(ble_file_transfer.file_buf, 
+										 ble_file_transfer.received_bytes, 
+										 NULL, 0);
+			if (ret == 0) {
+				printf("[BLE] File saved successfully\n");
+			} else {
+				printf("[BLE] File save failed: %d\n", ret);
+			}
+			
+			ble_file_transfer.receiving = 0;
+			if (ble_file_transfer.file_buf) {
+				free(ble_file_transfer.file_buf);
+				ble_file_transfer.file_buf = NULL;
+			}
+			ble_file_transfer.received_bytes = 0;
+			ble_file_transfer.file_size = 0;
+			break;
+			
+		default:
+			printf("[BLE] Unknown command: 0x%02X\n", cmd);
+			break;
+	}
 }
 
 /**
@@ -210,7 +339,7 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 	
 	if (write_data && data_len > 0) {
 
-		fp = cfg_private_open_by_maxsize(file_path, "w+", 4 * 1024);
+		fp = cfg_private_open_by_maxsize(file_path, "w+", 32 * 1024);
 		if (!fp) {
 			printf("[USER] Failed to open file for writing\n");
 			cfg_private_uninit();
@@ -230,7 +359,7 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 	
 	if (read_buf && read_len > 0) {
 		
-		fp = cfg_private_open_by_maxsize(file_path, "r", 4 * 1024);
+		fp = cfg_private_open_by_maxsize(file_path, "r", 32 * 1024);
 		if (!fp) {
 			printf("[USER] File not found or open failed\n");
 			cfg_private_uninit();

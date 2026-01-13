@@ -211,7 +211,7 @@
           "changeTag": true,
           "tag": "el-input",
           "tagIcon": "input",
-          "defaultValue": "soundbox_tws",
+          "defaultValue": "debug_4612",
           "required": false,
           "layout": "colFormItem",
           "span": 7,
