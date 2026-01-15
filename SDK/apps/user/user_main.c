@@ -129,16 +129,7 @@ void motor_set_duty(u8 motor_id, s16 duty)
 
 static void user_gpio_init(void)
 {
-	/* Configure as output low. IO_PORT_SPILT expands to (port, pin_mask). */
-	// gpio_set_mode(IO_PORT_SPILT(USER_BLINK_GPIO), PORT_OUTPUT_LOW);
-	// u32 gpio = IO_PORTB_00;
-	// gpio_set_pull_down(gpio, 0);
-	// gpio_set_pull_up(gpio, 0);
-	// gpio_set_die(gpio, 1);
-	// gpio_set_hd(gpio, 0);
-	// gpio_set_hd0(gpio, 0);
-	// gpio_set_direction(gpio, 0);
-	// gpio_set_output_value(gpio, 1);
+	gpio_set_mode(PORTA, PORT_PIN_2, PORT_INPUT_PULLUP_10K);//PA2 audio control
 }
 
 
@@ -256,6 +247,7 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 void user_init(void)
 {
 	pwm_init();
+	user_gpio_init();
 	os_task_create(user_blink_task,
 				   NULL,
 				   2,
