@@ -6,6 +6,7 @@
 #include "fat_nor/cfg_private.h"
 #include "stepper_motor.h"
 #include "piezo_pump.h"
+#include "uart_comm.h"
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
@@ -132,6 +133,7 @@ void user_init(void)
 {
 	piezo_pump_init();
 	stepper_motor_init();
+	uart_comm_init();
 	user_gpio_init();
 	os_task_create(user_blink_task,
 				   NULL,
