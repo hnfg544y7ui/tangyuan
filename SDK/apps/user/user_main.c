@@ -4,6 +4,7 @@
 #include "btstack/third_party/rcsp/btstack_rcsp_user.h"
 #include "btstack/le/att.h"
 #include "asm/mcpwm.h"
+#include "fat_nor/cfg_private.h"
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
@@ -128,16 +129,7 @@ void motor_set_duty(u8 motor_id, s16 duty)
 
 static void user_gpio_init(void)
 {
-	/* Configure as output low. IO_PORT_SPILT expands to (port, pin_mask). */
-	// gpio_set_mode(IO_PORT_SPILT(USER_BLINK_GPIO), PORT_OUTPUT_LOW);
-	// u32 gpio = IO_PORTB_00;
-	// gpio_set_pull_down(gpio, 0);
-	// gpio_set_pull_up(gpio, 0);
-	// gpio_set_die(gpio, 1);
-	// gpio_set_hd(gpio, 0);
-	// gpio_set_hd0(gpio, 0);
-	// gpio_set_direction(gpio, 0);
-	// gpio_set_output_value(gpio, 1);
+	gpio_set_mode(PORTA, PORT_PIN_2, PORT_INPUT_PULLUP_10K);//PA2 audio control
 }
 
 
@@ -186,10 +178,76 @@ void user_bt_send_custom_data(u16 ble_con_hdl, u8 *data, u16 len)
 	printf("[BLE TX] Sent %d bytes to hdl:%d\n", len, ble_con_hdl);
 }
 
+/**
+ * @brief Read or write music file from/to flash storage.
+ * @param write_data Data buffer to write, NULL for read-only operation.
+ * @param data_len Length of data to write.
+ * @param read_buf Buffer to store read data, NULL for write-only operation.
+ * @param read_len Length of data to read.
+ * @return 0 if success, negative value on error.
+ */
+int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
+{
+	int ret = 0;
+	RESFILE *fp = NULL;
+	char path[64] = "flash/APP/FATFSI/";
+	char file_path[64] = "flash/APP/FATFSI/music0.mp3";
+
+	ret = cfg_private_init(10, path);
+	if (ret != CFG_PRIVATE_OK) {
+		printf("[USER] Init failed: %d\n", ret);
+		return -1;
+	}
+	
+	if (write_data && data_len > 0) {
+
+		fp = cfg_private_open_by_maxsize(file_path, "w+", 4 * 1024);
+		if (!fp) {
+			printf("[USER] Failed to open file for writing\n");
+			cfg_private_uninit();
+			return -2;
+		}
+		
+		ret = cfg_private_write(fp, write_data, data_len);
+		if (ret < 0) {
+			printf("[USER] Write failed: %d\n", ret);
+			cfg_private_close(fp);
+			cfg_private_uninit();
+			return -3;
+		}
+
+		cfg_private_close(fp);
+	}
+	
+	if (read_buf && read_len > 0) {
+		
+		fp = cfg_private_open_by_maxsize(file_path, "r", 4 * 1024);
+		if (!fp) {
+			printf("[USER] File not found or open failed\n");
+			cfg_private_uninit();
+			return -4;
+		}
+		
+		ret = cfg_private_read(fp, read_buf, read_len);
+		if (ret < 0) {
+			printf("[USER] Read failed: %d\n", ret);
+			cfg_private_close(fp);
+			cfg_private_uninit();
+			return -5;
+		}
+
+		cfg_private_close(fp);
+	}
+	
+	cfg_private_uninit();
+	
+	return 0;
+}
 
 void user_init(void)
 {
 	pwm_init();
+	user_gpio_init();
 	os_task_create(user_blink_task,
 				   NULL,
 				   2,
