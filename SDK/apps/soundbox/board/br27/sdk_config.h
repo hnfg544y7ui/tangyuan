@@ -53,7 +53,7 @@
 #define TCFG_PSRAM_PORT_SEL 1 // IO引脚组
 #endif // TCFG_PSRAM_DEV_ENABLE
 
-#define TCFG_SD0_ENABLE 1 // SD配置
+#define TCFG_SD0_ENABLE 0 // SD配置
 #if TCFG_SD0_ENABLE
 #define TCFG_SD0_DAT_MODE 1 // 线数设置
 #define TCFG_SD0_DET_MODE SD_CMD_DECT // 检测方式

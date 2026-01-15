@@ -3,129 +3,13 @@
 #include "user_main.h"
 #include "btstack/third_party/rcsp/btstack_rcsp_user.h"
 #include "btstack/le/att.h"
-#include "asm/mcpwm.h"
 #include "fat_nor/cfg_private.h"
+#include "stepper_motor.h"
+#include "piezo_pump.h"
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
 #endif
-
-static int g_pwm_pb10_id = -1;
-static int g_pwm_pb9_id = -1;
-static int g_pwm_pa1_id = -1;
-static int g_pwm_pa0_id = -1;
-
-/**
- * @brief Initialize PWM channels for motor control.
- * @return 0 if initialization succeeds.
- */
-uint8_t pwm_init(void)
-{
-	struct mcpwm_config usr_mcpwm_cfg;
-
-	usr_mcpwm_cfg.ch = MCPWM_CH0;
-	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
-	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
-	usr_mcpwm_cfg.duty = 0;			   // duty 0~10000
-	usr_mcpwm_cfg.h_pin = IO_PORTB_05; // port
-	usr_mcpwm_cfg.l_pin = -1;
-	usr_mcpwm_cfg.complementary_en = 0;
-	usr_mcpwm_cfg.detect_port = -1;
-	usr_mcpwm_cfg.irq_cb = NULL;
-	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pb10_id = mcpwm_init(&usr_mcpwm_cfg);
-
-	usr_mcpwm_cfg.ch = MCPWM_CH1;
-	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
-	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
-	usr_mcpwm_cfg.duty = 0;			   // duty 0~10000
-	usr_mcpwm_cfg.h_pin = IO_PORTB_06; // port
-	usr_mcpwm_cfg.l_pin = -1;
-	usr_mcpwm_cfg.complementary_en = 0;
-	usr_mcpwm_cfg.detect_port = -1;
-	usr_mcpwm_cfg.irq_cb = NULL;
-	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pb9_id = mcpwm_init(&usr_mcpwm_cfg);
-
-	usr_mcpwm_cfg.ch = MCPWM_CH0 + 2;
-	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
-	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
-	usr_mcpwm_cfg.duty = 0;			   // duty 0~10000
-	usr_mcpwm_cfg.h_pin = IO_PORTB_07; // port
-	usr_mcpwm_cfg.l_pin = -1;
-	usr_mcpwm_cfg.complementary_en = 0;
-	usr_mcpwm_cfg.detect_port = -1;
-	usr_mcpwm_cfg.irq_cb = NULL;
-	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pa1_id = mcpwm_init(&usr_mcpwm_cfg);
-
-	usr_mcpwm_cfg.ch = MCPWM_CH0 + 3;
-	usr_mcpwm_cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
-	usr_mcpwm_cfg.frequency = 1000;	   // frequency Hz
-	usr_mcpwm_cfg.duty = 0;			   // duty 0~10000
-	usr_mcpwm_cfg.h_pin = IO_PORTB_08; // port
-	usr_mcpwm_cfg.l_pin = -1;
-	usr_mcpwm_cfg.complementary_en = 0;
-	usr_mcpwm_cfg.detect_port = -1;
-	usr_mcpwm_cfg.irq_cb = NULL;
-	usr_mcpwm_cfg.irq_priority = 1;
-	g_pwm_pa0_id = mcpwm_init(&usr_mcpwm_cfg);
-
-	mcpwm_start(g_pwm_pb10_id);
-	mcpwm_start(g_pwm_pb9_id);
-	mcpwm_start(g_pwm_pa1_id);
-	mcpwm_start(g_pwm_pa0_id);
-
-	return 0;
-}
-
-
-
-/**
- * @brief Control motor PWM duty cycle with direction support.
- * @param motor_id Motor ID: 0=group1(PB10/PB9), 1=group2(PA1/PA0).
- * @param duty Duty cycle range -10000~10000.
- *             Positive: first pin outputs PWM, second pin outputs 0.
- *             Negative: second pin outputs PWM, first pin outputs 0.
- *             Zero: both pins output 0 (brake).
- */
-void motor_set_duty(u8 motor_id, s16 duty)
-{
-	if (duty > 10000) {
-		duty = 10000;
-	} else if (duty < -10000) {
-		duty = -10000;
-	}
-
-	u16 pwm_duty = (duty >= 0) ? duty : (-duty);
-
-	int pin1_id, pin2_id;
-
-	switch (motor_id) {
-		case 0:
-			pin1_id = g_pwm_pb10_id;
-			pin2_id = g_pwm_pb9_id;
-			break;
-		case 1:
-			pin1_id = g_pwm_pa1_id;
-			pin2_id = g_pwm_pa0_id;
-			break;
-		default:
-			printf("Error: Invalid motor_id %d\n", motor_id);
-			return;
-	}
-
-	if (duty > 0) {
-		mcpwm_set_duty(pin1_id, pwm_duty);
-		mcpwm_set_duty(pin2_id, 0);
-	} else if (duty < 0) {
-		mcpwm_set_duty(pin1_id, 0);
-		mcpwm_set_duty(pin2_id, pwm_duty);
-	} else {
-		mcpwm_set_duty(pin1_id, 0);
-		mcpwm_set_duty(pin2_id, 0);
-	}
-}
 
 static void user_gpio_init(void)
 {
@@ -246,7 +130,8 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 
 void user_init(void)
 {
-	pwm_init();
+	piezo_pump_init();
+	stepper_motor_init();
 	user_gpio_init();
 	os_task_create(user_blink_task,
 				   NULL,

@@ -6,6 +6,8 @@
 
 c_SRC_FILES += \
 	apps/user/user_main.c \
+	apps/user/stepper_motor.c \
+	apps/user/piezo_pump.c \
 
 c_SRC_FILES += \
       audio/framework/plugs/source/a2dp_file.c \
