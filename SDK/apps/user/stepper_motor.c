@@ -2,8 +2,8 @@
 #include "gpio.h"
 
 #define STEPPER_PIN_A  IO_PORTB_05
-#define STEPPER_PIN_B  IO_PORTB_06
-#define STEPPER_PIN_C  IO_PORTB_07
+#define STEPPER_PIN_B  IO_PORTB_07
+#define STEPPER_PIN_C  IO_PORTB_06
 #define STEPPER_PIN_D  IO_PORTB_08
 
 static struct {
@@ -77,6 +77,7 @@ static void stepper_set_phase(u8 step_index)
 static void stepper_motor_task(void *p)
 {
     while (1) {
+        // stepper_move(1000, 10);
         os_time_dly(100);
     }
 }
