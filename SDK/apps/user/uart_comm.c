@@ -56,13 +56,7 @@ static void uart_comm_recv_task(void *p)
             
             len = uart_recv_bytes(g_uart_dev, buf, len);
             if (len > 0) {
-                printf("UART RX [%d]: ", len);
-                for (int i = 0; i < len; i++) {
-                    printf("%02X ", buf[i]);
-                }
-                printf("\n");
-                
-                uart_comm_send(buf, len);
+                // Data handled by NFC module
             }
         }
         
@@ -82,8 +76,8 @@ int uart_comm_init(void)
     
     s32 uart_num = 1;
     u32 baud_rate = 9600;
-    u16 tx_pin = IO_PORTA_03;
-    u16 rx_pin = IO_PORTA_04;
+    u16 tx_pin = IO_PORTC_09;
+    u16 rx_pin = IO_PORTC_10;
     
     g_uart_rx_buf = dma_malloc(UART_RX_BUF_SIZE);
     if (!g_uart_rx_buf) {

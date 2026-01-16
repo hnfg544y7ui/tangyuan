@@ -9,6 +9,7 @@ c_SRC_FILES += \
 	apps/user/stepper_motor.c \
 	apps/user/piezo_pump.c \
 	apps/user/uart_comm.c \
+	apps/user/nfc_reader.c \
 
 c_SRC_FILES += \
       audio/framework/plugs/source/a2dp_file.c \
