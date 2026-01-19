@@ -78,12 +78,24 @@ static int nfc_recv_resp(u8 cmd, u8 *data, u8 max_len, u8 *out_len)
         return -1;
     }
     
+    u32 wait_count = 0;
+    while (uart_comm_get_recv_len() < 6 && wait_count < 100) {
+        os_time_dly(5);
+        wait_count++;
+    }
+    
     int ret = uart_comm_recv(frame, NFC_FRAME_MAX_LEN, NFC_TIMEOUT_MS);
     if (ret <= 0) {
         dma_free(frame);
-        printf("NFC recv timeout\n");
+        printf("NFC recv timeout (ret=%d)\n", ret);
         return -1;
     }
+    
+    // printf("NFC recv %d bytes: ", ret);
+    // for (int i = 0; i < ret && i < 32; i++) {
+    //     printf("%02X ", frame[i]);
+    // }
+    // printf("\n");
     
     if (frame[0] != NFC_STX) {
         dma_free(frame);
@@ -172,12 +184,14 @@ int nfc_reader_init(void)
 {
     printf("NFC reader initialized\n");
     
-    int ret = os_task_create(nfc_card_read_task,
-                             NULL,
-                             4,
-                             512,
-                             0,
-                             "nfc_read");
+    int ret = 0;
+    
+    // ret = os_task_create(nfc_card_read_task,
+    //                          NULL,
+    //                          4,
+    //                          512,
+    //                          0,
+    //                          "nfc_read");
     
     return ret;
 }
@@ -294,9 +308,14 @@ int nfc_write_block(u8 block, u8 key_type, const u8 *key, const u8 *data)
         return ret;
     }
     
-    os_time_dly(10);
+    os_time_dly(50);
     
     int state = nfc_recv_resp(NFC_CMD_WRITE_BLOCK, NULL, 0, NULL);
+    
+    if (state < 0) {
+        printf("NFC write block failed: state=0x%08X\n", (u32)state);
+        return -1;
+    }
     
     if (state != NFC_STATE_SUCCESS) {
         printf("NFC write block failed: state=0x%02X\n", state);

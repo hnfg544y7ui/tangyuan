@@ -124,12 +124,12 @@ int uart_comm_init(void)
     
     uart_dump();
     
-    ret = os_task_create(uart_comm_recv_task,
-                         NULL,
-                         3,
-                         512,
-                         0,
-                         "uart_recv");
+    // ret = os_task_create(uart_comm_recv_task,
+    //                      NULL,
+    //                      3,
+    //                      512,
+    //                      0,
+    //                      "uart_recv");
     
     return 0;
 }
