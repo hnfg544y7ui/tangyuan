@@ -3,6 +3,9 @@
 
 #include "system/includes.h"
 
+// Gear reduction ratio
+#define STEPPER_REDUCTION_RATIO  15
+
 typedef enum {
     STEPPER_MODE_SINGLE = 0,
     STEPPER_MODE_DOUBLE = 1,
@@ -44,5 +47,11 @@ void stepper_stop(void);
  * @return Total steps accumulated.
  */
 s32 stepper_get_total_steps(void);
+
+/**
+ * @brief Control stepper motor driver power.
+ * @param enable 1=ON, 0=OFF.
+ */
+void stepper_driver_control(u8 enable);
 
 #endif

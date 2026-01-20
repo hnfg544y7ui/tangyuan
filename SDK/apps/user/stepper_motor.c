@@ -1,10 +1,11 @@
 #include "stepper_motor.h"
 #include "gpio.h"
 
-#define STEPPER_PIN_A  IO_PORTB_05
-#define STEPPER_PIN_B  IO_PORTB_07
-#define STEPPER_PIN_C  IO_PORTB_06
-#define STEPPER_PIN_D  IO_PORTB_08
+#define STEPPER_PIN_A      IO_PORTB_05
+#define STEPPER_PIN_B      IO_PORTB_07
+#define STEPPER_PIN_C      IO_PORTB_06
+#define STEPPER_PIN_D      IO_PORTB_08
+#define STEPPER_DRIVER_EN  IO_PORTB_11
 
 static struct {
     stepper_mode_t mode;
@@ -92,6 +93,7 @@ int stepper_motor_init(void)
     gpio_set_mode(PORTB, PORT_PIN_6, PORT_OUTPUT_LOW);
     gpio_set_mode(PORTB, PORT_PIN_7, PORT_OUTPUT_LOW);
     gpio_set_mode(PORTB, PORT_PIN_8, PORT_OUTPUT_LOW);
+    gpio_set_mode(PORTB, PORT_PIN_11, PORT_OUTPUT_LOW);
     
     stepper_state.mode = STEPPER_MODE_HALF;
     stepper_state.step_position = 0;
@@ -137,11 +139,12 @@ void stepper_move(s32 steps, u16 delay_ms)
 {
     s8 direction = (steps > 0) ? 1 : -1;
     u32 abs_steps = (steps > 0) ? steps : (-steps);
-    
+    stepper_driver_control(1);
     for (u32 i = 0; i < abs_steps; i++) {
         stepper_step(direction);
         os_time_dly(delay_ms / 10);
     }
+    stepper_driver_control(0);
 }
 
 /**
@@ -163,6 +166,7 @@ void stepper_set_mode(stepper_mode_t mode)
  */
 void stepper_stop(void)
 {
+    stepper_driver_control(0);
     gpio_write(STEPPER_PIN_A, 0);
     gpio_write(STEPPER_PIN_B, 0);
     gpio_write(STEPPER_PIN_C, 0);
@@ -176,4 +180,14 @@ void stepper_stop(void)
 s32 stepper_get_total_steps(void)
 {
     return stepper_state.total_steps;
+}
+
+/**
+ * @brief Control stepper motor driver power.
+ * @param enable 1=ON, 0=OFF.
+ */
+void stepper_driver_control(u8 enable)
+{
+    gpio_write(STEPPER_DRIVER_EN, enable ? 1 : 0);
+    printf("Stepper driver %s\n", enable ? "ON" : "OFF");
 }

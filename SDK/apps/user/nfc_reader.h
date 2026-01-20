@@ -24,6 +24,15 @@
 #define NFC_CARD_TYPE_CPU       0x10
 
 /**
+ * @brief Aroma diffuser data structure.
+ */
+struct aroma_data {
+    u8 type_id;              // Aroma type ID
+    u8 aroma_id[6];          // Aroma 0-5 ID numbers
+    u8 aroma_used_time[6];   // Aroma 0-5 used time
+};
+
+/**
  * @brief Initialize NFC reader module.
  * @return 0 if success, negative value on error.
  */
@@ -55,5 +64,26 @@ int nfc_read_block(u8 block, u8 key_type, const u8 *key, u8 *data);
  * @return 0 if success, negative value on error.
  */
 int nfc_write_block(u8 block, u8 key_type, const u8 *key, const u8 *data);
+
+/**
+ * @brief Initialize NFC card keys.
+ * @param sector Sector number (0-15).
+ * @return 0 if success, negative value on error.
+ */
+int nfc_init_keys(u8 sector);
+
+/**
+ * @brief Read aroma data from NFC card.
+ * @param data Pointer to aroma_data structure.
+ * @return 0 if success, negative value on error.
+ */
+int nfc_read_aroma_data(struct aroma_data *data);
+
+/**
+ * @brief Write aroma data to NFC card.
+ * @param data Pointer to aroma_data structure.
+ * @return 0 if success, negative value on error.
+ */
+int nfc_write_aroma_data(const struct aroma_data *data);
 
 #endif

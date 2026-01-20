@@ -5,6 +5,11 @@
 #define NFC_FRAME_MAX_LEN   128
 #define NFC_TIMEOUT_MS      5000
 
+// Default aroma data storage configuration
+#define NFC_AROMA_BLOCK     4
+static const u8 g_nfc_key_a[6] = {0x11, 0x21, 0x31, 0x41, 0x51, 0x61};
+static struct aroma_data current_aroma_data;
+
 /**
  * @brief Calculate BCC checksum.
  * @param data Pointer to data buffer.
@@ -159,20 +164,11 @@ static void nfc_card_read_task(void *p)
     int ret;
     
     printf("NFC card read task started\n");
-    
-    os_time_dly(20);
+    nfc_init_keys(1);
     
     while (1) {
-        ret = nfc_get_uid(uid);
-        if (ret == 0) {
-            printf("Card UID: ");
-            for (int i = 0; i < 4; i++) {
-                printf("%02X ", uid[i]);
-            }
-            printf("(BCC: %02X)\n", uid[4]);
-        }
-        
-        os_time_dly(200);
+        ret = nfc_read_aroma_data(&current_aroma_data);
+        os_time_dly(100);
     }
 }
 
@@ -186,12 +182,12 @@ int nfc_reader_init(void)
     
     int ret = 0;
     
-    // ret = os_task_create(nfc_card_read_task,
-    //                          NULL,
-    //                          4,
-    //                          512,
-    //                          0,
-    //                          "nfc_read");
+    ret = os_task_create(nfc_card_read_task,
+                             NULL,
+                             4,
+                             512,
+                             0,
+                             "nfc_read");
     
     return ret;
 }
@@ -323,4 +319,93 @@ int nfc_write_block(u8 block, u8 key_type, const u8 *key, const u8 *data)
     }
     
     return 0;
+}
+
+/**
+ * @brief Initialize NFC card keys.
+ * @param sector Sector number (0-15).
+ * @return 0 if success, negative value on error.
+ */
+int nfc_init_keys(u8 sector)
+{
+    if (sector > 15) {
+        printf("NFC invalid sector: %d\n", sector);
+        return -1;
+    }
+    
+    // Calculate control block address
+    u8 control_block = sector * 4 + 3;
+    
+    // Default factory key
+    const u8 default_key[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    
+    // Read current control block with default key
+    u8 control_data[16] = {0};
+    int ret = nfc_read_block(control_block, 0, default_key, control_data);
+    if (ret < 0) {
+        printf("NFC read control block %d failed (key already changed?)\n", control_block);
+        return -1;
+    }
+    
+    u8 new_control[16];
+    // Set new KeyA
+    memcpy(&new_control[0], g_nfc_key_a, 6);
+    // Keep access bits unchanged (bytes 6-9)
+    memcpy(&new_control[6], &control_data[6], 4);
+    // Keep KeyB unchanged (bytes 10-15)
+    memcpy(&new_control[10], &control_data[10], 6);
+    
+    // Write new control block with default key
+    ret = nfc_write_block(control_block, 0, default_key, new_control);
+    if (ret < 0) {
+        printf("NFC write control block failed\n");
+        return -1;
+    }
+    
+    return 0;
+}
+
+/**
+ * @brief Read aroma data from NFC card.
+ * @param data Pointer to aroma_data structure.
+ * @return 0 if success, negative value on error.
+ */
+int nfc_read_aroma_data(struct aroma_data *data)
+{
+    if (!data) {
+        return -1;
+    }
+    
+    u8 buf[16] = {0};
+    int ret = nfc_read_block(NFC_AROMA_BLOCK, 0, g_nfc_key_a, buf);
+    if (ret < 0) {
+        return ret;
+    }
+    
+    // Parse structure from buffer
+    data->type_id = buf[0];
+    memcpy(data->aroma_id, &buf[1], 6);
+    memcpy(data->aroma_used_time, &buf[7], 6);
+    
+    return 0;
+}
+
+/**
+ * @brief Write aroma data to NFC card.
+ * @param data Pointer to aroma_data structure.
+ * @return 0 if success, negative value on error.
+ */
+int nfc_write_aroma_data(const struct aroma_data *data)
+{
+    if (!data) {
+        return -1;
+    }
+    
+    u8 buf[16] = {0};
+    
+    buf[0] = data->type_id;
+    memcpy(&buf[1], data->aroma_id, 6);
+    memcpy(&buf[7], data->aroma_used_time, 6);
+    
+    return nfc_write_block(NFC_AROMA_BLOCK, 0, g_nfc_key_a, buf);
 }
