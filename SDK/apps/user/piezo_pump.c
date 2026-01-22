@@ -1,5 +1,6 @@
 #include "piezo_pump.h"
 #include "asm/mcpwm.h"
+#include "gpio.h"
 
 static int g_pwm_motor1_id = -1;
 static int g_pwm_motor2_id = -1;
@@ -25,10 +26,13 @@ int piezo_pump_init(void)
 {
     struct mcpwm_config cfg;
 
+    // Configure PC3 as voltage enable pin
+    gpio_set_mode(PORTC, PORT_PIN_3, PORT_OUTPUT_HIGH);
+
     // Motor 1: PB10(H)/PB9(L)
     cfg.ch = MCPWM_CH0;
     cfg.aligned_mode = MCPWM_EDGE_ALIGNED;
-    cfg.frequency = 1000;
+    cfg.frequency = 20000;
     cfg.duty = 0;
     cfg.h_pin = IO_PORTB_10;
     cfg.l_pin = IO_PORTB_09;
@@ -63,12 +67,10 @@ int piezo_pump_init(void)
 /**
  * @brief Set pump motor PWM duty cycle (complementary mode).
  * @param motor_id Motor ID: 0=motor1(PB10/PB9), 1=motor2(PA1/PA0).
+ * @param frequency PWM frequency in Hz (e.g., 20000 for 20kHz).
  * @param duty Duty cycle range 0~10000 (0%~100%).
- *             In complementary mode:
- *             - H pin outputs duty% high
- *             - L pin outputs (100-duty)% high
  */
-void piezo_pump_set_duty(u8 motor_id, s16 duty)
+void piezo_pump_set_duty(u8 motor_id, u32 frequency, s16 duty)
 {
     if (duty > 10000) {
         duty = 10000;
@@ -90,5 +92,16 @@ void piezo_pump_set_duty(u8 motor_id, s16 duty)
             return;
     }
 
+    mcpwm_set_frequency(pwm_id, MCPWM_EDGE_ALIGNED, frequency);
     mcpwm_set_duty(pwm_id, duty);
+}
+
+/**
+ * @brief Start piezo pump with specified frequency.
+ * @param motor_id Motor ID: 0=motor1(PB10/PB9), 1=motor2(PA1/PA0).
+ * @param frequency PWM frequency in Hz (e.g., 20000 for 20kHz).
+ */
+void piezo_pump_run(u8 motor_id, u32 frequency)
+{
+    piezo_pump_set_duty(motor_id, frequency, 5000);
 }
