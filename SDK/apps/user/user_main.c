@@ -8,6 +8,7 @@
 #include "piezo_pump.h"
 #include "uart_comm.h"
 #include "nfc_reader.h"
+#include "led_control.h"
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
@@ -136,6 +137,7 @@ void user_init(void)
 	stepper_motor_init();
 	uart_comm_init();
 	nfc_reader_init();
+	led_control_init();
 	user_gpio_init();
 	os_task_create(user_blink_task,
 				   NULL,
