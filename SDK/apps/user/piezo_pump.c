@@ -11,8 +11,6 @@ static int g_pwm_motor2_id = -1;
  */
 static void piezo_pump_task(void *p)
 {
-    piezo_pump_set_duty(0, 5000);
-    piezo_pump_set_duty(1, 5000);
     while (1) {
         os_time_dly(100);
     }
@@ -68,7 +66,7 @@ int piezo_pump_init(void)
  * @brief Set pump motor PWM duty cycle (complementary mode).
  * @param motor_id Motor ID: 0=motor1(PB10/PB9), 1=motor2(PA1/PA0).
  * @param frequency PWM frequency in Hz (e.g., 20000 for 20kHz).
- * @param duty Duty cycle range 0~10000 (0%~100%).
+ * @param duty Duty cycle range 0-10000 (0%-100%).
  */
 void piezo_pump_set_duty(u8 motor_id, u32 frequency, s16 duty)
 {
