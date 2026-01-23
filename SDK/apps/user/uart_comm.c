@@ -3,6 +3,13 @@
 #include "gpio.h"
 #include "system/malloc.h"
 
+#define UART_COMM_DEBUG_ENABLE  0
+#if UART_COMM_DEBUG_ENABLE
+#define uart_comm_debug(fmt, ...) printf("[UART_COMM] "fmt, ##__VA_ARGS__)
+#else
+#define uart_comm_debug(...)
+#endif
+
 #define UART_RX_BUF_SIZE    1024
 
 static s32 g_uart_dev = -1;
@@ -17,20 +24,20 @@ static void uart_comm_event_callback(uart_dev uart_num, enum uart_event event)
 {
     if (event & UART_EVENT_RX_DATA) {
         int len = uart_get_recv_len(uart_num);
-        printf("UART RX: %d bytes\n", len);
+        uart_comm_debug("UART RX: %d bytes\n", len);
     }
     
     if (event & UART_EVENT_RX_TIMEOUT) {
-        printf("UART RX timeout\n");
+        uart_comm_debug("UART RX timeout\n");
     }
     
     if (event & UART_EVENT_RX_FIFO_OVF) {
-        printf("UART RX overflow\n");
+        uart_comm_debug("UART RX overflow\n");
         uart_dma_rx_reset(uart_num);
     }
     
     if (event & UART_EVENT_TX_DONE) {
-        printf("UART TX done\n");
+        uart_comm_debug("UART TX done\n");
     }
 }
 
@@ -44,7 +51,7 @@ static void uart_comm_recv_task(void *p)
     int len;
     
     if (!buf) {
-        printf("UART recv task buffer malloc failed\n");
+        uart_comm_debug("UART recv task buffer malloc failed\n");
     }
     
     while (1) {
@@ -81,7 +88,7 @@ int uart_comm_init(void)
     
     g_uart_rx_buf = dma_malloc(UART_RX_BUF_SIZE);
     if (!g_uart_rx_buf) {
-        printf("UART rx buffer malloc failed\n");
+        uart_comm_debug("UART rx buffer malloc failed\n");
         return -1;
     }
     
@@ -93,7 +100,7 @@ int uart_comm_init(void)
     
     g_uart_dev = uart_init(uart_num, &uart_cfg);
     if (g_uart_dev < 0) {
-        printf("UART init failed: %d\n", g_uart_dev);
+        uart_comm_debug("UART init failed: %d\n", g_uart_dev);
         dma_free(g_uart_rx_buf);
         g_uart_rx_buf = NULL;
         return g_uart_dev;
@@ -111,7 +118,7 @@ int uart_comm_init(void)
     
     ret = uart_dma_init(g_uart_dev, &dma_cfg);
     if (ret != UART_OK) {
-        printf("UART DMA init failed: %d\n", ret);
+        uart_comm_debug("UART DMA init failed: %d\n", ret);
         uart_deinit(g_uart_dev);
         dma_free(g_uart_rx_buf);
         g_uart_rx_buf = NULL;
@@ -119,7 +126,7 @@ int uart_comm_init(void)
         return ret;
     }
     
-    printf("UART%d initialized: %d baud, TX=0x%04X, RX=0x%04X\n", 
+    uart_comm_debug("UART%d initialized: %d baud, TX=0x%04X, RX=0x%04X\n", 
            g_uart_dev, baud_rate, tx_pin, rx_pin);
     
     uart_dump();

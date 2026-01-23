@@ -2,6 +2,13 @@
 #include "asm/mcpwm.h"
 #include "gpio.h"
 
+#define PIEZO_PUMP_DEBUG_ENABLE  0
+#if PIEZO_PUMP_DEBUG_ENABLE
+#define piezo_pump_debug(fmt, ...) printf("[PIEZO_PUMP] "fmt, ##__VA_ARGS__)
+#else
+#define piezo_pump_debug(...)
+#endif
+
 static int g_pwm_motor1_id = -1;
 static int g_pwm_motor2_id = -1;
 
@@ -50,7 +57,7 @@ int piezo_pump_init(void)
     mcpwm_start(g_pwm_motor1_id);
     mcpwm_start(g_pwm_motor2_id);
 
-    printf("Piezo pump initialized (complementary mode: PB10/PB9, PA1/PA0)\n");
+    piezo_pump_debug("Piezo pump initialized (complementary mode: PB10/PB9, PA1/PA0)\n");
 
     int ret = os_task_create(piezo_pump_task,
                              NULL,
@@ -86,7 +93,7 @@ static void piezo_pump_set_duty(u8 motor_id, u32 frequency, s16 duty)
             pwm_id = g_pwm_motor2_id;
             break;
         default:
-            printf("Invalid motor_id: %d\n", motor_id);
+            piezo_pump_debug("Invalid motor_id: %d\n", motor_id);
             return;
     }
 

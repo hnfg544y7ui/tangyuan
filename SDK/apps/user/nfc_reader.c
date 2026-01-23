@@ -2,6 +2,13 @@
 #include "uart_comm.h"
 #include "system/malloc.h"
 
+#define NFC_READER_DEBUG_ENABLE  0
+#if NFC_READER_DEBUG_ENABLE
+#define nfc_reader_debug(fmt, ...) printf("[NFC_READER] "fmt, ##__VA_ARGS__)
+#else
+#define nfc_reader_debug(...)
+#endif
+
 #define NFC_FRAME_MAX_LEN   128
 #define NFC_TIMEOUT_MS      5000
 
@@ -92,25 +99,25 @@ static int nfc_recv_resp(u8 cmd, u8 *data, u8 max_len, u8 *out_len)
     int ret = uart_comm_recv(frame, NFC_FRAME_MAX_LEN, NFC_TIMEOUT_MS);
     if (ret <= 0) {
         dma_free(frame);
-        printf("NFC recv timeout (ret=%d)\n", ret);
+        nfc_reader_debug("NFC recv timeout (ret=%d)\n", ret);
         return -1;
     }
     
-    // printf("NFC recv %d bytes: ", ret);
+    // nfc_reader_debug("NFC recv %d bytes: ", ret);
     // for (int i = 0; i < ret && i < 32; i++) {
-    //     printf("%02X ", frame[i]);
+    //     nfc_reader_debug("%02X ", frame[i]);
     // }
-    // printf("\n");
+    // nfc_reader_debug("\n");
     
     if (frame[0] != NFC_STX) {
         dma_free(frame);
-        printf("NFC invalid STX: 0x%02X\n", frame[0]);
+        nfc_reader_debug("NFC invalid STX: 0x%02X\n", frame[0]);
         return -1;
     }
     
     if (frame[ret - 1] != NFC_ETX) {
         dma_free(frame);
-        printf("NFC invalid ETX: 0x%02X\n", frame[ret - 1]);
+        nfc_reader_debug("NFC invalid ETX: 0x%02X\n", frame[ret - 1]);
         return -1;
     }
     
@@ -120,7 +127,7 @@ static int nfc_recv_resp(u8 cmd, u8 *data, u8 max_len, u8 *out_len)
     
     if (recv_cmd != cmd) {
         dma_free(frame);
-        printf("NFC cmd mismatch: 0x%02X != 0x%02X\n", recv_cmd, cmd);
+        nfc_reader_debug("NFC cmd mismatch: 0x%02X != 0x%02X\n", recv_cmd, cmd);
         return -1;
     }
     
@@ -145,7 +152,7 @@ static int nfc_recv_resp(u8 cmd, u8 *data, u8 max_len, u8 *out_len)
     
     if (recv_bcc != calc_bcc) {
         dma_free(frame);
-        printf("NFC BCC error: 0x%02X != 0x%02X\n", recv_bcc, calc_bcc);
+        nfc_reader_debug("NFC BCC error: 0x%02X != 0x%02X\n", recv_bcc, calc_bcc);
         return -1;
     }
     
@@ -163,7 +170,7 @@ static void nfc_card_read_task(void *p)
     u8 uid[5];
     int ret;
     
-    printf("NFC card read task started\n");
+    nfc_reader_debug("NFC card read task started\n");
     nfc_init_keys(1);
     
     while (1) {
@@ -178,7 +185,7 @@ static void nfc_card_read_task(void *p)
  */
 int nfc_reader_init(void)
 {
-    printf("NFC reader initialized\n");
+    nfc_reader_debug("NFC reader initialized\n");
     
     int ret = 0;
     
@@ -205,7 +212,7 @@ int nfc_get_uid(u8 *uid)
     
     int ret = nfc_send_cmd(NFC_CMD_GET_UID, NULL, 0);
     if (ret < 0) {
-        printf("NFC send get_uid cmd failed\n");
+        nfc_reader_debug("NFC send get_uid cmd failed\n");
         return ret;
     }
     
@@ -214,22 +221,22 @@ int nfc_get_uid(u8 *uid)
     int state = nfc_recv_resp(NFC_CMD_GET_UID, data, sizeof(data), &data_len);
     
     if (state != NFC_STATE_SUCCESS) {
-        printf("NFC get_uid failed: state=0x%02X\n", state);
+        nfc_reader_debug("NFC get_uid failed: state=0x%02X\n", state);
         return -1;
     }
     
     if (data_len != 5) {
-        printf("NFC UID len error: %d\n", data_len);
+        nfc_reader_debug("NFC UID len error: %d\n", data_len);
         return -1;
     }
     
     memcpy(uid, data, 5);
     
-    printf("NFC UID: ");
+    nfc_reader_debug("NFC UID: ");
     for (int i = 0; i < 5; i++) {
-        printf("%02X ", uid[i]);
+        nfc_reader_debug("%02X ", uid[i]);
     }
-    printf("\n");
+    nfc_reader_debug("\n");
     
     return 0;
 }
@@ -265,12 +272,12 @@ int nfc_read_block(u8 block, u8 key_type, const u8 *key, u8 *data)
     int state = nfc_recv_resp(NFC_CMD_READ_BLOCK, resp_data, sizeof(resp_data), &resp_len);
     
     if (state != NFC_STATE_SUCCESS) {
-        printf("NFC read block failed: state=0x%02X\n", state);
+        nfc_reader_debug("NFC read block failed: state=0x%02X\n", state);
         return -1;
     }
     
     if (resp_len != 16) {
-        printf("NFC read block len error: %d\n", resp_len);
+        nfc_reader_debug("NFC read block len error: %d\n", resp_len);
         return -1;
     }
     
@@ -309,12 +316,12 @@ int nfc_write_block(u8 block, u8 key_type, const u8 *key, const u8 *data)
     int state = nfc_recv_resp(NFC_CMD_WRITE_BLOCK, NULL, 0, NULL);
     
     if (state < 0) {
-        printf("NFC write block failed: state=0x%08X\n", (u32)state);
+        nfc_reader_debug("NFC write block failed: state=0x%08X\n", (u32)state);
         return -1;
     }
     
     if (state != NFC_STATE_SUCCESS) {
-        printf("NFC write block failed: state=0x%02X\n", state);
+        nfc_reader_debug("NFC write block failed: state=0x%02X\n", state);
         return -1;
     }
     
@@ -329,7 +336,7 @@ int nfc_write_block(u8 block, u8 key_type, const u8 *key, const u8 *data)
 int nfc_init_keys(u8 sector)
 {
     if (sector > 15) {
-        printf("NFC invalid sector: %d\n", sector);
+        nfc_reader_debug("NFC invalid sector: %d\n", sector);
         return -1;
     }
     
@@ -343,7 +350,7 @@ int nfc_init_keys(u8 sector)
     u8 control_data[16] = {0};
     int ret = nfc_read_block(control_block, 0, default_key, control_data);
     if (ret < 0) {
-        printf("NFC read control block %d failed (key already changed?)\n", control_block);
+        nfc_reader_debug("NFC read control block %d failed (key already changed?)\n", control_block);
         return -1;
     }
     
@@ -358,7 +365,7 @@ int nfc_init_keys(u8 sector)
     // Write new control block with default key
     ret = nfc_write_block(control_block, 0, default_key, new_control);
     if (ret < 0) {
-        printf("NFC write control block failed\n");
+        nfc_reader_debug("NFC write control block failed\n");
         return -1;
     }
     

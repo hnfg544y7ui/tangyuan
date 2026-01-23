@@ -2,6 +2,13 @@
 #include "asm/mcpwm.h"
 #include "gpio.h"
 
+#define LED_CONTROL_DEBUG_ENABLE  0
+#if LED_CONTROL_DEBUG_ENABLE
+#define led_control_debug(fmt, ...) printf("[LED_CONTROL] "fmt, ##__VA_ARGS__)
+#else
+#define led_control_debug(...)
+#endif
+
 // PWM LED pin definitions
 #define LED_RED_PIN    IO_PORTC_04
 #define LED_GREEN_PIN  IO_PORTC_05
@@ -37,7 +44,7 @@ static int led_pwm_init(void)
     cfg.irq_priority = 1;
     g_pwm_led_ids[LED_RED] = mcpwm_init(&cfg);
     if (g_pwm_led_ids[LED_RED] < 0) {
-        printf("LED Red PWM init failed\n");
+        led_control_debug("LED Red PWM init failed\n");
         return -1;
     }
     
@@ -46,7 +53,7 @@ static int led_pwm_init(void)
     cfg.h_pin = LED_GREEN_PIN;
     g_pwm_led_ids[LED_GREEN] = mcpwm_init(&cfg);
     if (g_pwm_led_ids[LED_GREEN] < 0) {
-        printf("LED Green PWM init failed\n");
+        led_control_debug("LED Green PWM init failed\n");
         return -2;
     }
     
@@ -55,7 +62,7 @@ static int led_pwm_init(void)
     cfg.h_pin = LED_BLUE_PIN;
     g_pwm_led_ids[LED_BLUE] = mcpwm_init(&cfg);
     if (g_pwm_led_ids[LED_BLUE] < 0) {
-        printf("LED Blue PWM init failed\n");
+        led_control_debug("LED Blue PWM init failed\n");
         return -3;
     }
     
@@ -64,7 +71,7 @@ static int led_pwm_init(void)
     cfg.h_pin = LED_WHITE_PIN;
     g_pwm_led_ids[LED_WHITE] = mcpwm_init(&cfg);
     if (g_pwm_led_ids[LED_WHITE] < 0) {
-        printf("LED White PWM init failed\n");
+        led_control_debug("LED White PWM init failed\n");
         return -4;
     }
     
@@ -73,7 +80,7 @@ static int led_pwm_init(void)
     mcpwm_start(g_pwm_led_ids[LED_BLUE]);
     mcpwm_start(g_pwm_led_ids[LED_WHITE]);
     
-    printf("PWM LEDs initialized (R:PC4, G:PC5, B:PC0, W:PA6)\n");
+    led_control_debug("PWM LEDs initialized (R:PC4, G:PC5, B:PC0, W:PA6)\n");
     
     return 0;
 }
@@ -89,7 +96,7 @@ static int led_gpio_init(void)
     gpio_set_mode(PORTC, PORT_PIN_6, PORT_OUTPUT_LOW);
     gpio_set_mode(PORTA, PORT_PIN_7, PORT_OUTPUT_LOW);
     
-    printf("GPIO LEDs initialized (PC1, PC2, PC6, PA7)\n");
+    led_control_debug("GPIO LEDs initialized (PC1, PC2, PC6, PA7)\n");
     
     return 0;
 }
@@ -112,7 +119,7 @@ int led_control_init(void)
         return ret;
     }
     
-    printf("LED control module initialized\n");
+    led_control_debug("LED control module initialized\n");
     
     return 0;
 }
@@ -126,12 +133,12 @@ int led_control_init(void)
 static void led_pwm_set(led_pwm_t led, u32 frequency, u16 duty)
 {
     if (led >= 4) {
-        printf("Invalid LED ID: %d\n", led);
+        led_control_debug("Invalid LED ID: %d\n", led);
         return;
     }
     
     if (g_pwm_led_ids[led] < 0) {
-        printf("LED %d not initialized\n", led);
+        led_control_debug("LED %d not initialized\n", led);
         return;
     }
     
@@ -181,7 +188,7 @@ void led_gpio_set(led_gpio_t led, u8 state)
             pin = LED_GPIO4_PIN;
             break;
         default:
-            printf("Invalid GPIO LED ID: %d\n", led);
+            led_control_debug("Invalid GPIO LED ID: %d\n", led);
             return;
     }
     

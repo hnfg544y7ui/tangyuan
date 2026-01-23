@@ -1,6 +1,13 @@
 #include "key_check.h"
 #include "gpio.h"
 
+#define KEY_CHECK_DEBUG_ENABLE  0
+#if KEY_CHECK_DEBUG_ENABLE
+#define key_check_debug(fmt, ...) printf("[KEY_CHECK] "fmt, ##__VA_ARGS__)
+#else
+#define key_check_debug(...)
+#endif
+
 #define TOUCH_KEY_PIN       IO_PORTB_00
 #define LONG_PRESS_TIME     200   // 2s (200*10ms)
 #define CLICK_INTERVAL      50    // 500ms (50*10ms)
@@ -122,7 +129,7 @@ int key_check_init(key_event_callback_t t_callback)
                              "key_check");
     
     if (ret == 0) {
-        printf("Touch key initialized (PB0)\n");
+        key_check_debug("Touch key initialized (PB0)\n");
     }
     
     return ret;

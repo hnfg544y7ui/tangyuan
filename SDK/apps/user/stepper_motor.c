@@ -1,6 +1,13 @@
 #include "stepper_motor.h"
 #include "gpio.h"
 
+#define STEPPER_MOTOR_DEBUG_ENABLE  0
+#if STEPPER_MOTOR_DEBUG_ENABLE
+#define stepper_motor_debug(fmt, ...) printf("[STEPPER_MOTOR] "fmt, ##__VA_ARGS__)
+#else
+#define stepper_motor_debug(...)
+#endif
+
 #define STEPPER_PIN_A      IO_PORTB_05
 #define STEPPER_PIN_B      IO_PORTB_07
 #define STEPPER_PIN_C      IO_PORTB_06
@@ -158,7 +165,7 @@ void stepper_set_mode(stepper_mode_t mode)
     stepper_set_phase(0);
     
     const char *mode_str[] = {"SINGLE", "DOUBLE", "HALF"};
-    printf("Stepper mode: %s\n", mode_str[mode]);
+    stepper_motor_debug("Stepper mode: %s\n", mode_str[mode]);
 }
 
 /**
@@ -189,5 +196,5 @@ s32 stepper_get_total_steps(void)
 void stepper_driver_control(u8 enable)
 {
     gpio_write(STEPPER_DRIVER_EN, enable ? 1 : 0);
-    printf("Stepper driver %s\n", enable ? "ON" : "OFF");
+    stepper_motor_debug("Stepper driver %s\n", enable ? "ON" : "OFF");
 }

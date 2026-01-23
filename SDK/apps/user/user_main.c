@@ -11,6 +11,13 @@
 #include "led_control.h"
 #include "key_check.h"
 
+#define USER_MAIN_DEBUG_ENABLE  0
+#if USER_MAIN_DEBUG_ENABLE
+#define user_main_debug(fmt, ...) printf("[USER_MAIN] "fmt, ##__VA_ARGS__)
+#else
+#define user_main_debug(...)
+#endif
+
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
 #endif
@@ -21,22 +28,22 @@
  */
 static void key_event_handler(key_event_t t_event)
 {
-	printf("[KEY EVENT] ");
+	user_main_debug("[KEY EVENT] ");
 	switch (t_event) {
 		case KEY_EVENT_SHORT_PRESS:{
-			printf("[KEY] Short press\n");
+			user_main_debug("[KEY] Short press\n");
 		}break;
 		
 		case KEY_EVENT_LONG_PRESS:{
-			printf("[KEY] Long press\n");
+			user_main_debug("[KEY] Long press\n");
 		}break;
 		
 		case KEY_EVENT_DOUBLE_CLICK:{
-			printf("[KEY] Double click\n");
+			user_main_debug("[KEY] Double click\n");
 		}break;
 		
 		case KEY_EVENT_TRIPLE_CLICK:{
-			printf("[KEY] Triple click\n");
+			user_main_debug("[KEY] Triple click\n");
 		}break;
 		
 		default:
@@ -73,12 +80,12 @@ static void user_blink_task(void *p)
  */
 void bt_rcsp_custom_recieve_callback(u16 ble_con_hdl, void *remote_addr, u8 *buf, u16 len, uint16_t att_handle)
 {
-	printf("[BLE RX] hdl:%d, len:%d, att:0x%04x\n", ble_con_hdl, len, att_handle);
-	printf("[BLE RX] Data: ");
-	for(u16 i = 0; i < len; i++) {
-		printf("%02X ", buf[i]);
+	user_main_debug("[BLE RX] hdl:%d, len:%d, att:0x%04x\n", ble_con_hdl, len, att_handle);
+	user_main_debug("[BLE RX] Data: ");
+	for (u16 i = 0; i < len; i++) {
+		user_main_debug("%02X ", buf[i]);
 	}
-	printf("\n");
+	user_main_debug("\n");
 	
 }
 
@@ -92,7 +99,7 @@ void bt_rcsp_custom_recieve_callback(u16 ble_con_hdl, void *remote_addr, u8 *buf
 void user_bt_send_custom_data(u16 ble_con_hdl, u8 *data, u16 len)
 {	
 	bt_rcsp_custom_data_send(ble_con_hdl, NULL, data, len, 0, ATT_OP_AUTO_READ_CCC);
-	printf("[BLE TX] Sent %d bytes to hdl:%d\n", len, ble_con_hdl);
+	user_main_debug("[BLE TX] Sent %d bytes to hdl:%d\n", len, ble_con_hdl);
 }
 
 /**
@@ -112,7 +119,7 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 
 	ret = cfg_private_init(10, path);
 	if (ret != CFG_PRIVATE_OK) {
-		printf("[USER] Init failed: %d\n", ret);
+		user_main_debug("[USER] Init failed: %d\n", ret);
 		return -1;
 	}
 	
@@ -120,14 +127,14 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 
 		fp = cfg_private_open_by_maxsize(file_path, "w+", 4 * 1024);
 		if (!fp) {
-			printf("[USER] Failed to open file for writing\n");
+			user_main_debug("[USER] Failed to open file for writing\n");
 			cfg_private_uninit();
 			return -2;
 		}
 		
 		ret = cfg_private_write(fp, write_data, data_len);
 		if (ret < 0) {
-			printf("[USER] Write failed: %d\n", ret);
+			user_main_debug("[USER] Write failed: %d\n", ret);
 			cfg_private_close(fp);
 			cfg_private_uninit();
 			return -3;
@@ -140,14 +147,14 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 		
 		fp = cfg_private_open_by_maxsize(file_path, "r", 4 * 1024);
 		if (!fp) {
-			printf("[USER] File not found or open failed\n");
+			user_main_debug("[USER] File not found or open failed\n");
 			cfg_private_uninit();
 			return -4;
 		}
 		
 		ret = cfg_private_read(fp, read_buf, read_len);
 		if (ret < 0) {
-			printf("[USER] Read failed: %d\n", ret);
+			user_main_debug("[USER] Read failed: %d\n", ret);
 			cfg_private_close(fp);
 			cfg_private_uninit();
 			return -5;
