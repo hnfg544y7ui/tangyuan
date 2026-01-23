@@ -123,7 +123,7 @@ int led_control_init(void)
  * @param frequency PWM frequency in Hz (e.g., 1000 for 1kHz).
  * @param duty Duty cycle 0~10000 (0%~100%).
  */
-void led_pwm_set(led_pwm_t led, u32 frequency, u16 duty)
+static void led_pwm_set(led_pwm_t led, u32 frequency, u16 duty)
 {
     if (led >= 4) {
         printf("Invalid LED ID: %d\n", led);

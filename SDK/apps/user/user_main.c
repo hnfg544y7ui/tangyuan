@@ -9,10 +9,40 @@
 #include "uart_comm.h"
 #include "nfc_reader.h"
 #include "led_control.h"
+#include "key_check.h"
 
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
 #endif
+
+/**
+ * @brief Handle key events from touch key.
+ * @param t_event Key event type.
+ */
+static void key_event_handler(key_event_t t_event)
+{
+	printf("[KEY EVENT] ");
+	switch (t_event) {
+		case KEY_EVENT_SHORT_PRESS:{
+			printf("[KEY] Short press\n");
+		}break;
+		
+		case KEY_EVENT_LONG_PRESS:{
+			printf("[KEY] Long press\n");
+		}break;
+		
+		case KEY_EVENT_DOUBLE_CLICK:{
+			printf("[KEY] Double click\n");
+		}break;
+		
+		case KEY_EVENT_TRIPLE_CLICK:{
+			printf("[KEY] Triple click\n");
+		}break;
+		
+		default:
+			break;
+	}
+}
 
 static void user_gpio_init(void)
 {
@@ -138,6 +168,7 @@ void user_init(void)
 	uart_comm_init();
 	nfc_reader_init();
 	led_control_init();
+	key_check_init(key_event_handler);
 	user_gpio_init();
 	os_task_create(user_blink_task,
 				   NULL,

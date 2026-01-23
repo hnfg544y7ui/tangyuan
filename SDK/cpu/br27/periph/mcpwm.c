@@ -362,7 +362,7 @@ void mcpwm_set_duty(int mcpwm_cfg_id, u16 duty)
     asm("csync");
 
     ch_cmpl = tmr_pr * duty / 10000;
-    printf("---%d---%d---%d\n", ch_cmpl, tmr_pr, duty);
+    mcpwm_debug("---%d---%d---%d\n", ch_cmpl, tmr_pr, duty);
     ch_cmph = ch_cmpl;
     tmr_cnt = 0;
     /* tmr_con |= 0b01; */

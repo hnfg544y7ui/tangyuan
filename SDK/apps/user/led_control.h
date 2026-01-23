@@ -26,14 +26,6 @@ typedef enum {
 int led_control_init(void);
 
 /**
- * @brief Set PWM LED brightness.
- * @param led LED ID (LED_RED/GREEN/BLUE/WHITE).
- * @param frequency PWM frequency in Hz (e.g., 1000 for 1kHz).
- * @param duty Duty cycle 0-10000 (0%~100%).
- */
-void led_pwm_set(led_pwm_t led, u32 frequency, u16 duty);
-
-/**
  * @brief Set RGB and White LED brightness.
  * @param t_r Red brightness 0-10000.
  * @param t_g Green brightness 0-10000.

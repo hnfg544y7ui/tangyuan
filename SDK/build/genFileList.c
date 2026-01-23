@@ -11,6 +11,7 @@ c_SRC_FILES += \
 	apps/user/uart_comm.c \
 	apps/user/nfc_reader.c \
 	apps/user/led_control.c \
+	apps/user/key_check.c \
 
 c_SRC_FILES += \
       audio/framework/plugs/source/a2dp_file.c \

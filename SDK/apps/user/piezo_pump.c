@@ -68,7 +68,7 @@ int piezo_pump_init(void)
  * @param frequency PWM frequency in Hz (e.g., 20000 for 20kHz).
  * @param duty Duty cycle range 0-10000 (0%-100%).
  */
-void piezo_pump_set_duty(u8 motor_id, u32 frequency, s16 duty)
+static void piezo_pump_set_duty(u8 motor_id, u32 frequency, s16 duty)
 {
     if (duty > 10000) {
         duty = 10000;
