@@ -5445,7 +5445,7 @@
      }
     ],
     "eventField": [],
-    "disable": false
+    "disable": true
    },
    "type": "default",
    "justify": "start",
@@ -13800,7 +13800,7 @@
     "eventField": [],
     "saveWay": "macro",
     "tipAlways": true,
-    "disable": false
+    "disable": true
    },
    "type": "default",
    "justify": "start",
