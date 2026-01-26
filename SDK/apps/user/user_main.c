@@ -54,6 +54,7 @@ static void key_event_handler(key_event_t t_event)
 static void user_gpio_init(void)
 {
 	gpio_set_mode(PORTA, PORT_PIN_2, PORT_INPUT_PULLUP_10K);//PA2 audio control
+	gpio_set_mode(PORTB, PORT_PIN_1, PORT_INPUT_PULLUP_10K);
 }
 
 
@@ -165,6 +166,92 @@ int user_music_file_rw(u8 *write_data, u32 data_len, u8 *read_buf, u32 read_len)
 	
 	cfg_private_uninit();
 	
+	return 0;
+}
+
+/**
+ * @brief Write data to a file.
+ * @param t_file_name File name.
+ * @param t_data Pointer to data buffer.
+ * @param t_len Length of data.
+ * @return 0 if success, negative value on error.
+ */
+int user_file_write(const char *t_file_name, const u8 *t_data, u32 t_len)
+{
+	int ret = 0;
+	RESFILE *fp = NULL;
+	char path[64] = "flash/APP/FATFSI/";
+	char file_path[128] = {0};
+
+	if (t_file_name == NULL || t_data == NULL || t_len == 0) {
+		return -1;
+	}
+
+	ret = cfg_private_init(10, path);
+	if (ret != CFG_PRIVATE_OK) {
+		return -2;
+	}
+
+	snprintf(file_path, sizeof(file_path), "%s%s", path, t_file_name);
+	
+	fp = cfg_private_open_by_maxsize(file_path, "w+", 4 * 1024);
+	if (!fp) {
+		cfg_private_uninit();
+		return -3;
+	}
+
+	ret = cfg_private_write(fp, (void *)t_data, t_len);
+	if (ret < 0) {
+		cfg_private_close(fp);
+		cfg_private_uninit();
+		return -4;
+	}
+
+	cfg_private_close(fp);
+	cfg_private_uninit();
+	return 0;
+}
+
+/**
+ * @brief Read data from a file.
+ * @param t_file_name File name.
+ * @param t_buf Pointer to read buffer.
+ * @param t_len Length to read.
+ * @return 0 if success, negative value on error.
+ */
+int user_file_read(const char *t_file_name, u8 *t_buf, u32 t_len)
+{
+	int ret = 0;
+	RESFILE *fp = NULL;
+	char path[64] = "flash/APP/FATFSI/";
+	char file_path[128] = {0};
+
+	if (t_file_name == NULL || t_buf == NULL || t_len == 0) {
+		return -1;
+	}
+
+	ret = cfg_private_init(10, path);
+	if (ret != CFG_PRIVATE_OK) {
+		return -2;
+	}
+
+	snprintf(file_path, sizeof(file_path), "%s%s", path, t_file_name);
+
+	fp = cfg_private_open_by_maxsize(file_path, "r", 4 * 1024);
+	if (!fp) {
+		cfg_private_uninit();
+		return -3;
+	}
+
+	ret = cfg_private_read(fp, t_buf, t_len);
+	if (ret < 0) {
+		cfg_private_close(fp);
+		cfg_private_uninit();
+		return -4;
+	}
+
+	cfg_private_close(fp);
+	cfg_private_uninit();
 	return 0;
 }
 
