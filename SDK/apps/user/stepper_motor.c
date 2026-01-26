@@ -18,6 +18,11 @@ static struct {
     stepper_mode_t mode;
     u8 step_position;
     s32 total_steps;
+    s32 remain_steps;
+    s8 direction;
+    u16 interval_ticks;
+    u16 tick_count;
+    u8 busy;
 } stepper_state = {STEPPER_MODE_HALF, 0, 0};
 
 static const u8 step_seq_single[4][4] = {
@@ -85,8 +90,19 @@ static void stepper_set_phase(u8 step_index)
 static void stepper_motor_task(void *p)
 {
     while (1) {
-        // stepper_move(1000, 10);
-        os_time_dly(100);
+        if (stepper_state.busy) {
+            stepper_state.tick_count++;
+            if (stepper_state.tick_count >= stepper_state.interval_ticks) {
+                stepper_state.tick_count = 0;
+                stepper_step(stepper_state.direction);
+                stepper_state.remain_steps--;
+                if (stepper_state.remain_steps <= 0) {
+                    stepper_state.busy = 0;
+                    stepper_driver_control(0);
+                }
+            }
+        }
+        os_time_dly(1);
     }
 }
 
@@ -144,14 +160,20 @@ void stepper_step(s8 direction)
  */
 void stepper_move(s32 steps, u16 delay_ms)
 {
-    s8 direction = (steps > 0) ? 1 : -1;
-    u32 abs_steps = (steps > 0) ? steps : (-steps);
-    stepper_driver_control(1);
-    for (u32 i = 0; i < abs_steps; i++) {
-        stepper_step(direction);
-        os_time_dly(delay_ms / 10);
+    s32 abs_steps = (steps > 0) ? steps : (-steps);
+    if (abs_steps == 0) {
+        return;
     }
-    stepper_driver_control(0);
+
+    stepper_state.direction = (steps > 0) ? 1 : -1;
+    stepper_state.remain_steps = abs_steps;
+    stepper_state.tick_count = 0;
+    stepper_state.interval_ticks = delay_ms / 10;
+    if (stepper_state.interval_ticks == 0) {
+        stepper_state.interval_ticks = 1;
+    }
+    stepper_state.busy = 1;
+    stepper_driver_control(1);
 }
 
 /**
@@ -187,6 +209,24 @@ void stepper_stop(void)
 s32 stepper_get_total_steps(void)
 {
     return stepper_state.total_steps;
+}
+
+/**
+ * @brief Get current position in steps.
+ * @return Current step position.
+ */
+s32 stepper_get_position(void)
+{
+    return stepper_state.total_steps;
+}
+
+/**
+ * @brief Get stepper running status.
+ * @return 1 if running, 0 if idle.
+ */
+u8 stepper_is_running(void)
+{
+    return stepper_state.busy ? 1 : 0;
 }
 
 /**

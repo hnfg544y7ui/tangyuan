@@ -49,6 +49,18 @@ void stepper_stop(void);
 s32 stepper_get_total_steps(void);
 
 /**
+ * @brief Get current position in steps.
+ * @return Current step position.
+ */
+s32 stepper_get_position(void);
+
+/**
+ * @brief Get stepper running status.
+ * @return 1 if running, 0 if idle.
+ */
+u8 stepper_is_running(void);
+
+/**
  * @brief Control stepper motor driver power.
  * @param enable 1=ON, 0=OFF.
  */
