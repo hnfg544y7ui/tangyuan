@@ -2680,7 +2680,8 @@
     "saveWay": "",
     "uuid": "",
     "eventField": [],
-    "enableUuid": "TCFG_PWMLED_ENABLE"
+    "enableUuid": "TCFG_PWMLED_ENABLE",
+    "disable": true
    },
    "type": "default",
    "justify": "start",
