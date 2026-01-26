@@ -14,4 +14,7 @@ void user_init(void);
 void bt_rcsp_custom_recieve_callback(u16 ble_con_hdl, void *remote_addr, u8 *buf, u16 len, uint16_t att_handle);
 void user_bt_send_custom_data(u16 ble_con_hdl, u8 *data, u16 len);
 
+int user_file_write(const char *t_file_name, const u8 *t_data, u32 t_len);
+int user_file_read(const char *t_file_name, u8 *t_buf, u32 t_len);
+
 #endif /* USER_MAIN_H */
