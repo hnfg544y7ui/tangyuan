@@ -1,7 +1,7 @@
 #include "stepper_motor.h"
 #include "gpio.h"
 
-#define STEPPER_MOTOR_DEBUG_ENABLE  0
+#define STEPPER_MOTOR_DEBUG_ENABLE  1
 #if STEPPER_MOTOR_DEBUG_ENABLE
 #define stepper_motor_debug(fmt, ...) printf("[STEPPER_MOTOR] "fmt, ##__VA_ARGS__)
 #else
@@ -195,6 +195,9 @@ void stepper_set_mode(stepper_mode_t mode)
  */
 void stepper_stop(void)
 {
+    stepper_state.busy = 0;
+    stepper_state.remain_steps = 0;
+    stepper_state.tick_count = 0;
     stepper_driver_control(0);
     gpio_write(STEPPER_PIN_A, 0);
     gpio_write(STEPPER_PIN_B, 0);

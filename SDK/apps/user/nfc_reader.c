@@ -2,7 +2,7 @@
 #include "uart_comm.h"
 #include "system/malloc.h"
 
-#define NFC_READER_DEBUG_ENABLE  0
+#define NFC_READER_DEBUG_ENABLE  1
 #if NFC_READER_DEBUG_ENABLE
 #define nfc_reader_debug(fmt, ...) printf("[NFC_READER] "fmt, ##__VA_ARGS__)
 #else
@@ -16,6 +16,7 @@
 #define NFC_AROMA_BLOCK     4
 static const u8 g_nfc_key_a[6] = {0x11, 0x21, 0x31, 0x41, 0x51, 0x61};
 static struct aroma_data current_aroma_data;
+static nfc_card_event_callback_t g_card_cb = NULL;
 
 /**
  * @brief Calculate BCC checksum.
@@ -167,14 +168,31 @@ static int nfc_recv_resp(u8 cmd, u8 *data, u8 max_len, u8 *out_len)
  */
 static void nfc_card_read_task(void *p)
 {
-    u8 uid[5];
     int ret;
+    u8 card_present = 0;
     
     nfc_reader_debug("NFC card read task started\n");
     nfc_init_keys(1);
     
     while (1) {
         ret = nfc_read_aroma_data(&current_aroma_data);
+        if (ret == 0) {
+            nfc_reader_debug("nfc card in position\n");
+            if (!card_present) {
+                card_present = 1;
+                if (g_card_cb) {
+                    g_card_cb(1, &current_aroma_data);
+                }
+            }
+        } else {
+            nfc_reader_debug("nfc card not in position\n");
+            if (card_present) {
+                card_present = 0;
+                if (g_card_cb) {
+                    g_card_cb(0, NULL);
+                }
+            }
+        }
         os_time_dly(100);
     }
 }
@@ -197,6 +215,15 @@ int nfc_reader_init(void)
                              "nfc_read");
     
     return ret;
+}
+
+/**
+ * @brief Set NFC card event callback.
+ * @param t_callback Callback for card present/removal events.
+ */
+void nfc_set_card_event_callback(nfc_card_event_callback_t t_callback)
+{
+    g_card_cb = t_callback;
 }
 
 /**

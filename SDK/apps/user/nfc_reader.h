@@ -32,11 +32,19 @@ struct aroma_data {
     u8 aroma_used_time[6];   // Aroma 0-5 used time
 };
 
+typedef void (*nfc_card_event_callback_t)(u8 present, const struct aroma_data *data);
+
 /**
  * @brief Initialize NFC reader module.
  * @return 0 if success, negative value on error.
  */
 int nfc_reader_init(void);
+
+/**
+ * @brief Set NFC card event callback.
+ * @param t_callback Callback for card present/removal events.
+ */
+void nfc_set_card_event_callback(nfc_card_event_callback_t t_callback);
 
 /**
  * @brief Get card UID.

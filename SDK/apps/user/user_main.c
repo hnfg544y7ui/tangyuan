@@ -11,16 +11,24 @@
 #include "led_control.h"
 #include "key_check.h"
 
-#define USER_MAIN_DEBUG_ENABLE  0
+#define USER_MAIN_DEBUG_ENABLE  1
 #if USER_MAIN_DEBUG_ENABLE
 #define user_main_debug(fmt, ...) printf("[USER_MAIN] "fmt, ##__VA_ARGS__)
 #else
 #define user_main_debug(...)
 #endif
 
+#define STEPPER_TEST_STEPS        10000
+#define STEPPER_TEST_DELAY_MS     10
+#define PIEZO_PUMP_TEST_ID        0
+#define PIEZO_PUMP_TEST_FREQ_HZ   20000
+#define LED_BLINK_INTERVAL_TICKS  200
+
 #ifndef USER_BLINK_GPIO
 #define USER_BLINK_GPIO   IO_PORTB_01
 #endif
+
+static s8 g_stepper_next_dir = 1;
 
 /**
  * @brief Handle key events from touch key.
@@ -33,6 +41,16 @@ static void key_event_handler(key_id_t t_key_id, key_event_t t_event)
 	switch (t_event) {
 		case KEY_EVENT_SHORT_PRESS:{
 			user_main_debug("[KEY] Short press\n");
+			if (t_key_id == KEY_ID_1) {
+				if (stepper_is_running()) {
+					stepper_stop();
+				}
+				stepper_move(g_stepper_next_dir * STEPPER_TEST_STEPS, STEPPER_TEST_DELAY_MS);
+				g_stepper_next_dir = -g_stepper_next_dir;
+			}
+			if (t_key_id == KEY_ID_0) {
+				stepper_stop();
+			}
 		}break;
 		
 		case KEY_EVENT_LONG_PRESS:{
@@ -52,6 +70,21 @@ static void key_event_handler(key_id_t t_key_id, key_event_t t_event)
 	}
 }
 
+/**
+ * @brief NFC card event callback.
+ * @param t_present 1=card present, 0=card removed.
+ * @param t_data Pointer to aroma data when present.
+ */
+static void nfc_card_event_handler(u8 t_present, const struct aroma_data *t_data)
+{
+	(void)t_data;
+	if (t_present) {
+		piezo_pump_run(PIEZO_PUMP_TEST_ID, PIEZO_PUMP_TEST_FREQ_HZ);
+	} else {
+		piezo_pump_stop(PIEZO_PUMP_TEST_ID);
+	}
+}
+
 static void user_gpio_init(void)
 {
 	gpio_set_mode(PORTA, PORT_PIN_2, PORT_INPUT_PULLUP_10K);//PA2 audio control
@@ -62,10 +95,17 @@ static void user_gpio_init(void)
 static void user_blink_task(void *p)
 {
 	u8 level = 0;
-	static u32 counter = 0;
-	
+
 	while (1) {
-		os_time_dly(1000);
+		level = !level;
+		if (level) {
+			led_rgb_set(10000, 10000, 10000, 10000);
+			led_gpio_set_all(1);
+		} else {
+			led_rgb_set(0, 0, 0, 0);
+			led_gpio_set_all(0);
+		}
+		os_time_dly(LED_BLINK_INTERVAL_TICKS);
 	}
 }
 
@@ -262,6 +302,7 @@ void user_init(void)
 	stepper_motor_init();
 	uart_comm_init();
 	nfc_reader_init();
+	nfc_set_card_event_callback(nfc_card_event_handler);
 	led_control_init();
 	key_check_init(key_event_handler);
 	user_gpio_init();

@@ -110,3 +110,12 @@ void piezo_pump_run(u8 motor_id, u32 frequency)
 {
     piezo_pump_set_duty(motor_id, frequency, 5000);
 }
+
+/**
+ * @brief Stop piezo pump.
+ * @param motor_id Motor ID: 0=motor1(PB10/PB9), 1=motor2(PA1/PA0).
+ */
+void piezo_pump_stop(u8 motor_id)
+{
+    piezo_pump_set_duty(motor_id, 20000, 0);
+}

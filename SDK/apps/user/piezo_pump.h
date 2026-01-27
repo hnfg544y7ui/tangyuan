@@ -16,4 +16,10 @@ int piezo_pump_init(void);
  */
 void piezo_pump_run(u8 motor_id, u32 frequency);
 
+/**
+ * @brief Stop piezo pump.
+ * @param motor_id Motor ID: 0=motor1(PB10/PB9), 1=motor2(PA1/PA0).
+ */
+void piezo_pump_stop(u8 motor_id);
+
 #endif
