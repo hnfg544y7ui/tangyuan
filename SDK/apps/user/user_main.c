@@ -79,9 +79,11 @@ static void nfc_card_event_handler(u8 t_present, const struct aroma_data *t_data
 {
 	(void)t_data;
 	if (t_present) {
-		piezo_pump_run(PIEZO_PUMP_TEST_ID, PIEZO_PUMP_TEST_FREQ_HZ);
+		piezo_pump_run(0, PIEZO_PUMP_TEST_FREQ_HZ);
+		piezo_pump_run(1, PIEZO_PUMP_TEST_FREQ_HZ);
 	} else {
-		piezo_pump_stop(PIEZO_PUMP_TEST_ID);
+		piezo_pump_stop(0);
+		piezo_pump_stop(1);
 	}
 }
 
