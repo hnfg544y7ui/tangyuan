@@ -24,11 +24,12 @@
 
 /**
  * @brief Handle key events from touch key.
+ * @param t_key_id Key ID.
  * @param t_event Key event type.
  */
-static void key_event_handler(key_event_t t_event)
+static void key_event_handler(key_id_t t_key_id, key_event_t t_event)
 {
-	user_main_debug("[KEY EVENT] ");
+	user_main_debug("[KEY EVENT] id:%d ", t_key_id);
 	switch (t_event) {
 		case KEY_EVENT_SHORT_PRESS:{
 			user_main_debug("[KEY] Short press\n");

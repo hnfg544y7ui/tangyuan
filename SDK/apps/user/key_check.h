@@ -11,7 +11,12 @@ typedef enum {
     KEY_EVENT_TRIPLE_CLICK,
 } key_event_t;
 
-typedef void (*key_event_callback_t)(key_event_t t_event);
+typedef enum {
+    KEY_ID_0 = 0,
+    KEY_ID_1 = 1,
+} key_id_t;
+
+typedef void (*key_event_callback_t)(key_id_t t_key_id, key_event_t t_event);
 
 /**
  * @brief Initialize touch key detection module.
